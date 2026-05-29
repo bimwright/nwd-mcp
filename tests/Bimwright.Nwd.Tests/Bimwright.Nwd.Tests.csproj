@@ -26,6 +26,9 @@
 
   <ItemGroup>
     <Compile Include="..\..\src\shared\Plugin\NwdCommandRegistry.Names.cs" />
+    <Compile Include="..\..\src\shared\Infrastructure\INwdCommand.cs" />
+    <Compile Include="..\..\src\shared\Infrastructure\CommandDispatcher.cs" />
+    <Compile Include="..\..\src\shared\Infrastructure\NwdCommandContext.cs" />
   </ItemGroup>
 
 </Project>
