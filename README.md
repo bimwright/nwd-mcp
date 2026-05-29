@@ -13,6 +13,21 @@
 
 ---
 
+## Current Status
+
+| Component | Status |
+|---|---|
+| MCP gateway server (.NET 8) | ✅ Builds warning-clean (Debug + Release) |
+| Unit tests (40 xUnit) | ✅ All passing |
+| Plug-in handler implementations | ⚠️ Written against documented API, **pending verification on a Navisworks machine** |
+| Plug-in projects (net48) | ⚠️ Require Navisworks Manage SDK DLLs to compile |
+
+> **Note:** The plug-in handler layer has been fully implemented using real Navisworks .NET API calls
+> (not stubs or fabricated data), but has not yet been compiled or tested against a live Navisworks
+> instance. See [walkthrough.md](walkthrough.md) for the first-run checklist.
+
+---
+
 ## Tool Surface
 
 Phase 1 provides exactly **30 tools** when all toolsets are enabled. Every tool uses the `nwd_*` prefix.
