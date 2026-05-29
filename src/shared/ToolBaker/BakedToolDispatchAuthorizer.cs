@@ -20,6 +20,7 @@ public static class BakedToolDispatchAuthorizer
         "send_code",
         "batch_execute",
         "run_baked_tool",
+        "apply_bake",
         "accept_bake_suggestion",
         "dismiss_bake_suggestion",
         "list_baked_tools"

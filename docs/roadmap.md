@@ -28,4 +28,4 @@ All six plug-in shells (versions 2022 to 2027) target `.NET Framework 4.8` (`net
 
 > [!IMPORTANT]
 > **TFM Upgrade Directive:**
-> If a future version of Autodesk Navisworks Manage moves to .NET Core/8.0+, add a `net8.0-windows` (or appropriate) target framework TFM for that specific version's plug-in project shell. Until such a change is announced, all current and legacy plug-ins must remain on `net48`.
+> If a future version of Autodesk Navisworks Manage moves to .NET Core/8.0+, add the Autodesk-supported Windows target framework for that specific version's plug-in project shell. Until such a change is announced, all current and legacy plug-ins must remain on `net48`.

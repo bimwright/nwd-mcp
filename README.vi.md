@@ -95,11 +95,11 @@ Các tệp DLL Autodesk Navisworks API **không được phân phối trực ti�
   ```
 - **Biên dịch Plug-In:** Yêu cầu máy phát triển phải cài đặt sẵn Autodesk Navisworks Manage.
   ```powershell
-  dotnet build src\NwdMcp.sln -c Debug
+  dotnet build src\plugin-navis26\Bimwright.Nwd.Plugin.Navis26.csproj -c Debug /p:NavisworksInstallDir="C:\Program Files\Autodesk\Navisworks Manage 2026"
   ```
   Nếu Navisworks Manage được cài đặt ở đường dẫn tùy chỉnh, hãy ghi đè thuộc tính chỉ dẫn:
   ```powershell
-  dotnet build src\NwdMcp.sln -c Debug /p:NavisworksInstallDir="D:\Autodesk\Navisworks 2026"
+  dotnet build src\plugin-navis26\Bimwright.Nwd.Plugin.Navis26.csproj -c Debug /p:NavisworksInstallDir="D:\Autodesk\Navisworks 2026"
   ```
 
 ---

@@ -26,6 +26,8 @@ public static partial class NwdCommandRegistry
         "save_viewpoint",
         "hide_items",
         "unhide_all",
-        "send_code"
+        "send_code",
+        "run_baked_tool",
+        "apply_bake"
     };
 }

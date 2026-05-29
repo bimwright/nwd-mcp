@@ -33,6 +33,8 @@ public static partial class NwdCommandRegistry
         Add(new HideItemsHandler());
         Add(new UnhideAllHandler());
         Add(new SendCodeHandler());
+        Add(new RunBakedToolHandler());
+        Add(new ApplyBakeHandler());
 
         return dict;
     }

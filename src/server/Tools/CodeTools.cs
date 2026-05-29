@@ -16,8 +16,8 @@ public sealed class CodeTools
     public CodeTools(PluginClient client) => _client = client;
 
     [McpServerTool(Name = "nwd_send_code"), Description("Execute a C# code snippet in-process within the Navisworks plug-in context.")]
-    public Task<string> SendCode(string source, CancellationToken ct)
-        => Call("send_code", new JObject { ["source"] = source }, ct);
+    public Task<string> SendCode(string code, CancellationToken ct)
+        => Call("send_code", new JObject { ["code"] = code }, ct);
 
     private async Task<string> Call(string command, JObject p, CancellationToken ct)
     {

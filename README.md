@@ -110,11 +110,11 @@ Autodesk Navisworks API DLLs are **not redistributed** in this repository.
   ```
 - **Plug-In Compilation:** Requires a local Navisworks Manage installation.
   ```powershell
-  dotnet build src\NwdMcp.sln -c Debug
+  dotnet build src\plugin-navis26\Bimwright.Nwd.Plugin.Navis26.csproj -c Debug /p:NavisworksInstallDir="C:\Program Files\Autodesk\Navisworks Manage 2026"
   ```
   If Navisworks Manage is installed in a non-default path, override the hint property:
   ```powershell
-  dotnet build src\NwdMcp.sln -c Debug /p:NavisworksInstallDir="D:\Autodesk\Navisworks 2026"
+  dotnet build src\plugin-navis26\Bimwright.Nwd.Plugin.Navis26.csproj -c Debug /p:NavisworksInstallDir="D:\Autodesk\Navisworks 2026"
   ```
 
 ---

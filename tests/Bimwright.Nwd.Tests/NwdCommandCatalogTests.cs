@@ -12,7 +12,7 @@ public sealed class NwdCommandCatalogTests
         "get_current_selection","clear_selection","select_items_by_search",
         "list_sets","get_selection_set_items","execute_search_set",
         "list_viewpoints","get_current_viewpoint","goto_viewpoint","save_viewpoint",
-        "hide_items","unhide_all","send_code"
+        "hide_items","unhide_all","send_code","run_baked_tool","apply_bake"
     };
 
     [Fact]
@@ -25,7 +25,7 @@ public sealed class NwdCommandCatalogTests
     [Fact]
     public void WriteCommandsAreFlaggedNotReadOnly()
     {
-        foreach (var w in new[] { "clear_selection","select_items_by_search","goto_viewpoint","save_viewpoint","hide_items","unhide_all","send_code" })
+        foreach (var w in new[] { "clear_selection","select_items_by_search","goto_viewpoint","save_viewpoint","hide_items","unhide_all","send_code","run_baked_tool","apply_bake" })
             Assert.False(NwdCommandCatalog.All.Single(c => c.Name == w).IsReadOnly, $"{w} should be write");
     }
 }

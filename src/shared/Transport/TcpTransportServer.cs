@@ -112,7 +112,8 @@ public sealed class TcpTransportServer : IDisposable
                                     ReadOnly = false, // plug-in receives dispatch context
                                     EnableSendCode = _options.EnableSendCode,
                                     NavisworksYear = _options.NavisworksYear,
-                                    TargetId = _targetId
+                                    TargetId = _targetId,
+                                    Commands = handlers
                                 };
                                 result = _dispatcher!.Dispatch(context, env);
                             });

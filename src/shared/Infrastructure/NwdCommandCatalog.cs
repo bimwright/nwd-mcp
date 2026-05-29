@@ -30,6 +30,8 @@ public static class NwdCommandCatalog
         new NwdCommandInfo("hide_items", false),
         new NwdCommandInfo("unhide_all", false),
         new NwdCommandInfo("send_code", false),
+        new NwdCommandInfo("run_baked_tool", false),
+        new NwdCommandInfo("apply_bake", false),
     };
 
     public static bool TryGet(string name, out NwdCommandInfo info)

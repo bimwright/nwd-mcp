@@ -44,9 +44,11 @@ public sealed class NwdPluginApplication : NWP.EventWatcherPlugin
 #endif
 
         var enableSendCodeEnv = Environment.GetEnvironmentVariable("BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE");
-        var enableSendCode = !string.IsNullOrEmpty(enableSendCodeEnv) && 
-            (enableSendCodeEnv.Equals("1", StringComparison.OrdinalIgnoreCase) || 
-             enableSendCodeEnv.Equals("true", StringComparison.OrdinalIgnoreCase));
+        var enableSendCode = !string.IsNullOrEmpty(enableSendCodeEnv) &&
+            (enableSendCodeEnv.Equals("1", StringComparison.OrdinalIgnoreCase) ||
+             enableSendCodeEnv.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+             enableSendCodeEnv.Equals("yes", StringComparison.OrdinalIgnoreCase) ||
+             enableSendCodeEnv.Equals("on", StringComparison.OrdinalIgnoreCase));
 
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         var descriptorDir = Path.Combine(appData, "Bimwright", "nwd-mcp");

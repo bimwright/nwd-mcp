@@ -55,7 +55,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the conceptual model. Quick reference
 1. Write the handler in `src/shared/Handlers/<Verb><Noun>Handler.cs` implementing `INwdCommand`. Return DTOs (anonymous objects or `JObject`) — never serialize Navisworks API objects directly.
 2. Register in `src/shared/Plugin/NwdCommandRegistry.cs`: `Add(new YourHandler());`.
 3. Add the command name to `src/shared/Plugin/NwdCommandRegistry.Names.cs` and `src/shared/Infrastructure/NwdCommandCatalog.cs`.
-4. Add an `[McpServerTool]` method in the appropriate toolset class under `src/server/Tools/` (e.g., `QueryTools.cs`).
+4. Add an `[McpServerTool]` method in the matching toolset class under `src/server/Tools/` (e.g., `QueryTools.cs`).
 5. Cover any non-trivial logic with an xUnit test in `tests/Bimwright.Nwd.Tests/`.
 6. Manual smoke test in at least one Navisworks version before PR.
 

@@ -12,13 +12,11 @@ public sealed class PluginProjectFileTests
     public void VerifyPluginProjectsShape()
     {
         var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-        // relative path to src/
-        var srcDir = Path.Combine(baseDir, "..", "..", "..", "..", "..", "src");
-        if (!Directory.Exists(srcDir))
-        {
-            // fallback for different test running contexts
-            srcDir = @"D:\Projects\bimwright\nwd-mcp\src";
-        }
+        var dir = new DirectoryInfo(baseDir);
+        while (dir != null && !Directory.Exists(Path.Combine(dir.FullName, "src")))
+            dir = dir.Parent;
+        Assert.NotNull(dir);
+        var srcDir = Path.Combine(dir!.FullName, "src");
 
         foreach (var year in Years)
         {

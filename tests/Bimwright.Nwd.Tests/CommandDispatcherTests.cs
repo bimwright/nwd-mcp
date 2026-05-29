@@ -52,4 +52,20 @@ public sealed class CommandDispatcherTests
         var r = d.Dispatch(new NwdCommandContext { EnableSendCode = false }, new NwdCommandEnvelope { Command = "send_code" });
         Assert.Equal("SEND_CODE_DISABLED", r.Error!.Code);
     }
+
+    [Fact]
+    public void SuccessfulHandlerResponseKeepsEnvelopeId()
+    {
+        var id = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var d = Make(new FakeCmd
+        {
+            Name = "ping",
+            IsReadOnly = true,
+            Body = () => NwdCommandResult.Success(Guid.Empty, new JObject { ["ok"] = true }, new NwdResponseMeta())
+        });
+
+        var r = d.Dispatch(new NwdCommandContext(), new NwdCommandEnvelope { Id = id, Command = "ping" });
+
+        Assert.Equal(id, r.Id);
+    }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Bimwright.Nwd.Shared.Infrastructure;
 
@@ -8,4 +9,5 @@ public sealed class NwdCommandContext
     public bool EnableSendCode { get; init; }
     public int NavisworksYear { get; init; }
     public string? TargetId { get; init; }
+    public IReadOnlyDictionary<string, INwdCommand>? Commands { get; init; }
 }

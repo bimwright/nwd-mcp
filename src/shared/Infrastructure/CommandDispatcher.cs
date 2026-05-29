@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -16,6 +17,7 @@ public sealed class CommandDispatcher
 
     public NwdCommandResult Dispatch(NwdCommandContext ctx, NwdCommandEnvelope env)
     {
+        var started = Stopwatch.StartNew();
         var meta = new NwdResponseMeta { TargetId = ctx.TargetId, NavisworksYear = ctx.NavisworksYear };
         if (!_commands.TryGetValue(env.Command, out var cmd))
             return NwdCommandResult.Fail(env.Id, "INVALID_ARGUMENT", $"unknown command: {env.Command}", meta);
@@ -27,6 +29,7 @@ public sealed class CommandDispatcher
         try
         {
             var result = cmd.Execute(ctx, env.Params ?? new JObject());
+            Normalize(env, ctx, result, started);
             var serialized = JsonConvert.SerializeObject(result.Data);
             if (!ResponseSizeGuard.Check(serialized, _maxResponseBytes, out var sizeError))
                 return NwdCommandResult.Fail(env.Id, sizeError!.Code, sizeError.Message, result.Meta);
@@ -36,5 +39,13 @@ public sealed class CommandDispatcher
         {
             return NwdCommandResult.Fail(env.Id, "API_ERROR", ErrorSanitizer.Sanitize(ex), meta);
         }
+    }
+
+    private static void Normalize(NwdCommandEnvelope env, NwdCommandContext ctx, NwdCommandResult result, Stopwatch started)
+    {
+        result.Id = env.Id;
+        result.Meta.TargetId ??= ctx.TargetId;
+        result.Meta.NavisworksYear ??= ctx.NavisworksYear == 0 ? null : ctx.NavisworksYear;
+        result.Meta.DurationMs = started.ElapsedMilliseconds;
     }
 }
