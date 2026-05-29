@@ -40,6 +40,13 @@
     <Compile Include="..\shared\Infrastructure\TargetRegistry.cs" LinkBase="Shared\Infrastructure" />
     <Compile Include="..\shared\Security\SecretMasker.cs" LinkBase="Shared\Security" />
     <Compile Include="..\shared\Security\ErrorSanitizer.cs" LinkBase="Shared\Security" />
+    <Compile Include="..\shared\ToolBaker\BakedToolRecord.cs" LinkBase="Shared\ToolBaker" />
+    <Compile Include="..\shared\ToolBaker\BakedToolDispatchAuthorizer.cs" LinkBase="Shared\ToolBaker" />
+    <Compile Include="..\shared\ToolBaker\BakedToolRuntimeCommandFactory.cs" LinkBase="Shared\ToolBaker" />
+    <Compile Include="..\shared\ToolBaker\BakedToolRuntimeSource.cs" LinkBase="Shared\ToolBaker" />
+    <Compile Include="..\shared\ToolBaker\BakeCompilerPolicy.cs" LinkBase="Shared\ToolBaker" />
+    <Compile Include="..\shared\ToolBaker\ToolCompiler.cs" LinkBase="Shared\ToolBaker" />
+    <Compile Include="..\shared\Security\BakeRedactor.cs" LinkBase="Shared\Security" />
   </ItemGroup>
 
   <ItemGroup>
