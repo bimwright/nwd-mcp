@@ -32,6 +32,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\shared\Infrastructure\NwdCommandEnvelope.cs" LinkBase="Shared\Infrastructure" />
+    <Compile Include="..\shared\Infrastructure\NwdCommandResult.cs" LinkBase="Shared\Infrastructure" />
+    <Compile Include="..\shared\Infrastructure\NwdCommandCatalog.cs" LinkBase="Shared\Infrastructure" />
+    <Compile Include="..\shared\Infrastructure\ResponseSizeGuard.cs" LinkBase="Shared\Infrastructure" />
+    <Compile Include="..\shared\Infrastructure\TargetDescriptor.cs" LinkBase="Shared\Infrastructure" />
+    <Compile Include="..\shared\Infrastructure\TargetRegistry.cs" LinkBase="Shared\Infrastructure" />
+    <Compile Include="..\shared\Security\SecretMasker.cs" LinkBase="Shared\Security" />
+    <Compile Include="..\shared\Security\ErrorSanitizer.cs" LinkBase="Shared\Security" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="ModelContextProtocol" Version="1.1.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.11" />
