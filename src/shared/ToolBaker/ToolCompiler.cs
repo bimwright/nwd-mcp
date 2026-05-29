@@ -68,7 +68,7 @@ public static class ToolCompiler
             foreach (var step in sequence)
             {
                 var commandName = CommandName(step);
-                if (!BakedToolDispatchAuthorizer.IsAllowed(commandName))
+                if (commandName == null || !BakedToolDispatchAuthorizer.IsAllowed(commandName))
                 {
                     return Fail("Baked tool target is not allowed: " + commandName);
                 }
@@ -93,19 +93,19 @@ public static class ToolCompiler
 
         if (string.Equals(record.Source, "preset", StringComparison.Ordinal))
         {
-            var preflightResult = preflight(record.HandlerTool, ParseObject(record.FixedArgs, out _));
+            var preflightResult = preflight(record.HandlerTool, ParseObject(record.FixedArgs, out _) ?? new JObject());
             return preflightResult.Ok
                 ? validation
                 : Fail("Baked tool smoke test failed: " + preflightResult.Error);
         }
 
-        foreach (var step in ParseArray(record.Sequence, out _))
+        foreach (var step in ParseArray(record.Sequence, out _) ?? new JArray())
         {
             var commandName = CommandName(step);
             var commandParams = CommandParams(step);
-            if (commandParams == null)
+            if (commandName == null || commandParams == null)
             {
-                return Fail("Macro baked tool steps must include params for smoke testing.");
+                return Fail("Macro baked tool steps must include a command name and params for smoke testing.");
             }
 
             var preflightResult = preflight(commandName, commandParams);

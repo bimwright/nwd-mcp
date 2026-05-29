@@ -2,10 +2,11 @@
 
 ## Summary
 
-This phase completed the half-finished Navisworks plug-in handler layer. All 16 domain
+This phase completed the half-finished Navisworks plug-in handler layer. All 21 domain
 command handlers in `src\shared\Handlers\` now contain real Navisworks API calls instead
-of shell stubs returning fabricated data. A unified `ModelItem` ID encoding scheme was
-introduced and applied consistently across every handler.
+of shell stubs returning fabricated data (the 16 listed below were implemented or updated
+this pass; the other 5 were already real). A unified `ModelItem` ID encoding scheme was
+introduced and applied consistently across handlers that produce or consume item IDs.
 
 ## What Changed
 

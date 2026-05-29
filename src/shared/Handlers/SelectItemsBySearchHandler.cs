@@ -29,7 +29,7 @@ public sealed class SelectItemsBySearchHandler : INwdCommand
         {
             if (filters is JObject filterObj)
             {
-                search.SearchConditions.Add(BuildCondition(filterObj));
+                search.SearchConditions.Add(SearchConditionBuilder.BuildCondition(filterObj));
             }
             else if (filters is JArray filtersArr)
             {
@@ -37,7 +37,7 @@ public sealed class SelectItemsBySearchHandler : INwdCommand
                 {
                     if (f is JObject obj)
                     {
-                        search.SearchConditions.Add(BuildCondition(obj));
+                        search.SearchConditions.Add(SearchConditionBuilder.BuildCondition(obj));
                     }
                 }
             }
@@ -55,37 +55,6 @@ public sealed class SelectItemsBySearchHandler : INwdCommand
             ["selected_count"] = matches.Count
         };
         return NwdCommandResult.Success(System.Guid.Empty, data, meta);
-    }
-
-    private static NW.SearchCondition BuildCondition(JToken filter)
-    {
-        var category = (string?)filter["category"] ?? "Item";
-        var property = (string?)filter["property"] ?? "Name";
-        var op = (string?)filter["operator"] ?? "contains";
-        var value = (string?)filter["value"] ?? "";
-
-        NW.SearchCondition cond = NW.SearchCondition.HasPropertyByDisplayName(category, property);
-        switch ((op ?? "").Trim().ToLowerInvariant())
-        {
-            case "equals":
-            case "=":
-                cond = cond.EqualValue(NW.VariantData.FromDisplayString(value));
-                break;
-            case "contains":
-            case "~":
-                cond = cond.EqualValue(NW.VariantData.FromDisplayString("*" + value + "*"));
-                break;
-            case "startswith":
-                cond = cond.EqualValue(NW.VariantData.FromDisplayString(value + "*"));
-                break;
-            case "endswith":
-                cond = cond.EqualValue(NW.VariantData.FromDisplayString("*" + value));
-                break;
-            default:
-                throw new System.ArgumentException(
-                    $"unknown operator '{op}'. Use equals, contains, startsWith, endsWith.");
-        }
-        return cond;
     }
 }
 #endif

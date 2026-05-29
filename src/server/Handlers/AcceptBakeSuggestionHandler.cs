@@ -25,7 +25,7 @@ public static class AcceptBakeSuggestionHandler
         if (db == null) throw new ArgumentNullException(nameof(db));
         var suggestion = db.GetSuggestion(id);
         if (suggestion == null) return Failure("not_found", "Bake suggestion was not found.");
-        if (!ToolNamePattern.IsMatch(name ?? string.Empty)) return Failure("invalid_name", "Tool name must use snake_case and start with a letter.");
+        if (string.IsNullOrEmpty(name) || !ToolNamePattern.IsMatch(name)) return Failure("invalid_name", "Tool name must use snake_case and start with a letter.");
         if (!string.Equals(outputChoice ?? "mcp_only", "mcp_only", StringComparison.Ordinal))
         {
             return Failure("unsupported_output_choice", "V1 baked tools support output_choice=mcp_only.");
@@ -97,7 +97,7 @@ public static class AcceptBakeSuggestionHandler
             ["fixed_args"] = fixedArgs,
             ["sequence"] = sequence ?? new JArray(handlerTool),
             ["source_code"] = source == "macro"
-                ? BakedToolRuntimeSource.BuildMacro((sequence ?? new JArray(handlerTool)).Values<string>().ToArray())
+                ? BakedToolRuntimeSource.BuildMacro((sequence ?? new JArray(handlerTool)).Values<string>().OfType<string>().ToArray())
                 : BakedToolRuntimeSource.BuildPreset(handlerTool, fixedArgs),
             ["created_from_suggestion_id"] = suggestion.Id
         };

@@ -3,7 +3,7 @@
 ## v0.1.1 - Handler Layer Completion
 
 ### Added
-- **Unified ModelItem ID encoding** (`ModelItemHelper.cs`) using deterministic index-path scheme (`modelIndex:childIndex:...`) across all 16 domain handlers.
+- **Unified ModelItem ID encoding** (`ModelItemHelper.cs`) using deterministic index-path scheme (`modelIndex:childIndex:...`) shared by every handler that produces or consumes item IDs.
 - **10 plug-in handlers fully implemented** with real Navisworks .NET API calls:
   `hide_items`, `unhide_all`, `select_items_by_search`, `save_viewpoint`, `goto_viewpoint`,
   `list_viewpoints`, `get_current_viewpoint`, `list_sets`, `get_selection_set_items`, `execute_search_set`.
@@ -13,6 +13,10 @@
 
 ### Changed
 - `README.md` — Added "Current Status" section with honest plug-in verification status.
+
+### Fixed
+- Resolved all 6 nullable-reference warnings (`ToolCompiler.cs`, `AcceptBakeSuggestionHandler.cs`); the server now builds warning-clean in Debug and Release.
+- Extracted the duplicated Navisworks search-filter logic into a shared `SearchConditionBuilder` (used by `find_items` and `select_items_by_search`).
 
 ### Removed
 - `UnitTest1.cs` — Empty test template file.
