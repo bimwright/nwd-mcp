@@ -1,0 +1,25 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  server-tests:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Restore
+        run: dotnet restore src/NwdMcp.sln
+      - name: Build + test (the test project pulls in the server transitively)
+        run: dotnet test tests/Bimwright.Nwd.Tests/Bimwright.Nwd.Tests.csproj -c Release
+      # The whole NwdMcp.sln is intentionally NOT built in CI: it contains the net48 plug-in
+      # projects, which only build where Navisworks Manage is installed. The server-only path
+      # builds/tests the server + test projects specifically (matches dwg-mcp / rvt-mcp CI).
+      # Plug-in *shape* (net48, NAVIS20YY, Private=false, ...) is verified by the xUnit
+      # PluginProjectFileTests, which run inside this job without needing Navisworks.
