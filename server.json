@@ -1,0 +1,10 @@
+{
+  "name": "bimwright-nwd",
+  "displayName": "Bimwright Navisworks MCP",
+  "description": "MCP gateway for Autodesk Navisworks Manage 2022-2027.",
+  "command": "bimwright-nwd",
+  "args": [],
+  "env": {
+    "BIMWRIGHT_NWD_READ_ONLY": "true"
+  }
+}

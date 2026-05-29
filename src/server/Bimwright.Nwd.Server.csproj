@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Bimwright.Nwd.Server</RootNamespace>
+    <AssemblyName>Bimwright.Nwd.Server</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>bimwright-nwd</ToolCommandName>
+    <PackageId>Bimwright.Nwd.Server</PackageId>
+    <Version>0.1.0-dev</Version>
+    <Authors>Khoa Le</Authors>
+    <Description>MCP gateway for Autodesk Navisworks Manage 2022-2027.</Description>
+    <PackageProjectUrl>https://github.com/bimwright/nwd-mcp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/bimwright/nwd-mcp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageTags>mcp;navisworks;bim;nwd;ai</PackageTags>
+    <Copyright>Copyright 2026 Khoa Le</Copyright>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <InternalsVisibleTo Include="Bimwright.Nwd.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.11" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+</Project>
