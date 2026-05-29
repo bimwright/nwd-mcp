@@ -24,4 +24,8 @@
     <None Include="Golden\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\..\src\shared\Plugin\NwdCommandRegistry.Names.cs" />
+  </ItemGroup>
+
 </Project>

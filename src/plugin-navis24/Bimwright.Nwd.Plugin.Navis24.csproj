@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <RootNamespace>Bimwright.Nwd.Plugin</RootNamespace>
+    <AssemblyName>Bimwright.Nwd.Plugin.Navis24</AssemblyName>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <NavisworksYear>2024</NavisworksYear>
+    <DefineConstants>$(DefineConstants);NAVIS2024</DefineConstants>
+    <NavisworksInstallDir Condition="'$(NavisworksInstallDir)' == ''">C:\Program Files\Autodesk\Navisworks Manage 2024</NavisworksInstallDir>
+  </PropertyGroup>
+
+  <Target Name="ValidateNavisworksReferences" BeforeTargets="ResolveReferences" Condition="'$(SkipNavisworksReferenceCheck)' != 'true'">
+    <Error Condition="!Exists('$(NavisworksInstallDir)\Autodesk.Navisworks.Api.dll')"
+           Text="Navisworks API not found at $(NavisworksInstallDir). Pass /p:NavisworksInstallDir=&quot;C:\Program Files\Autodesk\Navisworks Manage 2024&quot; or /p:SkipNavisworksReferenceCheck=true for project-shape checks." />
+  </Target>
+
+  <ItemGroup>
+    <Reference Include="Autodesk.Navisworks.Api">
+      <HintPath>$(NavisworksInstallDir)\Autodesk.Navisworks.Api.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Autodesk.Navisworks.Api.Controls">
+      <HintPath>$(NavisworksInstallDir)\Autodesk.Navisworks.Api.Controls.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.8.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\shared\**\*.cs" LinkBase="Shared" />
+  </ItemGroup>
+
+</Project>
