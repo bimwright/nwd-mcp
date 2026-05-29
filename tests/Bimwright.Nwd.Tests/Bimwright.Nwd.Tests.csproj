@@ -20,4 +20,8 @@
     <ProjectReference Include="..\..\src\server\Bimwright.Nwd.Server.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="Golden\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
