@@ -21,7 +21,12 @@ public sealed class SaveViewpointHandler : INwdCommand
         if (string.IsNullOrEmpty(name))
             return NwdCommandResult.Fail(System.Guid.Empty, "INVALID_ARGUMENT", "name is required", meta);
 
-        // Under real run: creates a new SavedViewpoint, copies current viewpoint, sets name, and saves to doc.SavedViewpoints
+        var sv = new NW.SavedViewpoint(doc.CurrentViewpoint.CreateCopy())
+        {
+            DisplayName = name
+        };
+        doc.SavedViewpoints.AddCopy(sv);
+
         var data = new JObject
         {
             ["saved"] = true

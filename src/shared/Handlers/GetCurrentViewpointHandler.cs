@@ -17,10 +17,30 @@ public sealed class GetCurrentViewpointHandler : INwdCommand
         if (doc is null)
             return NwdCommandResult.Fail(System.Guid.Empty, "NO_DOCUMENT", "no active Navisworks document", meta);
 
-        // Under real run: reads camera parameters from doc.CurrentViewpoint and builds state DTO
+        var vp = doc.CurrentViewpoint.CreateCopy();
+
+        var pos = new JObject
+        {
+            ["x"] = vp.Position.X,
+            ["y"] = vp.Position.Y,
+            ["z"] = vp.Position.Z
+        };
+
+        var rot = new JObject
+        {
+            ["a"] = vp.Rotation.A,
+            ["b"] = vp.Rotation.B,
+            ["c"] = vp.Rotation.C,
+            ["d"] = vp.Rotation.D
+        };
+
         var data = new JObject
         {
-            ["camera"] = new JObject()
+            ["position"] = pos,
+            ["rotation"] = rot,
+            ["projection"] = vp.Projection.ToString(),
+            ["focal_distance"] = vp.FocalDistance,
+            ["has_lighting"] = vp.HasLighting
         };
         return NwdCommandResult.Success(System.Guid.Empty, data, meta);
     }

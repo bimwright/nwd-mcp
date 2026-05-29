@@ -20,7 +20,11 @@ public sealed class GetCurrentSelectionHandler : INwdCommand
         var itemIds = new JArray();
         foreach (var item in doc.CurrentSelection.SelectedItems)
         {
-            // Add item paths or unique ids
+            var id = ModelItemHelper.GetModelItemId(item, doc);
+            if (!string.IsNullOrEmpty(id))
+            {
+                itemIds.Add(id);
+            }
         }
 
         var data = new JObject { ["item_ids"] = itemIds };

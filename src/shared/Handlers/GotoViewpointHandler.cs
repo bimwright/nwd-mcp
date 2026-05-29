@@ -21,12 +21,66 @@ public sealed class GotoViewpointHandler : INwdCommand
         if (string.IsNullOrEmpty(viewpointId))
             return NwdCommandResult.Fail(System.Guid.Empty, "INVALID_ARGUMENT", "viewpoint_id is required", meta);
 
-        // Under real run: finds saved viewpoint by ID/path, and sets doc.CurrentViewpoint.CopyFrom(viewpoint)
+        var sv = FindSavedViewpoint(doc.SavedViewpoints.RootItem, viewpointId);
+        if (sv is null)
+            return NwdCommandResult.Fail(System.Guid.Empty, "INVALID_ARGUMENT", $"Saved viewpoint '{viewpointId}' not found", meta);
+
+        doc.CurrentViewpoint.CopyFrom(sv.Viewpoint);
+
         var data = new JObject
         {
             ["moved"] = true
         };
         return NwdCommandResult.Success(System.Guid.Empty, data, meta);
+    }
+
+    private static NW.SavedViewpoint FindSavedViewpoint(NW.GroupItem root, string name)
+    {
+        if (root is null || string.IsNullOrEmpty(name)) return null;
+
+        if (name.Contains("/"))
+        {
+            var segments = name.Split(new[] { '/' }, System.StringSplitOptions.RemoveEmptyEntries);
+            return FindBySegments(root, segments, 0);
+        }
+
+        foreach (NW.SavedItem item in root.Children)
+        {
+            if (item is NW.SavedViewpoint sv &&
+                string.Equals(sv.DisplayName, name, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return sv;
+            }
+            if (item is NW.GroupItem g)
+            {
+                var hit = FindSavedViewpoint(g, name);
+                if (hit != null) return hit;
+            }
+        }
+        return null;
+    }
+
+    private static NW.SavedViewpoint FindBySegments(NW.GroupItem parent, string[] segments, int segmentIndex)
+    {
+        if (segmentIndex >= segments.Length) return null;
+        var currentSegment = segments[segmentIndex];
+
+        foreach (NW.SavedItem item in parent.Children)
+        {
+            if (string.Equals(item.DisplayName, currentSegment, System.StringComparison.OrdinalIgnoreCase))
+            {
+                if (segmentIndex == segments.Length - 1)
+                {
+                    return item as NW.SavedViewpoint;
+                }
+                if (item is NW.GroupItem childGroup)
+                {
+                    var hit = FindBySegments(childGroup, segments, segmentIndex + 1);
+                    if (hit != null) return hit;
+                }
+            }
+        }
+        return null;
     }
 }
 #endif

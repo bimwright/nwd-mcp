@@ -17,7 +17,8 @@ public sealed class UnhideAllHandler : INwdCommand
         if (doc is null)
             return NwdCommandResult.Fail(System.Guid.Empty, "NO_DOCUMENT", "no active Navisworks document", meta);
 
-        // Under real run: doc.Models.ResetAllHidden()
+        doc.Models.ResetAllHidden();
+
         var data = new JObject
         {
             ["unhidden"] = true

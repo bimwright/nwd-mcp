@@ -21,9 +21,45 @@ public sealed class FindItemsByNameHandler : INwdCommand
         if (string.IsNullOrEmpty(name))
             return NwdCommandResult.Fail(System.Guid.Empty, "INVALID_ARGUMENT", "name is required", meta);
 
+        var exact = (bool?)p["exact"] ?? false;
+        var maxItems = p["max_items"]?.Value<int>() ?? 500;
+
         var itemIds = new JArray();
+        int count = 0;
+        foreach (var mi in AllItems(doc))
+        {
+            if (count >= maxItems) break;
+            var dispName = mi.DisplayName ?? string.Empty;
+            bool match = exact 
+                ? string.Equals(dispName, name, System.StringComparison.OrdinalIgnoreCase)
+                : dispName.IndexOf(name, System.StringComparison.OrdinalIgnoreCase) >= 0;
+
+            if (match)
+            {
+                var id = ModelItemHelper.GetModelItemId(mi, doc);
+                if (!string.IsNullOrEmpty(id))
+                {
+                    itemIds.Add(id);
+                    count++;
+                }
+            }
+        }
+
         var data = new JObject { ["item_ids"] = itemIds };
         return NwdCommandResult.Success(System.Guid.Empty, data, meta);
+    }
+
+    private static System.Collections.Generic.IEnumerable<NW.ModelItem> AllItems(NW.Document doc)
+    {
+        if (doc == null || doc.Models == null) yield break;
+        foreach (NW.Model m in doc.Models)
+        {
+            if (m.RootItem == null) continue;
+            foreach (NW.ModelItem mi in m.RootItem.DescendantsAndSelf)
+            {
+                yield return mi;
+            }
+        }
     }
 }
 #endif

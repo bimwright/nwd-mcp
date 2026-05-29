@@ -21,12 +21,71 @@ public sealed class SelectItemsBySearchHandler : INwdCommand
         if (filters is null)
             return NwdCommandResult.Fail(System.Guid.Empty, "INVALID_ARGUMENT", "filters parameter is required", meta);
 
-        // Under real run: runs Search matching the filters and calls doc.CurrentSelection.CopyFrom(matches)
+        var search = new NW.Search();
+        search.Selection.SelectAll();
+        search.Locations = NW.SearchLocations.DescendantsAndSelf;
+
+        try
+        {
+            if (filters is JObject filterObj)
+            {
+                search.SearchConditions.Add(BuildCondition(filterObj));
+            }
+            else if (filters is JArray filtersArr)
+            {
+                foreach (var f in filtersArr)
+                {
+                    if (f is JObject obj)
+                    {
+                        search.SearchConditions.Add(BuildCondition(obj));
+                    }
+                }
+            }
+        }
+        catch (System.ArgumentException ex)
+        {
+            return NwdCommandResult.Fail(System.Guid.Empty, "INVALID_ARGUMENT", ex.Message, meta);
+        }
+
+        NW.ModelItemCollection matches = search.FindAll(doc, false);
+        doc.CurrentSelection.CopyFrom(matches);
+
         var data = new JObject
         {
-            ["selected_count"] = 0
+            ["selected_count"] = matches.Count
         };
         return NwdCommandResult.Success(System.Guid.Empty, data, meta);
+    }
+
+    private static NW.SearchCondition BuildCondition(JToken filter)
+    {
+        var category = (string?)filter["category"] ?? "Item";
+        var property = (string?)filter["property"] ?? "Name";
+        var op = (string?)filter["operator"] ?? "contains";
+        var value = (string?)filter["value"] ?? "";
+
+        NW.SearchCondition cond = NW.SearchCondition.HasPropertyByDisplayName(category, property);
+        switch ((op ?? "").Trim().ToLowerInvariant())
+        {
+            case "equals":
+            case "=":
+                cond = cond.EqualValue(NW.VariantData.FromDisplayString(value));
+                break;
+            case "contains":
+            case "~":
+                cond = cond.EqualValue(NW.VariantData.FromDisplayString("*" + value + "*"));
+                break;
+            case "startswith":
+                cond = cond.EqualValue(NW.VariantData.FromDisplayString(value + "*"));
+                break;
+            case "endswith":
+                cond = cond.EqualValue(NW.VariantData.FromDisplayString("*" + value));
+                break;
+            default:
+                throw new System.ArgumentException(
+                    $"unknown operator '{op}'. Use equals, contains, startsWith, endsWith.");
+        }
+        return cond;
     }
 }
 #endif

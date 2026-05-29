@@ -25,17 +25,50 @@ public sealed class GetModelTreeHandler : INwdCommand
         foreach (var model in doc.Models)
         {
             if (count >= maxItems) break;
-            var node = new JObject
+            if (model.RootItem == null) continue;
+
+            var modelNode = BuildNode(model.RootItem, doc, 0, maxDepth, ref count, maxItems);
+            if (modelNode != null)
             {
-                ["name"] = model.FileName,
-                ["type"] = "Model"
-            };
-            roots.Add(node);
-            count++;
+                modelNode["name"] = model.FileName ?? modelNode["name"]?.Value<string>() ?? "Model";
+                roots.Add(modelNode);
+            }
         }
 
         var data = new JObject { ["roots"] = roots };
         return NwdCommandResult.Success(System.Guid.Empty, data, meta);
+    }
+
+    private static JObject BuildNode(NW.ModelItem item, NW.Document doc, int currentDepth, int maxDepth, ref int count, int maxItems)
+    {
+        if (item == null) return null;
+
+        var node = new JObject
+        {
+            ["id"] = ModelItemHelper.GetModelItemId(item, doc),
+            ["name"] = item.DisplayName ?? item.ClassDisplayName ?? "Unnamed",
+            ["type"] = item.ClassDisplayName ?? "Node",
+            ["has_geometry"] = item.HasGeometry
+        };
+
+        count++;
+
+        if (currentDepth < maxDepth && item.Children.Count > 0 && count < maxItems)
+        {
+            var childrenArr = new JArray();
+            foreach (var child in item.Children)
+            {
+                if (count >= maxItems) break;
+                var childNode = BuildNode(child, doc, currentDepth + 1, maxDepth, ref count, maxItems);
+                if (childNode != null)
+                {
+                    childrenArr.Add(childNode);
+                }
+            }
+            node["children"] = childrenArr;
+        }
+
+        return node;
     }
 }
 #endif

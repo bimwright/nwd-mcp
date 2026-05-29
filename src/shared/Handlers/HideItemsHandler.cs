@@ -1,4 +1,5 @@
 #if NAVIS2022 || NAVIS2023 || NAVIS2024 || NAVIS2025 || NAVIS2026 || NAVIS2027
+using System.Collections.Generic;
 using Bimwright.Nwd.Shared.Infrastructure;
 using Newtonsoft.Json.Linq;
 using NW = Autodesk.Navisworks.Api;
@@ -23,10 +24,23 @@ public sealed class HideItemsHandler : INwdCommand
 
         var hide = (bool?)p["hide"] ?? true;
 
-        // Under real run: searches for ModelItems matching the IDs, and calls doc.Models.SetHidden(items, hide)
+        var itemsToHide = new List<NW.ModelItem>();
+        foreach (var t in itemIds)
+        {
+            var idStr = t?.Value<string>();
+            if (string.IsNullOrEmpty(idStr)) continue;
+            var item = ModelItemHelper.ResolveModelItemId(idStr, doc);
+            if (item != null)
+            {
+                itemsToHide.Add(item);
+            }
+        }
+
+        doc.Models.SetHidden(itemsToHide, hide);
+
         var data = new JObject
         {
-            ["hidden_count"] = itemIds.Count,
+            ["hidden_count"] = itemsToHide.Count,
             ["hide"] = hide
         };
         return NwdCommandResult.Success(System.Guid.Empty, data, meta);

@@ -21,7 +21,62 @@ public sealed class BatchGetPropertiesHandler : INwdCommand
         if (itemIds == null)
             return NwdCommandResult.Fail(System.Guid.Empty, "INVALID_ARGUMENT", "item_ids is required", meta);
 
+        var maxItems = p["max_items"]?.Value<int>() ?? 200;
+
         var results = new JArray();
+        int count = 0;
+        foreach (var t in itemIds)
+        {
+            if (count >= maxItems) break;
+            var idStr = t?.Value<string>();
+            if (string.IsNullOrEmpty(idStr)) continue;
+
+            var target = ModelItemHelper.ResolveModelItemId(idStr, doc);
+            if (target == null) continue;
+
+            var categories = new JArray();
+            foreach (NW.PropertyCategory cat in target.PropertyCategories)
+            {
+                var props = new JArray();
+                foreach (NW.DataProperty prop in cat.Properties)
+                {
+                    string valStr;
+                    try
+                    {
+                        valStr = prop.Value?.IsDisplayString == true ? prop.Value.ToDisplayString() : prop.Value?.ToString() ?? string.Empty;
+                    }
+                    catch
+                    {
+                        valStr = "(unreadable)";
+                    }
+
+                    var propObj = new JObject
+                    {
+                        ["name"] = prop.DisplayName ?? prop.Name ?? "Unnamed",
+                        ["value"] = valStr
+                    };
+                    props.Add(propObj);
+                }
+
+                var catObj = new JObject
+                {
+                    ["name"] = cat.DisplayName ?? cat.Name ?? "Category",
+                    ["properties"] = props
+                };
+                categories.Add(catObj);
+            }
+
+            var itemObj = new JObject
+            {
+                ["item_id"] = idStr,
+                ["display_name"] = target.DisplayName ?? "Unnamed",
+                ["class_display_name"] = target.ClassDisplayName ?? "Node",
+                ["categories"] = categories
+            };
+            results.Add(itemObj);
+            count++;
+        }
+
         var data = new JObject { ["items"] = results };
         return NwdCommandResult.Success(System.Guid.Empty, data, meta);
     }

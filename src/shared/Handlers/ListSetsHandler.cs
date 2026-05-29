@@ -17,12 +17,54 @@ public sealed class ListSetsHandler : INwdCommand
         if (doc is null)
             return NwdCommandResult.Fail(System.Guid.Empty, "NO_DOCUMENT", "no active Navisworks document", meta);
 
-        // Under real run: iterates doc.SelectionSets and recurses SavedItemCollection to build sets list
+        var sets = new JArray();
+        WalkSets(doc.SelectionSets.RootItem, "", sets);
+
         var data = new JObject
         {
-            ["sets"] = new JArray()
+            ["sets"] = sets
         };
         return NwdCommandResult.Success(System.Guid.Empty, data, meta);
+    }
+
+    private static void WalkSets(NW.GroupItem group, string prefix, JArray list)
+    {
+        if (group == null || group.Children == null) return;
+        foreach (NW.SavedItem si in group.Children)
+        {
+            if (si is NW.SelectionSet set)
+            {
+                if (!set.HasSearch)
+                {
+                    var setNode = new JObject
+                    {
+                        ["name"] = prefix + set.DisplayName,
+                        ["type"] = "selection",
+                        ["count"] = set.ExplicitModelItems.Count
+                    };
+                    list.Add(setNode);
+                }
+                else
+                {
+                    var setNode = new JObject
+                    {
+                        ["name"] = prefix + set.DisplayName,
+                        ["type"] = "search"
+                    };
+                    list.Add(setNode);
+                }
+            }
+            else if (si is NW.GroupItem g)
+            {
+                var folderNode = new JObject
+                {
+                    ["name"] = prefix + g.DisplayName,
+                    ["type"] = "folder"
+                };
+                list.Add(folderNode);
+                WalkSets(g, prefix + g.DisplayName + "/", list);
+            }
+        }
     }
 }
 #endif

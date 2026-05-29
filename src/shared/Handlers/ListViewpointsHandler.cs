@@ -17,12 +17,41 @@ public sealed class ListViewpointsHandler : INwdCommand
         if (doc is null)
             return NwdCommandResult.Fail(System.Guid.Empty, "NO_DOCUMENT", "no active Navisworks document", meta);
 
-        // Under real run: iterates doc.SavedViewpoints and recurses to build list
+        var viewpoints = new JArray();
+        WalkViewpoints(doc.SavedViewpoints.RootItem, "", viewpoints);
+
         var data = new JObject
         {
-            ["viewpoints"] = new JArray()
+            ["viewpoints"] = viewpoints
         };
         return NwdCommandResult.Success(System.Guid.Empty, data, meta);
+    }
+
+    private static void WalkViewpoints(NW.GroupItem group, string prefix, JArray list)
+    {
+        if (group == null || group.Children == null) return;
+        foreach (NW.SavedItem si in group.Children)
+        {
+            if (si is NW.SavedViewpoint sv)
+            {
+                var vpNode = new JObject
+                {
+                    ["name"] = prefix + sv.DisplayName,
+                    ["type"] = "viewpoint"
+                };
+                list.Add(vpNode);
+            }
+            else if (si is NW.GroupItem g)
+            {
+                var folderNode = new JObject
+                {
+                    ["name"] = prefix + g.DisplayName,
+                    ["type"] = "folder"
+                };
+                list.Add(folderNode);
+                WalkViewpoints(g, prefix + g.DisplayName + "/", list);
+            }
+        }
     }
 }
 #endif
