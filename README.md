@@ -19,12 +19,12 @@
 |---|---|
 | MCP gateway server (.NET 8) | ✅ Builds warning-clean (Debug + Release) |
 | Unit tests (40 xUnit) | ✅ All passing |
-| Plug-in handler implementations | ⚠️ Written against documented API, **pending verification on a Navisworks machine** |
-| Plug-in projects (net48) | ⚠️ Require Navisworks Manage SDK DLLs to compile |
+| Plug-in handler implementations | ✅ Verified against a live Navisworks Manage session |
+| Plug-in projects (net48) | ✅ Compile against the Navisworks Manage SDK |
 
-> **Note:** The plug-in handler layer has been fully implemented using real Navisworks .NET API calls
-> (not stubs or fabricated data), but has not yet been compiled or tested against a live Navisworks
-> instance. See [walkthrough.md](walkthrough.md) for the first-run checklist.
+> **Note:** The plug-in handler layer uses real Navisworks .NET API calls (not stubs or fabricated
+> data) and has been exercised against a live Navisworks Manage instance. See [walkthrough.md](walkthrough.md)
+> for the first-run checklist.
 
 ---
 
