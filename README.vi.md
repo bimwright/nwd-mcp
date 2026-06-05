@@ -1,4 +1,21 @@
-# Cổng Kết Nối Bimwright Navisworks MCP
+<!-- mcp-name: io.github.bimwright/nwd-mcp -->
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/bimwright/.github/master/assets/logos/nwd-mcp.png" alt="nwd-mcp" width="180" />
+</p>
+
+<h1 align="center">nwd-mcp</h1>
+
+<p align="center">
+  <a href="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
+  <img src="https://img.shields.io/badge/Navisworks-2022--2027-2D9B9B" alt="Navisworks 2022-2027" />
+  <img src="https://img.shields.io/badge/MCP-30%20tools-6C47FF" alt="MCP tools" />
+</p>
+
+<p align="center">
+  <a href="README.md">English</a> · Tiếng Việt
+</p>
 
 `nwd-mcp` là cổng kết nối Model Context Protocol (MCP) chuyên nghiệp dành cho việc tự động hóa **Autodesk Navisworks Manage**. Giải pháp này cho phép các trợ lý AI truy vấn, kiểm tra, điều hướng và viết mã kịch bản trực tiếp lên các phiên chạy Navisworks Manage desktop thông qua đầu vào/đầu ra tiêu chuẩn (stdin/stdout).
 
@@ -104,5 +121,20 @@ Các tệp DLL Autodesk Navisworks API **không được phân phối trực ti�
 
 ---
 
+## Họ bimwright
+
+Các MCP gateway hand-forged cho toolchain AEC — cùng một kiến trúc, predictable / auditable / reversible:
+
+- [**rvt-mcp**](https://github.com/bimwright/rvt-mcp) — Autodesk® Revit®
+- [**dwg-mcp**](https://github.com/bimwright/dwg-mcp) — Autodesk® AutoCAD®
+- [**nwd-mcp**](https://github.com/bimwright/nwd-mcp) — Autodesk® Navisworks®
+- [**ipt-mcp**](https://github.com/bimwright/ipt-mcp) — Autodesk® Inventor®
+- [**bim-wiki**](https://github.com/bimwright/bim-wiki) — Kho kiến thức BIM ưu tiên tiếng Việt
+
+---
+
 ## Giấy phép
+
 Apache-2.0. Xem chi tiết tại tệp [LICENSE](LICENSE).
+
+Navisworks và Autodesk là thương hiệu đã đăng ký của Autodesk, Inc. bimwright là dự án open-source độc lập, không liên kết, không được tài trợ và không được bảo chứng bởi Autodesk, Inc.

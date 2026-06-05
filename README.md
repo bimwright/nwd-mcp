@@ -1,4 +1,21 @@
-# Bimwright Navisworks MCP
+<!-- mcp-name: io.github.bimwright/nwd-mcp -->
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/bimwright/.github/master/assets/logos/nwd-mcp.png" alt="nwd-mcp" width="180" />
+</p>
+
+<h1 align="center">nwd-mcp</h1>
+
+<p align="center">
+  <a href="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
+  <a href="#capabilities--architecture"><img src="https://img.shields.io/badge/Navisworks-2022--2027-2D9B9B" alt="Navisworks 2022-2027" /></a>
+  <a href="#tool-surface"><img src="https://img.shields.io/badge/MCP-30%20tools-6C47FF" alt="MCP tools" /></a>
+</p>
+
+<p align="center">
+  English · <a href="README.vi.md">Tiếng Việt</a>
+</p>
 
 `nwd-mcp` is a professional-grade Model Context Protocol (MCP) gateway for **Autodesk Navisworks Manage** automation. It enables AI agents to query, inspect, navigate, and script Autodesk Navisworks Manage desktop sessions locally over stdin/stdout.
 
@@ -119,5 +136,20 @@ Autodesk Navisworks API DLLs are **not redistributed** in this repository.
 
 ---
 
+## The bimwright family
+
+Hand-forged MCP gateways for the AEC toolchain — one architecture, predictable / auditable / reversible:
+
+- [**rvt-mcp**](https://github.com/bimwright/rvt-mcp) — Autodesk® Revit®
+- [**dwg-mcp**](https://github.com/bimwright/dwg-mcp) — Autodesk® AutoCAD®
+- [**nwd-mcp**](https://github.com/bimwright/nwd-mcp) — Autodesk® Navisworks®
+- [**ipt-mcp**](https://github.com/bimwright/ipt-mcp) — Autodesk® Inventor®
+- [**bim-wiki**](https://github.com/bimwright/bim-wiki) — Vietnamese-first BIM knowledge base
+
+---
+
 ## License
+
 Apache-2.0. See [LICENSE](LICENSE) for details.
+
+Navisworks and Autodesk are registered trademarks of Autodesk, Inc. bimwright is an independent open-source project and is not affiliated with, sponsored by, or endorsed by Autodesk, Inc.
