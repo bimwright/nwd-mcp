@@ -24,8 +24,8 @@
 ## Capabilities & Architecture
 - **Supported Host:** Autodesk Navisworks Manage only. (Freedom and Simulate are not supported).
 - **Supported Versions:** 2022, 2023, 2024, 2025, 2026, and 2027.
-- **Two-Process Model:** Lightweight `.NET 8` console server communicating with a version-specific `.NET Framework 4.8` (`net48`) in-process plug-in over localhost TCP NDJSON.
-- **Security First:** Per-session random cryptographic token validation, loopback-only TCP binding, and absolute file path sanitization in model responses.
+- **Two-Process Model:** Lightweight `.NET 8` console server communicating with a version-specific in-process plug-in. Wire transport is **TCP NDJSON over loopback** for every supported year (2022–2027); all six plug-in shells target `.NET Framework 4.8` / `net48`. (Unlike the rest of the bimwright family, nwd-mcp does **not** use Named Pipe transport — the loopback-TCP convention applies uniformly across all versions.)
+- **Security First:** Per-session random cryptographic token validation, loopback-only binding for the TCP transport, and absolute file path sanitization in model responses.
 - **Multi-Instance Routing:** Automatically detects multiple running Navisworks Manage instances and supports switching targets dynamically.
 
 ---
@@ -35,7 +35,7 @@
 | Component | Status |
 |---|---|
 | MCP gateway server (.NET 8) | ✅ Builds warning-clean (Debug + Release) |
-| Unit tests (40 xUnit) | ✅ All passing |
+| Unit tests (45 xUnit) | ✅ All passing |
 | Plug-in handler implementations | ✅ Verified against a live Navisworks Manage session |
 | Plug-in projects (net48) | ✅ Compile against the Navisworks Manage SDK |
 
@@ -105,10 +105,8 @@ Strict read-only mode can be enforced via the `--read-only` flag or the `BIMWRIG
 - Mixed tools (e.g. `nwd_execute_search_set`) are modified to force read-only parameter bounds (`select=false`) and output a `read_only_enforced` response marker.
 - The total read-only tool surface is exactly **20 tools**.
 
-### SendCode Two-Sided Opt-in
-Dynamic C# scripting (`nwd_send_code`) is **disabled by default**. It is only exposed when:
-1. The server is booted with `--enable-send-code` or `BIMWRIGHT_NWD_ENABLE_SEND_CODE=1`.
-2. The plug-in detects `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=1` in its environment.
+### SendCode Opt-in
+Dynamic C# scripting (`nwd_send_code`) is **disabled by default**. The MCP server exposes it only when booted with `--enable-send-code` or `BIMWRIGHT_NWD_ENABLE_SEND_CODE=1` — this server-side gate is the authoritative control that prevents the tool from being registered. The plug-in additionally reads `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=1` from its environment as a second, documented opt-in signal.
 
 ### ToolBaker Persistence
 ToolBaker sqlite storage (`bake.db`) and usage audit logs (`audit.jsonl`) are persisted locally under:

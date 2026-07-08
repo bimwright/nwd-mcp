@@ -24,9 +24,22 @@
 ## Tính Năng & Kiến Trúc
 - **Ứng dụng Máy chủ Hỗ trợ:** Chỉ hỗ trợ Autodesk Navisworks Manage (Không hỗ trợ Freedom và Simulate).
 - **Các Phiên bản Hỗ trợ:** Từ 2022 đến 2027.
-- **Mô hình Hai Tiến trình:** Máy chủ điều phối chạy trên `.NET 8` gọn nhẹ, giao tiếp với plug-in chạy trực tiếp (`net48`) bên trong Navisworks thông qua giao thức TCP NDJSON (localhost).
+- **Mô hình Hai Tiến trình:** Máy chủ điều phối `.NET 8` gọn nhẹ giao tiếp với plug-in chạy trực tiếp bên trong Navisworks theo từng phiên bản cụ thể. Truyền tải dữ liệu là **TCP NDJSON over loopback** cho mọi năm được hỗ trợ (2022–2027); toàn bộ sáu plug-in shell đều nhắm tới `.NET Framework 4.8` / `net48`. (Khác với phần còn lại của gia đình bimwright, nwd-mcp **không** sử dụng truyền tải Named Pipe — quy ước loopback-TCP được áp dụng thống nhất trên tất cả các phiên bản.)
 - **Bảo mật Tối đa:** Xác thực qua mã token ngẫu nhiên tạo theo từng phiên, chỉ liên kết với loopback TCP (`127.0.0.1`), và tự động ẩn/lọc đường dẫn tệp tuyệt đối trong phản hồi gửi về cho mô hình AI.
 - **Điều hướng Nhiều Phiên chạy:** Tự động phát hiện nhiều tiến trình Navisworks đang chạy đồng thời và cho phép chuyển đổi mục tiêu điều khiển linh hoạt.
+
+---
+
+## Trạng thái Hiện tại
+
+| Thành phần | Trạng thái |
+|---|---|
+| Máy chủ MCP gateway (.NET 8) | ✅ Biên dịch sạch cảnh báo (Debug + Release) |
+| Unit tests (45 xUnit) | ✅ Tất cả đều qua |
+| Các triển khai plug-in handler | ✅ Đã xác minh trên một phiên Navisworks Manage thực tế |
+| Các dự án plug-in (net48) | ✅ Biên dịch thành công theo Navisworks Manage SDK |
+
+> **Lưu ý:** Lớp plug-in handler sử dụng các lời gọi Navisworks .NET API thực tế (không phải stub hay dữ liệu giả tạo) và đã được thực thi trên một phiên Navisworks Manage thực tế. Xem [walkthrough.md](walkthrough.md) để biết danh sách kiểm tra khi chạy lần đầu.
 
 ---
 
@@ -90,10 +103,8 @@ Có thể kích hoạt chế độ chỉ đọc nghiêm ngặt bằng cờ `--re
 - Các công cụ hỗn hợp (như `nwd_execute_search_set`) sẽ bị ép buộc tham số an toàn (`select=false`) và trả về cờ đánh dấu `read_only_enforced` trong phản hồi.
 - Tổng số lượng công cụ khả dụng ở chế độ chỉ đọc là đúng **20 công cụ**.
 
-### Cơ chế Xác thực Hai Bên của send_code
-Viết kịch bản C# động (`nwd_send_code`) bị **tắt theo mặc định**. Nó chỉ được kích hoạt khi:
-1. Máy chủ được chạy kèm cờ `--enable-send-code` hoặc biến môi trường `BIMWRIGHT_NWD_ENABLE_SEND_CODE=1`.
-2. Plug-in phát hiện biến môi trường `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=1` trong môi trường chạy của nó.
+### Cơ chế Kích hoạt send_code
+Viết kịch bản C# động (`nwd_send_code`) bị **tắt theo mặc định**. Máy chủ MCP chỉ hiển thị công cụ này khi chạy kèm cờ `--enable-send-code` hoặc biến môi trường `BIMWRIGHT_NWD_ENABLE_SEND_CODE=1` — cổng phía máy chủ này là cơ chế kiểm soát có hiệu lực thực tế, ngăn công cụ được đăng ký. Plug-in cũng đọc biến môi trường `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=1` như một tín hiệu xác thực thứ hai được tài liệu hóa.
 
 ### Lưu trữ ToolBaker
 Cơ sở dữ liệu lưu trữ sqlite (`bake.db`) và nhật ký kiểm tra quy trình (`audit.jsonl`) của ToolBaker được duy trì cục bộ tại:
