@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="README.md">English</a> · Tiếng Việt
+  <a href="README.md">English</a> · Tiếng Việt · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ja.md">日本語</a>
 </p>
 
 `nwd-mcp` là cổng kết nối Model Context Protocol (MCP) chuyên nghiệp dành cho việc tự động hóa **Autodesk Navisworks Manage**. Giải pháp này cho phép các trợ lý AI truy vấn, kiểm tra, điều hướng và viết mã kịch bản trực tiếp lên các phiên chạy Navisworks Manage desktop thông qua đầu vào/đầu ra tiêu chuẩn (stdin/stdout).

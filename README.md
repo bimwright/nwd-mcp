@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  English · <a href="README.vi.md">Tiếng Việt</a>
+  English · <a href="README.vi.md">Tiếng Việt</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ja.md">日本語</a>
 </p>
 
 `nwd-mcp` is a professional-grade Model Context Protocol (MCP) gateway for **Autodesk Navisworks Manage** automation. It enables AI agents to query, inspect, navigate, and script Autodesk Navisworks Manage desktop sessions locally over stdin/stdout.
