@@ -10,7 +10,7 @@
   <a href="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
   <img src="https://img.shields.io/badge/Navisworks-2022--2027-2D9B9B" alt="Navisworks 2022-2027" />
-  <img src="https://img.shields.io/badge/MCP-30%20tools-6C47FF" alt="MCP tools" />
+  <img src="https://img.shields.io/badge/MCP-29%20or%2030%20tools-6C47FF" alt="MCP tools" />
 </p>
 
 <p align="center">
@@ -25,7 +25,7 @@
 - **Ứng dụng Máy chủ Hỗ trợ:** Chỉ hỗ trợ Autodesk Navisworks Manage (Không hỗ trợ Freedom và Simulate).
 - **Các Phiên bản Hỗ trợ:** Từ 2022 đến 2027.
 - **Mô hình Hai Tiến trình:** Máy chủ điều phối `.NET 8` gọn nhẹ giao tiếp với plug-in chạy trực tiếp bên trong Navisworks theo từng phiên bản cụ thể. Truyền tải dữ liệu là **TCP NDJSON over loopback** cho mọi năm được hỗ trợ (2022–2027); toàn bộ sáu plug-in shell đều nhắm tới `.NET Framework 4.8` / `net48`. (Khác với phần còn lại của gia đình bimwright, nwd-mcp **không** sử dụng truyền tải Named Pipe — quy ước loopback-TCP được áp dụng thống nhất trên tất cả các phiên bản.)
-- **Bảo mật Tối đa:** Xác thực qua mã token ngẫu nhiên tạo theo từng phiên, chỉ liên kết với loopback TCP (`127.0.0.1`), và tự động ẩn/lọc đường dẫn tệp tuyệt đối trong phản hồi gửi về cho mô hình AI.
+- **Bảo mật Tối đa:** Xác thực qua mã token ngẫu nhiên tạo theo từng phiên, chỉ liên kết với loopback TCP (`127.0.0.1`), và tự động ẩn/lọc đường dẫn tệp tuyệt đối trong các thông báo lỗi trả về cho mô hình AI.
 - **Điều hướng Nhiều Phiên chạy:** Tự động phát hiện nhiều tiến trình Navisworks đang chạy đồng thời và cho phép chuyển đổi mục tiêu điều khiển linh hoạt.
 
 ---
@@ -45,7 +45,7 @@
 
 ## Danh Sách Công Cụ (Tool Surface)
 
-Phiên bản đầu tiên cung cấp chính xác **30 công cụ** khi tất cả bộ công cụ được bật. Mỗi công cụ đều sử dụng tiền tố `nwd_*`.
+Phiên bản đầu tiên cung cấp chính xác **29 công cụ** khi tất cả bộ công cụ được bật, hoặc **30 công cụ** khi bật cả --toolsets all và --enable-send-code. Mỗi công cụ đều sử dụng tiền tố `nwd_*`.
 
 ### 1. Công cụ Quản lý / Meta (3)
 * `nwd_list_available_targets` — Liệt kê tất cả các phiên chạy Navisworks đang hoạt động.

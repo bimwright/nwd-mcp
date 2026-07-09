@@ -10,7 +10,7 @@
   <a href="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
   <a href="#capabilities--architecture"><img src="https://img.shields.io/badge/Navisworks-2022--2027-2D9B9B" alt="Navisworks 2022-2027" /></a>
-  <a href="#tool-surface"><img src="https://img.shields.io/badge/MCP-30%20tools-6C47FF" alt="MCP tools" /></a>
+  <a href="#tool-surface"><img src="https://img.shields.io/badge/MCP-29%20or%2030%20tools-6C47FF" alt="MCP tools" /></a>
 </p>
 
 <p align="center">
@@ -26,7 +26,7 @@
 - **支持的宿主：** 仅支持 Autodesk Navisworks Manage。（Freedom 和 Simulate 不支持。）
 - **支持的版本：** 2022、2023、2024、2025、2026 和 2027。
 - **双进程模型：** 轻量级 `.NET 8` 控制台 server 与一个按版本拆分的进程内 plug-in 通信。有线传输在每一个受支持年份（2022–2027）均为 **TCP NDJSON over loopback**；六个 plug-in shell 都面向 `.NET Framework 4.8` / `net48`。（与 bimwright 家族其他成员不同，nwd-mcp **不**使用 Named Pipe 传输 —— loopback-TCP 约定在所有版本上统一适用。）
-- **安全优先：** 每会话随机加密 token 校验、TCP 传输仅绑定 loopback，以及对模型响应中的绝对文件路径进行净化。
+- **安全优先：** 每会话随机加密 token 校验、TCP 传输仅绑定 loopback，以及对返回给模型的错误消息中的绝对文件路径进行净化。
 - **多实例路由：** 自动检测多个正在运行的 Navisworks Manage 实例，并支持动态切换目标。
 
 ---
@@ -46,7 +46,7 @@
 
 ## 工具面
 
-Phase 1 在启用全部 toolsets 时恰好提供 **30 个工具**。每个工具都使用 `nwd_*` 前缀。
+Phase 1 在启用全部 toolsets 时默认提供 **29 个工具**，在同时指定 --toolsets all 和 --enable-send-code 时提供 **30 个工具**。每个工具都使用 `nwd_*` 前缀。
 
 ### 1. 目标/元工具（3 个）
 

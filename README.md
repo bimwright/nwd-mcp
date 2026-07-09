@@ -10,7 +10,7 @@
   <a href="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
   <a href="#capabilities--architecture"><img src="https://img.shields.io/badge/Navisworks-2022--2027-2D9B9B" alt="Navisworks 2022-2027" /></a>
-  <a href="#tool-surface"><img src="https://img.shields.io/badge/MCP-30%20tools-6C47FF" alt="MCP tools" /></a>
+  <a href="#tool-surface"><img src="https://img.shields.io/badge/MCP-29%20or%2030%20tools-6C47FF" alt="MCP tools" /></a>
 </p>
 
 <p align="center">
@@ -25,7 +25,7 @@
 - **Supported Host:** Autodesk Navisworks Manage only. (Freedom and Simulate are not supported).
 - **Supported Versions:** 2022, 2023, 2024, 2025, 2026, and 2027.
 - **Two-Process Model:** Lightweight `.NET 8` console server communicating with a version-specific in-process plug-in. Wire transport is **TCP NDJSON over loopback** for every supported year (2022–2027); all six plug-in shells target `.NET Framework 4.8` / `net48`. (Unlike the rest of the bimwright family, nwd-mcp does **not** use Named Pipe transport — the loopback-TCP convention applies uniformly across all versions.)
-- **Security First:** Per-session random cryptographic token validation, loopback-only binding for the TCP transport, and absolute file path sanitization in model responses.
+- **Security First:** Per-session random cryptographic token validation, loopback-only binding for the TCP transport, and absolute file path sanitization in error messages returned to the model.
 - **Multi-Instance Routing:** Automatically detects multiple running Navisworks Manage instances and supports switching targets dynamically.
 
 ---
@@ -47,7 +47,7 @@
 
 ## Tool Surface
 
-Phase 1 provides exactly **30 tools** when all toolsets are enabled. Every tool uses the `nwd_*` prefix.
+Phase 1 provides **29 tools** when all toolsets are enabled, or **30 tools** when both --toolsets all and --enable-send-code are specified. Every tool uses the `nwd_*` prefix.
 
 ### 1. Target/Meta Tools (3)
 * `nwd_list_available_targets` — List all active discovered Navisworks sessions.

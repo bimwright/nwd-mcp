@@ -10,7 +10,7 @@
   <a href="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
   <a href="#capabilities--architecture"><img src="https://img.shields.io/badge/Navisworks-2022--2027-2D9B9B" alt="Navisworks 2022-2027" /></a>
-  <a href="#tool-surface"><img src="https://img.shields.io/badge/MCP-30%20tools-6C47FF" alt="MCP tools" /></a>
+  <a href="#tool-surface"><img src="https://img.shields.io/badge/MCP-29%20or%2030%20tools-6C47FF" alt="MCP tools" /></a>
 </p>
 
 <p align="center">
@@ -25,7 +25,7 @@
 - **対応ホスト:** Autodesk Navisworks Manage のみ（Freedom および Simulate は非対応）。
 - **対応バージョン:** 2022、2023、2024、2025、2026、2027。
 - **2プロセスモデル:** 軽量な `.NET 8` コンソールサーバーがバージョン別のインプロセスプラグインと通信します。ワイヤトランスポートは全対応年（2022–2027）で **ループバック上の TCP NDJSON** を使用します。6つのプラグインシェルはすべて `.NET Framework 4.8` / `net48` をターゲットとします。（bimwright ファミリーの他製品とは異なり、nwd-mcp は Named Pipe トランスポートを**使用しません** — 全バージョンでループバック TCP 方式が一律に適用されます。）
-- **セキュリティ第一:** セッションごとのランダム暗号トークン検証、TCP トランスポートのループバック専用バインド、モデル応答における絶対ファイルパスのサニタイズ。
+- **セキュリティ第一:** セッションごとのランダム暗号トークン検証、TCP トランスポートのループバック専用バインド、モデルに返されるエラーメッセージにおける絶対ファイルパスのサニタイズ。
 - **マルチインスタンスルーティング:** 実行中の複数の Navisworks Manage インスタンスを自動検出し、動的なターゲット切り替えをサポートします。
 
 ---
@@ -45,7 +45,7 @@
 
 ## ツールサーフェス
 
-フェーズ 1 では、全ツールセットを有効にした場合に正確に **30 のツール** を提供します。すべてのツールは `nwd_*` プレフィックスを使用します。
+フェーズ 1 では、全ツールセットを有効にした場合にデフォルトで **29 のツール** を提供し、--toolsets all と --enable-send-code を同時に指定した場合には **30 のツール** を提供します。すべてのツールは `nwd_*` プレフィックスを使用します。
 
 ### 1. ターゲット/メタツール (3)
 * `nwd_list_available_targets` — 検出されたすべてのアクティブな Navisworks セッションを一覧表示します。
