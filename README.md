@@ -45,6 +45,47 @@
 
 ---
 
+## Install
+
+### 1. Server — .NET global tool
+
+```bash
+dotnet tool install -g Bimwright.Nwd.Server
+bimwright-nwd --help
+```
+
+Requires the .NET 8 SDK. Pin a Navisworks year with `--target 2026` or `BIMWRIGHT_NWD_TARGET=2026` when multiple instances may run.
+
+### 2. Plugin — Navisworks Manage add-in
+
+Build a per-year plugin (needs a local Navisworks Manage install), then deploy the ApplicationPlugins bundle:
+
+```powershell
+dotnet build src\plugin-navis26\Bimwright.Nwd.Plugin.Navis26.csproj -c Release
+pwsh scripts\install-bundle.ps1 -Year 2026 -Configuration Release
+```
+
+Default install root: `%APPDATA%\Autodesk\ApplicationPlugins\Bimwright.Nwd.bundle\`. Restart Navisworks Manage to load the add-in.
+
+If Manage is not under the default Autodesk path, pass `/p:NavisworksInstallDir="…"` on the `dotnet build` line (see [Local Development](#local-development--compilation)).
+
+### 3. Wire an MCP client
+
+```json
+{
+  "mcpServers": {
+    "nwd-mcp": {
+      "command": "bimwright-nwd",
+      "args": []
+    }
+  }
+}
+```
+
+Useful flags: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`; dual opt-in for `nwd_send_code` via `--enable-send-code` (or `BIMWRIGHT_NWD_ENABLE_SEND_CODE=1`) **and** `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=1` on the plug-in process (see [Safety](#safety-configurations)).
+
+---
+
 ## Tool Surface
 
 Phase 1 provides **29 tools** when all toolsets are enabled, or **30 tools** when both --toolsets all and --enable-send-code are specified. Every tool uses the `nwd_*` prefix.

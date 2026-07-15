@@ -9,12 +9,12 @@
 <p align="center">
   <a href="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
-  <a href="#capabilities--architecture"><img src="https://img.shields.io/badge/Navisworks-2022--2027-2D9B9B" alt="Navisworks 2022-2027" /></a>
-  <a href="#tool-surface"><img src="https://img.shields.io/badge/MCP-29%20or%2030%20tools-6C47FF" alt="MCP tools" /></a>
+  <a href="#能力--架构"><img src="https://img.shields.io/badge/Navisworks-2022--2027-2D9B9B" alt="Navisworks 2022-2027" /></a>
+  <a href="#工具面"><img src="https://img.shields.io/badge/MCP-29%20or%2030%20tools-6C47FF" alt="MCP tools" /></a>
 </p>
 
 <p align="center">
-  English · <a href="README.vi.md">Tiếng Việt</a> · 简体中文 · <a href="README.ja.md">日本語</a>
+  <a href="README.md">English</a> · <a href="README.vi.md">Tiếng Việt</a> · 简体中文 · <a href="README.ja.md">日本語</a>
 </p>
 
 `nwd-mcp` 是一个面向 **Autodesk Navisworks Manage** 自动化的专业级 Model Context Protocol（MCP）gateway。它让 AI agent 能够通过本地 stdin/stdout 查询、检查、导航并脚本化 Autodesk Navisworks Manage 桌面会话。
@@ -41,6 +41,47 @@
 | Plug-in 项目（net48） | ✅ 可针对 Navisworks Manage SDK 编译 |
 
 > **注意：** plug-in handler 层使用真实的 Navisworks .NET API 调用（并非桩函数或伪造数据），并且已在真实的 Navisworks Manage 实例中执行验证。首次运行清单见 [walkthrough.md](walkthrough.md)。
+
+---
+
+## 安装
+
+### 1. Server —— .NET 全局工具
+
+```bash
+dotnet tool install -g Bimwright.Nwd.Server
+bimwright-nwd --help
+```
+
+需要 .NET 8 SDK。多实例时可用 `--target 2026` 或 `BIMWRIGHT_NWD_TARGET=2026` 固定年份。
+
+### 2. Plugin —— Navisworks Manage 插件
+
+先编译对应年份的插件（本机需安装 Manage），再部署 ApplicationPlugins bundle：
+
+```powershell
+dotnet build src\plugin-navis26\Bimwright.Nwd.Plugin.Navis26.csproj -c Release
+pwsh scripts\install-bundle.ps1 -Year 2026 -Configuration Release
+```
+
+默认路径：`%APPDATA%\Autodesk\ApplicationPlugins\Bimwright.Nwd.bundle\`。重启 Manage 以加载。
+
+Manage 不在默认路径时，在 `dotnet build` 上加 `/p:NavisworksInstallDir="…"`（见 [本地开发与编译](#本地开发与编译)）。
+
+### 3. 接入 MCP client
+
+```json
+{
+  "mcpServers": {
+    "nwd-mcp": {
+      "command": "bimwright-nwd",
+      "args": []
+    }
+  }
+}
+```
+
+常用开关：`--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`。`nwd_send_code` 需双侧 opt-in（`--enable-send-code` 或 `BIMWRIGHT_NWD_ENABLE_SEND_CODE=1`，**以及**插件进程上的 `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=1`）——见 [安全配置](#安全配置)。
 
 ---
 

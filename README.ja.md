@@ -9,8 +9,8 @@
 <p align="center">
   <a href="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
-  <a href="#capabilities--architecture"><img src="https://img.shields.io/badge/Navisworks-2022--2027-2D9B9B" alt="Navisworks 2022-2027" /></a>
-  <a href="#tool-surface"><img src="https://img.shields.io/badge/MCP-29%20or%2030%20tools-6C47FF" alt="MCP tools" /></a>
+  <a href="#機能とアーキテクチャ"><img src="https://img.shields.io/badge/Navisworks-2022--2027-2D9B9B" alt="Navisworks 2022-2027" /></a>
+  <a href="#ツールサーフェス"><img src="https://img.shields.io/badge/MCP-29%20or%2030%20tools-6C47FF" alt="MCP tools" /></a>
 </p>
 
 <p align="center">
@@ -40,6 +40,47 @@
 | プラグインプロジェクト (net48) | ✅ Navisworks Manage SDK に対してコンパイル成功 |
 
 > **注:** プラグインハンドラ層は実際の Navisworks .NET API 呼び出し（スタブや疑似データではなく）を使用しており、実稼働の Navisworks Manage インスタンスで動作確認済みです。初回実行のチェックリストについては [walkthrough.md](walkthrough.md) を参照してください。
+
+---
+
+## インストール
+
+### 1. サーバー — .NET グローバルツール
+
+```bash
+dotnet tool install -g Bimwright.Nwd.Server
+bimwright-nwd --help
+```
+
+.NET 8 SDK が必要です。複数インスタンス時は `--target 2026` または `BIMWRIGHT_NWD_TARGET=2026` で年を固定できます。
+
+### 2. プラグイン — Navisworks Manage アドイン
+
+年ごとのプラグインをビルド（ローカルに Manage が必要）し、ApplicationPlugins バンドルを配置します。
+
+```powershell
+dotnet build src\plugin-navis26\Bimwright.Nwd.Plugin.Navis26.csproj -c Release
+pwsh scripts\install-bundle.ps1 -Year 2026 -Configuration Release
+```
+
+既定: `%APPDATA%\Autodesk\ApplicationPlugins\Bimwright.Nwd.bundle\`。Manage を再起動して読み込みます。
+
+Manage が既定パス以外の場合は `dotnet build` に `/p:NavisworksInstallDir="…"` を付けます（[ローカル開発とコンパイル](#ローカル開発とコンパイル) 参照）。
+
+### 3. MCP クライアントの接続
+
+```json
+{
+  "mcpServers": {
+    "nwd-mcp": {
+      "command": "bimwright-nwd",
+      "args": []
+    }
+  }
+}
+```
+
+よく使うフラグ: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`。`nwd_send_code` は二重オプトイン（`--enable-send-code` または `BIMWRIGHT_NWD_ENABLE_SEND_CODE=1` **と** プラグイン側 `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=1`）— [セーフティ設定](#セーフティ設定) を参照。
 
 ---
 

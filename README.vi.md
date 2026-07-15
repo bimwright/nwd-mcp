@@ -9,8 +9,8 @@
 <p align="center">
   <a href="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
-  <img src="https://img.shields.io/badge/Navisworks-2022--2027-2D9B9B" alt="Navisworks 2022-2027" />
-  <img src="https://img.shields.io/badge/MCP-29%20or%2030%20tools-6C47FF" alt="MCP tools" />
+  <a href="#tính-năng--kiến-trúc"><img src="https://img.shields.io/badge/Navisworks-2022--2027-2D9B9B" alt="Navisworks 2022-2027" /></a>
+  <a href="#danh-sách-công-cụ-tool-surface"><img src="https://img.shields.io/badge/MCP-29%20or%2030%20tools-6C47FF" alt="MCP tools" /></a>
 </p>
 
 <p align="center">
@@ -40,6 +40,47 @@
 | Các dự án plug-in (net48) | ✅ Biên dịch thành công theo Navisworks Manage SDK |
 
 > **Lưu ý:** Lớp plug-in handler sử dụng các lời gọi Navisworks .NET API thực tế (không phải stub hay dữ liệu giả tạo) và đã được thực thi trên một phiên Navisworks Manage thực tế. Xem [walkthrough.md](walkthrough.md) để biết danh sách kiểm tra khi chạy lần đầu.
+
+---
+
+## Cài đặt
+
+### 1. Server — .NET global tool
+
+```bash
+dotnet tool install -g Bimwright.Nwd.Server
+bimwright-nwd --help
+```
+
+Cần .NET 8 SDK. Ghim năm bằng `--target 2026` hoặc `BIMWRIGHT_NWD_TARGET=2026` khi có nhiều instance.
+
+### 2. Plugin — add-in Navisworks Manage
+
+Build plugin theo năm (cần Manage cài local), rồi deploy bundle:
+
+```powershell
+dotnet build src\plugin-navis26\Bimwright.Nwd.Plugin.Navis26.csproj -c Release
+pwsh scripts\install-bundle.ps1 -Year 2026 -Configuration Release
+```
+
+Mặc định: `%APPDATA%\Autodesk\ApplicationPlugins\Bimwright.Nwd.bundle\`. Restart Manage để load.
+
+Path Manage tùy chỉnh: thêm `/p:NavisworksInstallDir="…"` khi build (xem [Phát triển cục bộ](#phát-triển-cục-bộ--biên-dịch)).
+
+### 3. Nối MCP client
+
+```json
+{
+  "mcpServers": {
+    "nwd-mcp": {
+      "command": "bimwright-nwd",
+      "args": []
+    }
+  }
+}
+```
+
+Cờ hay dùng: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`. `nwd_send_code` cần opt-in hai phía (`--enable-send-code` hoặc `BIMWRIGHT_NWD_ENABLE_SEND_CODE=1` **và** `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=1` trên process plug-in) — xem [Cấu hình an toàn](#cấu-hình-an-toàn).
 
 ---
 
