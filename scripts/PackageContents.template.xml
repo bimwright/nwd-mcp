@@ -9,26 +9,26 @@
   <CompanyDetails Name="Bimwright" />
   <Components>
     <RuntimeRequirements OS="Win64" Platform="NAVMAN" SeriesMin="Nw19" SeriesMax="Nw19" />
-    <ComponentEntry AppName="Bimwright.Nwd.Plugin.Navis22" ModuleName="./Contents/2022/Bimwright.Nwd.Plugin.Navis22.dll" />
+    <ComponentEntry AppName="Bimwright.Nwd.Plugin.Navis22" AppType="ManagedPlugin" ModuleName="./Contents/2022/Bimwright.Nwd.Plugin.Navis22.dll" />
   </Components>
   <Components>
     <RuntimeRequirements OS="Win64" Platform="NAVMAN" SeriesMin="Nw20" SeriesMax="Nw20" />
-    <ComponentEntry AppName="Bimwright.Nwd.Plugin.Navis23" ModuleName="./Contents/2023/Bimwright.Nwd.Plugin.Navis23.dll" />
+    <ComponentEntry AppName="Bimwright.Nwd.Plugin.Navis23" AppType="ManagedPlugin" ModuleName="./Contents/2023/Bimwright.Nwd.Plugin.Navis23.dll" />
   </Components>
   <Components>
     <RuntimeRequirements OS="Win64" Platform="NAVMAN" SeriesMin="Nw21" SeriesMax="Nw21" />
-    <ComponentEntry AppName="Bimwright.Nwd.Plugin.Navis24" ModuleName="./Contents/2024/Bimwright.Nwd.Plugin.Navis24.dll" />
+    <ComponentEntry AppName="Bimwright.Nwd.Plugin.Navis24" AppType="ManagedPlugin" ModuleName="./Contents/2024/Bimwright.Nwd.Plugin.Navis24.dll" />
   </Components>
   <Components>
     <RuntimeRequirements OS="Win64" Platform="NAVMAN" SeriesMin="Nw22" SeriesMax="Nw22" />
-    <ComponentEntry AppName="Bimwright.Nwd.Plugin.Navis25" ModuleName="./Contents/2025/Bimwright.Nwd.Plugin.Navis25.dll" />
+    <ComponentEntry AppName="Bimwright.Nwd.Plugin.Navis25" AppType="ManagedPlugin" ModuleName="./Contents/2025/Bimwright.Nwd.Plugin.Navis25.dll" />
   </Components>
   <Components>
     <RuntimeRequirements OS="Win64" Platform="NAVMAN" SeriesMin="Nw23" SeriesMax="Nw23" />
-    <ComponentEntry AppName="Bimwright.Nwd.Plugin.Navis26" ModuleName="./Contents/2026/Bimwright.Nwd.Plugin.Navis26.dll" />
+    <ComponentEntry AppName="Bimwright.Nwd.Plugin.Navis26" AppType="ManagedPlugin" ModuleName="./Contents/2026/Bimwright.Nwd.Plugin.Navis26.dll" />
   </Components>
   <Components>
     <RuntimeRequirements OS="Win64" Platform="NAVMAN" SeriesMin="Nw24" SeriesMax="Nw24" />
-    <ComponentEntry AppName="Bimwright.Nwd.Plugin.Navis27" ModuleName="./Contents/2027/Bimwright.Nwd.Plugin.Navis27.dll" />
+    <ComponentEntry AppName="Bimwright.Nwd.Plugin.Navis27" AppType="ManagedPlugin" ModuleName="./Contents/2027/Bimwright.Nwd.Plugin.Navis27.dll" />
   </Components>
 </ApplicationPackage>

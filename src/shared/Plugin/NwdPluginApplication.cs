@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using Bimwright.Nwd.Shared.Transport;
 using Bimwright.Nwd.Shared.Infrastructure;
-using NW = Autodesk.Navisworks.Api;
 using NWP = Autodesk.Navisworks.Api.Plugins;
 
 namespace Bimwright.Nwd.Shared.Plugin;
@@ -14,19 +13,9 @@ public sealed class NwdPluginApplication : NWP.EventWatcherPlugin
 
     public override void OnLoaded()
     {
-        // Fail-safe check
-        try
-        {
-            if (NW.Application.HostProduct != NW.HostProduct.Manage)
-            {
-                return;
-            }
-        }
-        catch
-        {
-            // Outside Navisworks
-            return;
-        }
+        // Manage-only product: ApplicationPlugins RuntimeRequirements already
+        // gates Platform=NAVMAN. HostProduct was removed from the public API in
+        // recent Navisworks releases, so do not probe it here.
 
         var year = 2026;
 #if NAVIS2022

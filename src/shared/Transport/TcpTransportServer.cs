@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -25,6 +26,7 @@ public sealed class TcpTransportServer : IDisposable
     private string _authToken = "";
     private string _targetId = "";
     private CommandDispatcher? _dispatcher;
+    private IReadOnlyDictionary<string, INwdCommand>? _handlers;
 
     public TcpTransportServer(PluginOptions options, string descriptorDir)
     {
@@ -42,6 +44,7 @@ public sealed class TcpTransportServer : IDisposable
         var pid = Process.GetCurrentProcess().Id;
         _targetId = $"navis-{_options.NavisworksYear}-{pid}";
 
+        _handlers = handlers;
         _dispatcher = new CommandDispatcher(handlers, 10 * 1024 * 1024);
 
         _listener = new TcpListener(IPAddress.Loopback, 0);
@@ -113,7 +116,7 @@ public sealed class TcpTransportServer : IDisposable
                                     EnableSendCode = _options.EnableSendCode,
                                     NavisworksYear = _options.NavisworksYear,
                                     TargetId = _targetId,
-                                    Commands = handlers
+                                    Commands = _handlers
                                 };
                                 result = _dispatcher!.Dispatch(context, env);
                             });
@@ -184,6 +187,6 @@ internal static class AuthTokenGenerator
         using var rng = new System.Security.Cryptography.RNGCryptoServiceProvider();
         var bytes = new byte[32];
         rng.GetBytes(bytes);
-        return Convert.ToHexString(bytes).ToLowerInvariant();
+        return BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant();
     }
 }

@@ -22,8 +22,8 @@
       <HintPath>$(NavisworksInstallDir)\Autodesk.Navisworks.Api.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Autodesk.Navisworks.Api.Controls">
-      <HintPath>$(NavisworksInstallDir)\Autodesk.Navisworks.Api.Controls.dll</HintPath>
+    <Reference Include="Autodesk.Navisworks.Controls">
+      <HintPath>$(NavisworksInstallDir)\Autodesk.Navisworks.Controls.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
@@ -31,6 +31,12 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.8.0" />
+    <PackageReference Include="IsExternalInit" Version="1.0.3">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>

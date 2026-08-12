@@ -53,7 +53,7 @@ public sealed class GetModelTreeHandler : INwdCommand
 
         count++;
 
-        if (currentDepth < maxDepth && item.Children.Count > 0 && count < maxItems)
+        if (currentDepth < maxDepth && ModelItemHelper.HasChildren(item) && count < maxItems)
         {
             var childrenArr = new JArray();
             foreach (var child in item.Children)
