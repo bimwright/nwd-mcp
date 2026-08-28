@@ -45,42 +45,9 @@
 
 ## インストール
 
-### 1. サーバー — .NET グローバルツール
+[GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest) から `NwdMcp.Setup-*-win-x64.zip` を入手。v0.1.2 は Manage **2025** プラグイン入り。展開して `install.ps1`。MCP はインストール済み `nwd-mcp.exe` を指定。`dotnet tool install -g Bimwright.Nwd.Server` は使わないでください。
 
-```bash
-dotnet tool install -g Bimwright.Nwd.Server
-bimwright-nwd --help
-```
-
-.NET 8 SDK が必要です。複数インスタンス時は `--target 2026` または `BIMWRIGHT_NWD_TARGET=2026` で年を固定できます。
-
-### 2. プラグイン — Navisworks Manage アドイン
-
-年ごとのプラグインをビルド（ローカルに Manage が必要）し、ApplicationPlugins バンドルを配置します。
-
-```powershell
-dotnet build src\plugin-navis26\Bimwright.Nwd.Plugin.Navis26.csproj -c Release
-pwsh scripts\install-bundle.ps1 -Year 2026 -Configuration Release
-```
-
-既定: `%APPDATA%\Autodesk\ApplicationPlugins\Bimwright.Nwd.bundle\`。Manage を再起動して読み込みます。
-
-Manage が既定パス以外の場合は `dotnet build` に `/p:NavisworksInstallDir="…"` を付けます（[ローカル開発とコンパイル](#ローカル開発とコンパイル) 参照）。
-
-### 3. MCP クライアントの接続
-
-```json
-{
-  "mcpServers": {
-    "nwd-mcp": {
-      "command": "bimwright-nwd",
-      "args": []
-    }
-  }
-}
-```
-
-よく使うフラグ: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`。`nwd_send_code` は二重オプトイン（`--enable-send-code` または `BIMWRIGHT_NWD_ENABLE_SEND_CODE=1` **と** プラグイン側 `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=1`）— [セーフティ設定](#セーフティ設定) を参照。
+よく使うフラグ: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`。`nwd_send_code` は二重オプトイン — [セーフティ設定](#セーフティ設定) を参照。
 
 ---
 

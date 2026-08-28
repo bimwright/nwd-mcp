@@ -46,42 +46,9 @@
 
 ## 安装
 
-### 1. Server —— .NET 全局工具
+从 [GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest) 下载 `NwdMcp.Setup-*-win-x64.zip`。v0.1.2 含 Manage **2025** 插件。解压后运行 `install.ps1`，MCP 指向已安装的 `nwd-mcp.exe`。不要 `dotnet tool install -g Bimwright.Nwd.Server`。
 
-```bash
-dotnet tool install -g Bimwright.Nwd.Server
-bimwright-nwd --help
-```
-
-需要 .NET 8 SDK。多实例时可用 `--target 2026` 或 `BIMWRIGHT_NWD_TARGET=2026` 固定年份。
-
-### 2. Plugin —— Navisworks Manage 插件
-
-先编译对应年份的插件（本机需安装 Manage），再部署 ApplicationPlugins bundle：
-
-```powershell
-dotnet build src\plugin-navis26\Bimwright.Nwd.Plugin.Navis26.csproj -c Release
-pwsh scripts\install-bundle.ps1 -Year 2026 -Configuration Release
-```
-
-默认路径：`%APPDATA%\Autodesk\ApplicationPlugins\Bimwright.Nwd.bundle\`。重启 Manage 以加载。
-
-Manage 不在默认路径时，在 `dotnet build` 上加 `/p:NavisworksInstallDir="…"`（见 [本地开发与编译](#本地开发与编译)）。
-
-### 3. 接入 MCP client
-
-```json
-{
-  "mcpServers": {
-    "nwd-mcp": {
-      "command": "bimwright-nwd",
-      "args": []
-    }
-  }
-}
-```
-
-常用开关：`--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`。`nwd_send_code` 需双侧 opt-in（`--enable-send-code` 或 `BIMWRIGHT_NWD_ENABLE_SEND_CODE=1`，**以及**插件进程上的 `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=1`）——见 [安全配置](#安全配置)。
+常用开关：`--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`。`nwd_send_code` 需双侧 opt-in——见 [安全配置](#安全配置)。
 
 ---
 

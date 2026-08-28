@@ -45,42 +45,9 @@
 
 ## Cài đặt
 
-### 1. Server — .NET global tool
+Tải [GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest) (`NwdMcp.Setup-*-win-x64.zip`). v0.1.2 gồm plugin Manage **2025**. `install.ps1` trong ZIP; trỏ MCP vào `nwd-mcp.exe` đã cài. Không `dotnet tool install -g Bimwright.Nwd.Server`.
 
-```bash
-dotnet tool install -g Bimwright.Nwd.Server
-bimwright-nwd --help
-```
-
-Cần .NET 8 SDK. Ghim năm bằng `--target 2026` hoặc `BIMWRIGHT_NWD_TARGET=2026` khi có nhiều instance.
-
-### 2. Plugin — add-in Navisworks Manage
-
-Build plugin theo năm (cần Manage cài local), rồi deploy bundle:
-
-```powershell
-dotnet build src\plugin-navis26\Bimwright.Nwd.Plugin.Navis26.csproj -c Release
-pwsh scripts\install-bundle.ps1 -Year 2026 -Configuration Release
-```
-
-Mặc định: `%APPDATA%\Autodesk\ApplicationPlugins\Bimwright.Nwd.bundle\`. Restart Manage để load.
-
-Path Manage tùy chỉnh: thêm `/p:NavisworksInstallDir="…"` khi build (xem [Phát triển cục bộ](#phát-triển-cục-bộ--biên-dịch)).
-
-### 3. Nối MCP client
-
-```json
-{
-  "mcpServers": {
-    "nwd-mcp": {
-      "command": "bimwright-nwd",
-      "args": []
-    }
-  }
-}
-```
-
-Cờ hay dùng: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`. `nwd_send_code` cần opt-in hai phía (`--enable-send-code` hoặc `BIMWRIGHT_NWD_ENABLE_SEND_CODE=1` **và** `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=1` trên process plug-in) — xem [Cấu hình an toàn](#cấu-hình-an-toàn).
+Cờ: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`. `nwd_send_code` cần opt-in hai phía — xem [Cấu hình an toàn](#cấu-hình-an-toàn).
 
 ---
 

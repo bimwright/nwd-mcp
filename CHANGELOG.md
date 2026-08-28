@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## v0.1.2 - First GitHub Release
+
+Client setup ZIP: `NwdMcp.Setup-v0.1.2-win-x64.zip` (self-contained `nwd-mcp.exe`). **Plugin year in this ZIP:** Navisworks Manage **2025** (the only Manage install on the pack machine). Source still supports 2022–2027.
+
 ### Fixed
 
 - Navisworks 2025 API compatibility for model-tree walk and the host gate.

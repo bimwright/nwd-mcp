@@ -47,42 +47,26 @@
 
 ## Install
 
-### 1. Server — .NET global tool
-
-```bash
-dotnet tool install -g Bimwright.Nwd.Server
-bimwright-nwd --help
-```
-
-Requires the .NET 8 SDK. Pin a Navisworks year with `--target 2026` or `BIMWRIGHT_NWD_TARGET=2026` when multiple instances may run.
-
-### 2. Plugin — Navisworks Manage add-in
-
-Build a per-year plugin (needs a local Navisworks Manage install), then deploy the ApplicationPlugins bundle:
+Download the client setup ZIP from [GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest). It includes a self-contained MCP server and the Navisworks Manage plugin years compiled for that release (see `manifest.json`). The v0.1.2 ZIP ships **2025** only. Other years: build from source against that year’s Manage SDK.
 
 ```powershell
-dotnet build src\plugin-navis26\Bimwright.Nwd.Plugin.Navis26.csproj -c Release
-pwsh scripts\install-bundle.ps1 -Year 2026 -Configuration Release
+$tag = (Invoke-RestMethod https://api.github.com/repos/bimwright/nwd-mcp/releases/latest).tag_name
+$zip = "$env:TEMP\NwdMcp.Setup-$tag-win-x64.zip"
+$dir = "$env:TEMP\NwdMcp.Setup-$tag-win-x64"
+Invoke-WebRequest "https://github.com/bimwright/nwd-mcp/releases/download/$tag/NwdMcp.Setup-$tag-win-x64.zip" -OutFile $zip
+Expand-Archive $zip -DestinationPath $dir -Force
+
+powershell -ExecutionPolicy Bypass -File "$dir\install.ps1" -WhatIf
+powershell -ExecutionPolicy Bypass -File "$dir\install.ps1"
 ```
 
-Default install root: `%APPDATA%\Autodesk\ApplicationPlugins\Bimwright.Nwd.bundle\`. Restart Navisworks Manage to load the add-in.
+Deploys `%APPDATA%\Autodesk\ApplicationPlugins\Bimwright.Nwd.bundle\` and `nwd-mcp.exe` under `%LOCALAPPDATA%\Bimwright\nwd-mcp\server\<version>\`. Restart Navisworks Manage. Point your MCP client at that `nwd-mcp.exe` path. Pin a year with `--target 2025` or `BIMWRIGHT_NWD_TARGET=2025` when multiple instances may run.
 
-If Manage is not under the default Autodesk path, pass `/p:NavisworksInstallDir="…"` on the `dotnet build` line (see [Local Development](#local-development--compilation)).
+Do **not** `dotnet tool install -g Bimwright.Nwd.Server` — that is not the supported client install.
 
-### 3. Wire an MCP client
+**Developer:** `dotnet build` a `plugin-navisNN` project, then `pwsh scripts\install-bundle.ps1 -Year 2025 -Configuration Release`.
 
-```json
-{
-  "mcpServers": {
-    "nwd-mcp": {
-      "command": "bimwright-nwd",
-      "args": []
-    }
-  }
-}
-```
-
-Useful flags: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`; dual opt-in for `nwd_send_code` via `--enable-send-code` (or `BIMWRIGHT_NWD_ENABLE_SEND_CODE=1`) **and** `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=1` on the plug-in process (see [Safety](#safety-configurations)).
+Useful flags after wiring: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`; dual opt-in for `nwd_send_code` via `--enable-send-code` (or `BIMWRIGHT_NWD_ENABLE_SEND_CODE=1`) **and** `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=1` on the plug-in process (see [Safety](#safety-configurations)).
 
 ---
 
