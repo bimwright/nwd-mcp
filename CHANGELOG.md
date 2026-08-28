@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Navisworks 2025 API compatibility for model-tree walk and the host gate.
+- Tool dispatch hardened before the public push.
+
+### Changed
+
+- Plugin handlers marked verified against a live Navisworks Manage session (supersedes the v0.1.1 “not live-tested” status line).
+- README Install section, locale links, tool counts, and path-sanitization scope.
+- Japanese and Simplified Chinese README mirrors.
+
 ## v0.1.1 - Handler Layer Completion
 
 ### Added
