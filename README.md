@@ -161,7 +161,9 @@ Autodesk Navisworks API DLLs are **not redistributed** in this repository.
 
 ## The bimwright family
 
-Hand-forged MCP gateways for the AEC toolchain — one architecture, predictable / auditable / reversible:
+Open-source tools connecting AI assistants to BIM and CAD applications.
+
+The name **bimwright** combines **BIM** with **wright**, an old word for a maker or builder—as in *shipwright*.
 
 - [**rvt-mcp**](https://github.com/bimwright/rvt-mcp) — Autodesk® Revit®
 - [**dwg-mcp**](https://github.com/bimwright/dwg-mcp) — Autodesk® AutoCAD®
