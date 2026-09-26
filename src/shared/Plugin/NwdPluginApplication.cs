@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Windows.Threading;
 using Bimwright.Nwd.Shared.Transport;
 using Bimwright.Nwd.Shared.Infrastructure;
 using NWP = Autodesk.Navisworks.Api.Plugins;
@@ -13,9 +14,9 @@ public sealed class NwdPluginApplication : NWP.EventWatcherPlugin
 
     public override void OnLoaded()
     {
-        // Manage-only product: ApplicationPlugins RuntimeRequirements already
-        // gates Platform=NAVMAN. HostProduct was removed from the public API in
-        // recent Navisworks releases, so do not probe it here.
+        // Capture the UI dispatcher so commands can be marshaled
+        // back onto the main thread (Navisworks API is STA-affined).
+        NavisworksUiThreadInvoker.SetUiContext(Dispatcher.CurrentDispatcher);
 
         var year = 2026;
 #if NAVIS2022

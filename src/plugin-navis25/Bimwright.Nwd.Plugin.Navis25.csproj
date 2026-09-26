@@ -18,6 +18,7 @@
   </Target>
 
   <ItemGroup>
+    <Reference Include="WindowsBase"><Private>false</Private></Reference>
     <Reference Include="Autodesk.Navisworks.Api">
       <HintPath>$(NavisworksInstallDir)\Autodesk.Navisworks.Api.dll</HintPath>
       <Private>false</Private>
