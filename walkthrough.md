@@ -62,7 +62,7 @@ stable, fast, and does not depend on GUIDs or display names.
 > instance.** The build machine does not have Autodesk Navisworks Manage installed, so
 > the `net48` plug-in projects cannot be compiled here. The handler implementations are
 > written against the documented Navisworks .NET API and cross-referenced with working
-> open-source implementations (Aitology/navisworks-mcp), but they require validation on
+> open-source implementations, but they require validation on
 > a machine with Navisworks Manage 2022+ installed.
 >
 > **First-run checklist for a Navisworks machine:**
