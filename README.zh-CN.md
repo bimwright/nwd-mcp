@@ -40,7 +40,7 @@
 | Plug-in handler 实现 | ✅ 已在真实 Navisworks Manage 会话中验证 |
 | Plug-in 项目（net48） | ✅ 可针对 Navisworks Manage SDK 编译 |
 
-> **注意：** plug-in handler 层使用真实的 Navisworks .NET API 调用（并非桩函数或伪造数据），并且已在真实的 Navisworks Manage 实例中执行验证。首次运行清单见 [walkthrough.md](walkthrough.md)。
+> **注意：** plug-in handler 层使用真实的 Navisworks .NET API 调用（并非桩函数或伪造数据），并且已在真实的 Navisworks Manage 实例中执行验证。
 
 ---
 

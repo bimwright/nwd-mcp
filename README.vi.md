@@ -39,7 +39,7 @@
 | Các triển khai plug-in handler | ✅ Đã xác minh trên một phiên Navisworks Manage thực tế |
 | Các dự án plug-in (net48) | ✅ Biên dịch thành công theo Navisworks Manage SDK |
 
-> **Lưu ý:** Lớp plug-in handler sử dụng các lời gọi Navisworks .NET API thực tế (không phải stub hay dữ liệu giả tạo) và đã được thực thi trên một phiên Navisworks Manage thực tế. Xem [walkthrough.md](walkthrough.md) để biết danh sách kiểm tra khi chạy lần đầu.
+> **Lưu ý:** Lớp plug-in handler sử dụng các lời gọi Navisworks .NET API thực tế (không phải stub hay dữ liệu giả tạo) và đã được thực thi trên một phiên Navisworks Manage thực tế.
 
 ---
 
