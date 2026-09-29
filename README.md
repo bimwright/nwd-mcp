@@ -42,7 +42,7 @@ Navisworks shows one activity card for MCP commands. Toasts are on by default an
 | Plug-in projects (net48) | ✅ Compile against the Navisworks Manage SDK |
 
 > **Note:** The plug-in handler layer uses real Navisworks .NET API calls (not stubs or fabricated
-> data) and has been exercised against a live Navisworks Manage instance. See [walkthrough.md](walkthrough.md)
+> data) and has been exercised against a live Navisworks Manage instance.
 > for the first-run checklist.
 
 ---

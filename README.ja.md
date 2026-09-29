@@ -41,7 +41,7 @@ Navisworks は MCP コマンドごとに 1 枚のアクティビティカード�
 | プラグインハンドラ実装 | ✅ 実稼働 Navisworks Manage セッションで検証済み |
 | プラグインプロジェクト (net48) | ✅ Navisworks Manage SDK に対してコンパイル成功 |
 
-> **注:** プラグインハンドラ層は実際の Navisworks .NET API 呼び出し（スタブや疑似データではなく）を使用しており、実稼働の Navisworks Manage インスタンスで動作確認済みです。初回実行のチェックリストについては [walkthrough.md](walkthrough.md) を参照してください。
+> **注:** プラグインハンドラ層は実際の Navisworks .NET API 呼び出し（スタブや疑似データではなく）を使用しており、実稼働の Navisworks Manage インスタンスで動作確認済みです。
 
 ---
 
