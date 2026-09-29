@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <RootNamespace>Bimwright.Nwd.Toast.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\shared\Views\Toast\ActivityAggregator.cs" Link="ActivityAggregator.cs" />
+    <Compile Include="..\..\src\shared\Views\Toast\McpToastWindow.cs" Link="McpToastWindow.cs" />
+    <Compile Include="..\..\src\shared\Views\Toast\RollingToastNumber.cs" Link="RollingToastNumber.cs" />
+    <Compile Include="..\..\src\shared\Views\Toast\McpToastManager.cs" Link="McpToastManager.cs" />
+    <Compile Include="..\..\src\shared\Views\Toast\McpToastTheme.cs" Link="McpToastTheme.cs" />
+    <Compile Include="..\..\src\shared\Views\Toast\McpToastViewModel.cs" Link="McpToastViewModel.cs" />
+    <Compile Include="..\..\src\shared\Views\Toast\ToastContentBuilder.cs" Link="ToastContentBuilder.cs" />
+    <Compile Include="..\..\src\shared\Views\Toast\ToastThumbnailLoader.cs" Link="ToastThumbnailLoader.cs" />
+    <Compile Include="..\..\src\shared\Views\Toast\ToolNameFormatter.cs" Link="ToolNameFormatter.cs" />
+    <Compile Include="..\..\src\shared\Security\PathAllowlist.cs" Link="PathAllowlist.cs" />
+    <Compile Include="..\..\src\shared\Views\BrandAssets.cs" Link="BrandAssets.cs" />
+    <Compile Include="..\..\src\shared\Localization\L.cs" Link="Localization\L.cs" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+</Project>

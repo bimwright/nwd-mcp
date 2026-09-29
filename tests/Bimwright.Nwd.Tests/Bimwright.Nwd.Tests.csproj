@@ -29,6 +29,15 @@
     <Compile Include="..\..\src\shared\Infrastructure\INwdCommand.cs" />
     <Compile Include="..\..\src\shared\Infrastructure\CommandDispatcher.cs" />
     <Compile Include="..\..\src\shared\Infrastructure\NwdCommandContext.cs" />
+    <Compile Include="..\..\src\shared\Config\PluginSettings.cs" Link="PluginSettings.cs" />
+    <Compile Include="..\..\src\shared\Localization\L.cs" Link="L.cs" />
+    <Compile Include="..\..\src\shared\Security\PathAllowlist.cs" Link="PathAllowlist.cs" />
+    <Compile Include="..\..\src\shared\Views\Toast\ActivityAggregator.cs" Link="ActivityAggregator.cs" />
+    <Compile Include="..\..\src\shared\Views\Toast\ClientPresence.cs" Link="ClientPresence.cs" />
+    <Compile Include="..\..\src\shared\Views\Toast\McpToastViewModel.cs" Link="McpToastViewModel.cs" />
+    <Compile Include="..\..\src\shared\Views\Toast\ToastCommands.cs" Link="ToastCommands.cs" />
+    <Compile Include="..\..\src\shared\Views\Toast\ToastContentBuilder.cs" Link="ToastContentBuilder.cs" />
+    <Compile Include="..\..\src\shared\Views\Toast\ToolNameFormatter.cs" Link="ToolNameFormatter.cs" />
   </ItemGroup>
 
 </Project>

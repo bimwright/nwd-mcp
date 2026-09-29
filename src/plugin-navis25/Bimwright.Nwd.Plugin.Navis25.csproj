@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>Bimwright.Nwd.Plugin</RootNamespace>
     <AssemblyName>Bimwright.Nwd.Plugin.Navis25</AssemblyName>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
@@ -26,6 +28,14 @@
       <HintPath>$(NavisworksInstallDir)\Autodesk.Navisworks.Controls.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="AdWindows">
+      <HintPath>$(NavisworksInstallDir)\AdWindows.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="navisworks.gui.roamer">
+      <HintPath>$(NavisworksInstallDir)\navisworks.gui.roamer.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
@@ -41,6 +51,12 @@
 
   <ItemGroup>
     <Compile Include="..\shared\**\*.cs" LinkBase="Shared" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\shared\Plugin\NwdRibbon.xaml">
+      <LogicalName>NwdRibbon.xaml</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

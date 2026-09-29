@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using Bimwright.Nwd.Shared.Infrastructure;
 using Bimwright.Nwd.Shared.Plugin;
+using Bimwright.Nwd.Shared.Views.Toast;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NW = Autodesk.Navisworks.Api;
@@ -23,6 +24,7 @@ public sealed class TcpTransportServer : IDisposable
     private Timer? _heartbeatTimer;
     private volatile bool _running;
     private int _activeClients;
+    private long _lastCommandUtcTicks;
     private string _authToken = "";
     private string _targetId = "";
     private CommandDispatcher? _dispatcher;
@@ -37,6 +39,19 @@ public sealed class TcpTransportServer : IDisposable
     public int Port { get; private set; }
     public string AuthToken => _authToken;
     public string TargetId => _targetId;
+    public int ActiveClientCount => Volatile.Read(ref _activeClients);
+
+    public DateTime? LastCommandUtc
+    {
+        get
+        {
+            var ticks = Interlocked.Read(ref _lastCommandUtcTicks);
+            return ticks == 0 ? null : new DateTime(ticks, DateTimeKind.Utc);
+        }
+    }
+
+    /// <summary>Command name, response JSON, success, error message. Skips health_check.</summary>
+    public Action<string, string, bool, string?>? CommandCompleted { get; set; }
 
     public void Start(IReadOnlyDictionary<string, INwdCommand> handlers)
     {
@@ -94,6 +109,7 @@ public sealed class TcpTransportServer : IDisposable
                 while ((line = reader.ReadLine()) != null)
                 {
                     string responseJson = "";
+                    string? commandName = null;
                     try
                     {
                         var env = JsonConvert.DeserializeObject<NwdCommandEnvelope>(line);
@@ -107,8 +123,9 @@ public sealed class TcpTransportServer : IDisposable
                         }
                         else
                         {
+                            commandName = env.Command;
                             NwdCommandResult? result = null;
-                            NavisworksUiThreadInvoker.Invoke(() =>
+                            void Dispatch()
                             {
                                 var context = new NwdCommandContext
                                 {
@@ -119,13 +136,28 @@ public sealed class TcpTransportServer : IDisposable
                                     Commands = _handlers
                                 };
                                 result = _dispatcher!.Dispatch(context, env);
-                            });
+                            }
+
+                            // send_code waits up to 30s for its script thread. Doing that wait
+                            // inside SynchronizationContext.Send freezes Navisworks and deadlocks
+                            // a script that calls back onto the UI thread.
+                            if (string.Equals(commandName, "send_code", StringComparison.Ordinal))
+                                Dispatch();
+                            else
+                                NavisworksUiThreadInvoker.Invoke(Dispatch);
+                            TouchLastCommand();
                             responseJson = JsonConvert.SerializeObject(result);
+                            NotifyCompleted(commandName, responseJson, result != null && result.Ok, result?.Error?.Message);
                         }
                     }
                     catch (Exception ex)
                     {
                         responseJson = ErrorJson("API_ERROR", $"dispatch error: {ex.Message}");
+                        if (commandName != null)
+                        {
+                            TouchLastCommand();
+                            NotifyCompleted(commandName, responseJson, false, ex.Message);
+                        }
                     }
                     writer.WriteLine(responseJson);
                 }
@@ -138,6 +170,24 @@ public sealed class TcpTransportServer : IDisposable
         finally
         {
             Interlocked.Decrement(ref _activeClients);
+        }
+    }
+
+    private void TouchLastCommand()
+    {
+        Interlocked.Exchange(ref _lastCommandUtcTicks, DateTime.UtcNow.Ticks);
+    }
+
+    private void NotifyCompleted(string? command, string responseJson, bool success, string? errorMessage)
+    {
+        if (!ToastCommands.ShouldToast(command))
+            return;
+        try
+        {
+            CommandCompleted?.Invoke(command!, responseJson, success, errorMessage);
+        }
+        catch
+        {
         }
     }
 

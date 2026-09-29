@@ -29,6 +29,8 @@
 - **安全优先：** 每会话随机加密 token 校验、TCP 传输仅绑定 loopback，以及对返回给模型的错误消息中的绝对文件路径进行净化。
 - **多实例路由：** 自动检测多个正在运行的 Navisworks Manage 实例，并支持动态切换目标。
 
+Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最新结果之后停留 20 秒（可选 10、20、30 或 60）。悬停暂停；离开后重新计满该间隔。BIMwright 字标默认关闭，需打开 Show branding 才会出现。`nwd_health_check` 不会进入卡片。**Bimwright** 功能区有 **Toasts**、**Toast Brand** 和 **Status**。设置写在 `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwdmcp.config.json`。`BIMWRIGHT_NWD_ENABLE_TOAST` 在下次启动时覆盖开关。
+
 ---
 
 ## 当前状态
@@ -36,7 +38,7 @@
 | 组件 | 状态 |
 |---|---|
 | MCP gateway server（.NET 8） | ✅ 编译无警告（Debug + Release） |
-| 单元测试（45 个 xUnit） | ✅ 全部通过 |
+| 单元测试（63 个 xUnit） | ✅ 全部通过 |
 | Plug-in handler 实现 | ✅ 已在真实 Navisworks Manage 会话中验证 |
 | Plug-in 项目（net48） | ✅ 可针对 Navisworks Manage SDK 编译 |
 

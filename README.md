@@ -28,6 +28,8 @@
 - **Security First:** Per-session random cryptographic token validation, loopback-only binding for the TCP transport, and absolute file path sanitization in error messages returned to the model.
 - **Multi-Instance Routing:** Automatically detects multiple running Navisworks Manage instances and supports switching targets dynamically.
 
+Navisworks shows one activity card for MCP commands. Toasts are on by default and stay up for 20 seconds after the latest result (10, 20, 30, or 60). Hover pauses the card; leaving it starts the selected interval again. The BIMwright wordmark stays off unless Show branding is turned on. `nwd_health_check` does not appear on the card. The **Bimwright** ribbon tab has **Toasts**, **Toast Brand**, and **Status**. Settings are stored in `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwdmcp.config.json`. `BIMWRIGHT_NWD_ENABLE_TOAST` overrides the on/off switch at the next launch.
+
 ---
 
 ## Current Status
@@ -35,7 +37,7 @@
 | Component | Status |
 |---|---|
 | MCP gateway server (.NET 8) | ✅ Builds warning-clean (Debug + Release) |
-| Unit tests (45 xUnit) | ✅ All passing |
+| Unit tests (63 xUnit) | ✅ All passing |
 | Plug-in handler implementations | ✅ Verified against a live Navisworks Manage session |
 | Plug-in projects (net48) | ✅ Compile against the Navisworks Manage SDK |
 
@@ -164,6 +166,8 @@ Autodesk Navisworks API DLLs are **not redistributed** in this repository.
 Open-source tools connecting AI assistants to BIM and CAD applications.
 
 The name **bimwright** combines **BIM** with **wright**, an old word for a maker or builder—as in *shipwright*.
+
+See [how the gateway names are chosen](https://github.com/bimwright/.github/blob/master/profile/README.md#naming).
 
 - [**rvt-mcp**](https://github.com/bimwright/rvt-mcp) — Autodesk® Revit®
 - [**dwg-mcp**](https://github.com/bimwright/dwg-mcp) — Autodesk® AutoCAD®

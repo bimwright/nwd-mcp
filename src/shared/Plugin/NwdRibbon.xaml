@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RibbonControl
+    xmlns="clr-namespace:Autodesk.Windows;assembly=AdWindows"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:nw="clr-namespace:Autodesk.Navisworks.Gui.Roamer.AIRLook;assembly=navisworks.gui.roamer">
+  <RibbonTab Id="ID_Bimwright_Nwd_Tab" Title="Bimwright">
+    <RibbonPanel>
+      <RibbonPanelSource Id="ID_Bimwright_Nwd_Panel" Title="MCP">
+        <nw:NWRibbonToggleButton x:Uid="ID_Bimwright_Nwd_Toasts" Id="ID_Bimwright_Nwd_Toasts"
+            Text="Toasts" Size="Large" ShowText="True" ShowImage="False" Orientation="Vertical" />
+        <nw:NWRibbonToggleButton x:Uid="ID_Bimwright_Nwd_ToastBrand" Id="ID_Bimwright_Nwd_ToastBrand"
+            Text="Toast Brand" Size="Large" ShowText="True" ShowImage="False" Orientation="Vertical" />
+        <nw:NWRibbonButton x:Uid="ID_Bimwright_Nwd_Status" Id="ID_Bimwright_Nwd_Status"
+            Text="Status" Size="Large" ShowText="True" ShowImage="False" Orientation="Vertical" />
+      </RibbonPanelSource>
+    </RibbonPanel>
+  </RibbonTab>
+</RibbonControl>
