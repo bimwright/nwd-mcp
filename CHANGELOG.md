@@ -14,6 +14,11 @@
 - **Record** switch for every tool call, off by default. The ribbon, Status window, `recordCalls` in `nwdmcp.config.json`, and `BIMWRIGHT_NWD_RECORD_CALLS` share it. While on, calls append to `%LOCALAPPDATA%\Bimwright\nwd-mcp\mcp-calls.jsonl`. `send_code` stores length and SHA-256 instead of the script.
 - `nwd_list_recent_files`, `nwd_open_file`, and `nwd_import_model`. A default launch registers every toolset (33 tools). Open refuses unsaved changes unless `discard_changes` is true. Import `append` adds a model; `merge` combines it. Open and import wait up to 5 minutes.
 
+### Fixed
+- Item ids below a model root were empty, so `nwd_get_model_tree`, `nwd_find_items`, `nwd_find_items_by_name`, and `nwd_get_current_selection` returned no usable ids and `nwd_hide_items` / `nwd_get_item_properties` could not target them. Ids now look like `0:0:6:3`.
+- `contains`, `startsWith`, and `endsWith` filters in `nwd_find_items` and `nwd_select_items_by_search` matched nothing. They now match, case-insensitive.
+- A command that reached the plug-in before a UI `SynchronizationContext` was captured ran on a worker thread and could crash Navisworks (0x80131509). It now falls back to the UI `Dispatcher` (PR #1 by @huangting2015).
+
 ## v0.1.2 - First GitHub Release
 
 Client setup ZIP: `NwdMcp.Setup-v0.1.2-win-x64.zip` (self-contained `nwd-mcp.exe`). **Plugin year in this ZIP:** Navisworks Manage **2025** (the only Manage install on the pack machine). Source still supports 2022–2027.
