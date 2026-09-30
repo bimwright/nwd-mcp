@@ -37,7 +37,7 @@ Navisworks shows one activity card for MCP commands. Toasts are on by default an
 | Component | Status |
 |---|---|
 | MCP gateway server (.NET 8) | ✅ Builds warning-clean (Debug + Release) |
-| Unit tests (142 xUnit) | ✅ All passing |
+| Unit tests (155 xUnit) | ✅ All passing |
 | Plug-in handler implementations | ✅ Verified against a live Navisworks Manage session |
 | Plug-in projects (net48) | ✅ Compile against the Navisworks Manage SDK |
 
@@ -117,7 +117,7 @@ A default launch registers every toolset: **33 tools**, including `nwd_send_code
 * `nwd_unhide_all` *(Write)* — Reset all hidden elements to visible.
 
 ### 8. Escape Hatch Scripting (1)
-* `nwd_send_code` *(Write, on by default)* — Compile and execute in-process C# code against the Navisworks API.
+* `nwd_send_code` *(Write, on by default)* — Run a C# script on the Navisworks UI thread with `doc` as the active document. Returns the last expression as `result` and Console output as `stdout`; Navisworks waits while it runs.
 
 ### 9. ToolBaker Governed Tools (6)
 * `nwd_list_baked_tools` — List all verified compiled reusable tools.

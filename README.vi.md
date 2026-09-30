@@ -37,7 +37,7 @@ Navisworks hiện một thẻ cho các lệnh MCP. Thẻ bật sẵn và ở l�
 | Thành phần | Trạng thái |
 |---|---|
 | Máy chủ MCP gateway (.NET 8) | ✅ Biên dịch sạch cảnh báo (Debug + Release) |
-| Unit tests (142 xUnit) | ✅ Tất cả đều qua |
+| Unit tests (155 xUnit) | ✅ Tất cả đều qua |
 | Các triển khai plug-in handler | ✅ Đã xác minh trên một phiên Navisworks Manage thực tế |
 | Các dự án plug-in (net48) | ✅ Biên dịch thành công theo Navisworks Manage SDK |
 
@@ -98,7 +98,7 @@ Một lần chạy mặc định đăng ký đủ mọi nhóm: **33 công cụ**
 * `nwd_unhide_all` *(Ghi)* — Khôi phục trạng thái hiển thị của tất cả các phần tử bị ẩn.
 
 ### 8. Viết mã Kịch bản / Escape Hatch (1)
-* `nwd_send_code` *(Ghi, bật sẵn)* — Biên dịch và thực thi mã C# trực tiếp đối với Navisworks API.
+* `nwd_send_code` *(Ghi, bật sẵn)* — Chạy script C# trên UI thread của Navisworks, với `doc` là tài liệu đang mở. Trả biểu thức cuối trong `result` và nội dung Console trong `stdout`; Navisworks chờ trong lúc script chạy.
 
 ### 9. Công cụ Đóng gói ToolBaker (6)
 * `nwd_list_baked_tools` — Liệt kê danh sách các công cụ tự viết đã được xác thực, biên dịch và đăng ký.

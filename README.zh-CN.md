@@ -38,7 +38,7 @@ Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最�
 | 组件 | 状态 |
 |---|---|
 | MCP gateway server（.NET 8） | ✅ 编译无警告（Debug + Release） |
-| 单元测试（142 个 xUnit） | ✅ 全部通过 |
+| 单元测试（155 个 xUnit） | ✅ 全部通过 |
 | Plug-in handler 实现 | ✅ 已在真实 Navisworks Manage 会话中验证 |
 | Plug-in 项目（net48） | ✅ 可针对 Navisworks Manage SDK 编译 |
 
@@ -107,7 +107,7 @@ Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最�
 
 ### 8. 逃生舱脚本（1 个）
 
-* `nwd_send_code` *(写入，默认开启)* —— 针对 Navisworks API 编译并执行进程内 C# 代码。
+* `nwd_send_code` *(写入，默认开启)* —— 在 Navisworks UI 线程上运行 C# 脚本，`doc` 为当前文档。最后一个表达式作为 `result` 返回，控制台输出作为 `stdout` 返回；脚本运行期间 Navisworks 会等待。
 
 ### 9. ToolBaker 治理工具（6 个）
 

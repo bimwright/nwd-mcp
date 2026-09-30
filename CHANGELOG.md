@@ -17,6 +17,11 @@
 ### Fixed
 - Item ids below a model root were empty, so `nwd_get_model_tree`, `nwd_find_items`, `nwd_find_items_by_name`, and `nwd_get_current_selection` returned no usable ids and `nwd_hide_items` / `nwd_get_item_properties` could not target them. Ids now look like `0:0:6:3`, and each parent's children are numbered once per call: on a 10,717-item model, `nwd_get_model_tree` depth 6 / 5,000 nodes takes ~0.1 s and `nwd_find_items_by_name` 500 hits ~0.3 s.
 - `nwd_get_model_statistics` returns `item_count`, as its description says.
+- `nwd_send_code` failed on Navisworks 2025 with `TypeInitializationException` (`PerTypeValues`1`): Navisworks has no binding redirects for the Roslyn dependencies we ship. The plug-in now resolves those assemblies from its own folder. Scripts also ran on a worker thread, where the Navisworks API is not valid; they now compile off the UI thread and run on it, return the last expression as `result`, and report the full exception chain.
+- A command that waited in the UI queue past the caller's timeout still ran, and long walks kept Navisworks busy after the caller gave up. Stale commands are now skipped with `TIMEOUT`, and `get_model_tree`, `find_items`, `find_items_by_name`, `batch_get_properties`, and `get_model_statistics` stop at the deadline and mark the result (`truncated: "deadline"`, `item_count_complete: false`).
+- The target descriptor always reported no document: the heartbeat read the document off the UI thread. The title and path are now read on the UI thread after each command and on idle.
+- Failed tool calls (`{"ok":false,...}`) now also set the MCP `isError` flag.
+- The server enforces `maxResponseBytes` on plug-in replies, and tool results are compact JSON (about half the size of the previous indented output).
 - `contains`, `startsWith`, and `endsWith` filters in `nwd_find_items` and `nwd_select_items_by_search` matched nothing. They now match, case-insensitive.
 - A command that reached the plug-in before a UI `SynchronizationContext` was captured ran on a worker thread and could crash Navisworks (0x80131509). It now falls back to the UI `Dispatcher` (PR #1 by @huangting2015).
 
