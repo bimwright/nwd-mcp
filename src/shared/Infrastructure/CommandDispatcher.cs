@@ -24,7 +24,7 @@ public sealed class CommandDispatcher
         if (!cmd.IsReadOnly && ctx.ReadOnly)
             return NwdCommandResult.Fail(env.Id, "READ_ONLY", $"{env.Command} is a write command and the server is read-only", meta);
         if (env.Command == "send_code" && !ctx.EnableSendCode)
-            return NwdCommandResult.Fail(env.Id, "SEND_CODE_DISABLED", "send_code is disabled. Enable it on the server (--enable-send-code) and the plug-in (BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=1).", meta);
+            return NwdCommandResult.Fail(env.Id, "SEND_CODE_DISABLED", "send_code is disabled in this Navisworks session. Leave BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE unset, or set it to 1.", meta);
 
         try
         {

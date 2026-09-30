@@ -39,7 +39,11 @@ public sealed class ToolsListSnapshotTests
     [Fact] public void Counts()
     {
         Assert.Equal(33, ToolNamesFor(new NwdMcpConfig { Toolsets = new() { "all" }, EnableSendCode = true }).Length);
-        Assert.Equal(32, ToolNamesFor(new NwdMcpConfig()).Length);
+        Assert.Equal(33, ToolNamesFor(new NwdMcpConfig()).Length);
+        Assert.Equal(
+            ToolNamesFor(new NwdMcpConfig { Toolsets = new() { "all" } }),
+            ToolNamesFor(new NwdMcpConfig()));
+        Assert.Equal(32, ToolNamesFor(new NwdMcpConfig { EnableSendCode = false }).Length);
         Assert.Equal(21, ToolNamesFor(new NwdMcpConfig { Toolsets = new() { "all" }, ReadOnly = true, EnableSendCode = true }).Length);
     }
 }

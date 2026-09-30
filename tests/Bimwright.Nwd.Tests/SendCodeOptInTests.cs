@@ -15,8 +15,11 @@ public sealed class SendCodeOptInTests
                                 .Cast<McpServerToolAttribute>().FirstOrDefault()?.Name)
                   .Where(n => n is not null).Select(n => n!).ToArray();
 
-    [Fact] public void DefaultExcludesSendCode()
-        => Assert.DoesNotContain("nwd_send_code", Names(new NwdMcpConfig()));
+    [Fact] public void DefaultIncludesSendCode()
+        => Assert.Contains("nwd_send_code", Names(new NwdMcpConfig()));
+
+    [Fact] public void DisableSendCodeRemovesTheTool()
+        => Assert.DoesNotContain("nwd_send_code", Names(new NwdMcpConfig { EnableSendCode = false }));
 
     [Fact] public void EnableSendCodeIncludesIt()
         => Assert.Contains("nwd_send_code", Names(new NwdMcpConfig { Toolsets = new() { "all" }, EnableSendCode = true }));

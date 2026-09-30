@@ -10,7 +10,7 @@ namespace Bimwright.Nwd.Server;
 public sealed class NwdMcpConfig
 {
     public bool ReadOnly { get; set; }
-    public bool EnableSendCode { get; set; }
+    public bool EnableSendCode { get; set; } = true;
     public bool EnableToolBaker { get; set; } = true;
     public bool EnableAdaptiveBake { get; set; }
     public int TimeoutMs { get; set; } = 30000;
@@ -71,6 +71,7 @@ public sealed class NwdMcpConfig
             {
                 case "--read-only":            c.ReadOnly = NextBool(args, ref i, true); break;
                 case "--enable-send-code":     c.EnableSendCode = true; break;
+                case "--disable-send-code":    c.EnableSendCode = false; break;
                 case "--disable-toolbaker":    c.EnableToolBaker = false; break;
                 case "--enable-adaptive-bake": c.EnableAdaptiveBake = true; break;
                 case "--toolsets":             c.Toolsets = SplitCsv(Next(args, ref i)); break;

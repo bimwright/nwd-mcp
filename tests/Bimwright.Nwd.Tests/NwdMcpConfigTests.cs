@@ -38,8 +38,18 @@ public sealed class NwdMcpConfigTests
     }
 
     [Fact]
-    public void SendCodeIsDisabledByDefault()
-        => Assert.False(NwdMcpConfig.Load(Array.Empty<string>()).EnableSendCode);
+    public void SendCodeIsEnabledByDefault()
+    {
+        using var scope = new EnvScope().Set("BIMWRIGHT_NWD_ENABLE_SEND_CODE", null);
+        Assert.True(NwdMcpConfig.Load(Array.Empty<string>()).EnableSendCode);
+    }
+
+    [Fact]
+    public void DisableSendCodeFlagTurnsItOff()
+    {
+        using var scope = new EnvScope().Set("BIMWRIGHT_NWD_ENABLE_SEND_CODE", null);
+        Assert.False(NwdMcpConfig.Load(new[] { "--disable-send-code" }).EnableSendCode);
+    }
 
     [Fact]
     public void ToolBakerIsEnabledByDefault()
@@ -66,7 +76,7 @@ public sealed class NwdMcpConfigTests
 internal sealed class EnvScope : IDisposable
 {
     private readonly Dictionary<string, string?> previous = new(StringComparer.OrdinalIgnoreCase);
-    public EnvScope Set(string name, string value)
+    public EnvScope Set(string name, string? value)
     {
         previous[name] = Environment.GetEnvironmentVariable(name);
         Environment.SetEnvironmentVariable(name, value);

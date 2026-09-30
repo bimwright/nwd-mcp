@@ -5,11 +5,17 @@ namespace Bimwright.Nwd.Tests;
 public sealed class ToolsetFilterTests
 {
     [Fact]
-    public void DefaultSurfaceIncludesEverythingExceptCode()
+    public void DefaultSurfaceIncludesCode()
     {
         var set = ToolsetFilter.Resolve(new NwdMcpConfig());
-        foreach (var t in new[] { "meta","files","files_write","query","selection","selection_write","sets","view","view_write","visibility","toolbaker","toolbaker_write" })
+        foreach (var t in new[] { "meta","files","files_write","query","selection","selection_write","sets","view","view_write","visibility","code","toolbaker","toolbaker_write" })
             Assert.Contains(t, set);
+    }
+
+    [Fact]
+    public void DisableSendCodeRemovesCode()
+    {
+        var set = ToolsetFilter.Resolve(new NwdMcpConfig { EnableSendCode = false });
         Assert.DoesNotContain("code", set);
     }
 
@@ -28,6 +34,15 @@ public sealed class ToolsetFilterTests
             Assert.Contains(keep, set);
         foreach (var gone in new[] { "files_write","selection_write","view_write","visibility","code","toolbaker_write" })
             Assert.DoesNotContain(gone, set);
+    }
+
+    [Fact]
+    public void DefaultMatchesEveryKnownToolset()
+    {
+        var set = ToolsetFilter.Resolve(new NwdMcpConfig());
+        Assert.Equal(
+            ToolsetFilter.KnownToolsets.OrderBy(x => x, StringComparer.Ordinal),
+            set.OrderBy(x => x, StringComparer.Ordinal));
     }
 
     [Fact]

@@ -12,11 +12,11 @@ public static class ToolsetFilter
         "view", "view_write", "visibility", "code", "toolbaker", "toolbaker_write"
     };
 
-    // everything except "code" (send-code is opt-in)
+    // Empty --toolsets means every known toolset. code drops only when send-code is turned off.
     public static readonly string[] DefaultOn =
     {
         "meta", "files", "files_write", "query", "selection", "selection_write", "sets",
-        "view", "view_write", "visibility", "toolbaker", "toolbaker_write"
+        "view", "view_write", "visibility", "code", "toolbaker", "toolbaker_write"
     };
 
     public static readonly string[] WriteCapable =

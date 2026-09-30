@@ -37,12 +37,7 @@ public sealed class NwdPluginApplication : NWP.EventWatcherPlugin
         year = 2027;
 #endif
 
-        var enableSendCodeEnv = Environment.GetEnvironmentVariable("BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE");
-        var enableSendCode = !string.IsNullOrEmpty(enableSendCodeEnv) &&
-            (enableSendCodeEnv.Equals("1", StringComparison.OrdinalIgnoreCase) ||
-             enableSendCodeEnv.Equals("true", StringComparison.OrdinalIgnoreCase) ||
-             enableSendCodeEnv.Equals("yes", StringComparison.OrdinalIgnoreCase) ||
-             enableSendCodeEnv.Equals("on", StringComparison.OrdinalIgnoreCase));
+        var enableSendCode = PluginSendCodeEnabled();
 
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         var descriptorDir = Path.Combine(appData, "Bimwright", "nwd-mcp");
@@ -74,6 +69,26 @@ public sealed class NwdPluginApplication : NWP.EventWatcherPlugin
         NwdActivityToast.Stop();
         _server?.Dispose();
         _server = null;
+    }
+
+    /// <summary>
+    /// Unset means on. 0/false/no/off, or any other value, means off.
+    /// </summary>
+    private static bool PluginSendCodeEnabled()
+    {
+        var raw = Environment.GetEnvironmentVariable("BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE");
+        if (string.IsNullOrWhiteSpace(raw))
+            return true;
+        switch (raw.Trim().ToLowerInvariant())
+        {
+            case "1":
+            case "true":
+            case "yes":
+            case "on":
+                return true;
+            default:
+                return false;
+        }
     }
 
     private static void OnIdleToast(object sender, EventArgs e)
