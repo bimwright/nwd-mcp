@@ -48,15 +48,15 @@ Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最�
 
 ## 安装
 
-从 [GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest) 下载 `NwdMcp.Setup-*-win-x64.zip`。v0.1.2 含 Manage **2025** 插件。解压后运行 `install.ps1`，MCP 指向已安装的 `nwd-mcp.exe`。不要 `dotnet tool install -g Bimwright.Nwd.Server`。
+从 [GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest) 下载 `NwdMcp.Setup-*-win-x64.zip`。v1.0.0 含 Manage **2025** 插件。解压后运行 `install.ps1`，MCP 指向已安装的 `nwd-mcp.exe`。NuGet 包 `Bimwright.Nwd.Server` 只包含 server：不含 Navisworks 插件。请从安装 ZIP 安装；仅在已从 ZIP 安装好插件、且想把 server 用作全局 .NET 工具（命令 `bimwright-nwd`）时才使用 `dotnet tool install -g Bimwright.Nwd.Server`。
 
-常用开关：`--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`。`nwd_send_code` 默认开启。用 `--disable-send-code`（或 `BIMWRIGHT_NWD_ENABLE_SEND_CODE=0`）以及 Navisworks 进程上的 `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0` 关闭它——见 [安全配置](#安全配置)。
+常用开关：`--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`。
 
 ---
 
 ## 工具面
 
-默认启动注册全部 toolset，共 **33 个工具**，其中包括 `nwd_send_code`。`--disable-send-code` 为 **32 个**。`--read-only` 为 **21 个**。每个工具都使用 `nwd_*` 前缀。
+默认启动注册全部 toolset，共 **33 个工具**。`--read-only` 为 **21 个**。每个工具都使用 `nwd_*` 前缀。
 
 ### 1. 目标/元工具（3 个）
 
@@ -107,7 +107,7 @@ Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最�
 
 ### 8. 逃生舱脚本（1 个）
 
-* `nwd_send_code` *(写入，默认开启)* —— 在 Navisworks UI 线程上运行 C# 脚本，`doc` 为当前文档。最后一个表达式作为 `result` 返回，控制台输出作为 `stdout` 返回；脚本运行期间 Navisworks 会等待。
+* `nwd_send_code` *(写入)* —— 在 Navisworks UI 线程上运行 C# 脚本，`doc` 为当前文档。最后一个表达式作为 `result` 返回，控制台输出作为 `stdout` 返回；脚本运行期间 Navisworks 会等待。
 
 ### 9. ToolBaker 治理工具（6 个）
 
@@ -129,10 +129,6 @@ Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最�
 - 所有具备写入能力的 toolsets 都不会被注册。
 - 混合工具（例如 `nwd_execute_search_set`）会被修改为强制只读参数边界（`select=false`），并输出一个 `read_only_enforced` 响应标记。
 - 只读工具面恰好为 **21 个工具**。`nwd_list_recent_files` 保留；`nwd_open_file` 和 `nwd_import_model` 会被移除。
-
-### send_code
-
-`nwd_send_code` **默认开启**。`--read-only` 仍会移除它。在 server 上用 `--disable-send-code` 或 `BIMWRIGHT_NWD_ENABLE_SEND_CODE=0` 关闭，在 Navisworks 进程中用 `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0` 关闭。任一侧关闭都会阻止执行。`--enable-send-code` 或 `=1` 会重新打开。无法识别的值视为关闭。
 
 ### 工具调用记录（Record）
 

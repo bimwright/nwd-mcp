@@ -47,15 +47,15 @@ Navisworks は MCP コマンドごとに 1 枚のアクティビティカード�
 
 ## インストール
 
-[GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest) から `NwdMcp.Setup-*-win-x64.zip` を入手。v0.1.2 は Manage **2025** プラグイン入り。展開して `install.ps1`。MCP はインストール済み `nwd-mcp.exe` を指定。`dotnet tool install -g Bimwright.Nwd.Server` は使わないでください。
+[GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest) から `NwdMcp.Setup-*-win-x64.zip` を入手。v1.0.0 は Manage **2025** プラグイン入り。展開して `install.ps1`。MCP はインストール済み `nwd-mcp.exe` を指定。NuGet パッケージ `Bimwright.Nwd.Server` はサーバー専用で、Navisworks プラグインは含みません。セットアップ ZIP からインストールしてください。ZIP ですでにプラグインを導入済みで、サーバーをグローバル .NET ツール（コマンド `bimwright-nwd`）として使いたい場合のみ `dotnet tool install -g Bimwright.Nwd.Server` を使います。
 
-よく使うフラグ: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`。`nwd_send_code` は既定でオンです。`--disable-send-code`（または `BIMWRIGHT_NWD_ENABLE_SEND_CODE=0`）と、Navisworks プロセスの `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0` でオフにします（[セーフティ設定](#セーフティ設定)）。
+よく使うフラグ: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`。
 
 ---
 
 ## ツールサーフェス
 
-既定の起動ではすべてのツールセットを登録します。`nwd_send_code` を含む **33 のツール** です。`--disable-send-code` では **32**、`--read-only` では **21** です。すべてのツールは `nwd_*` プレフィックスを使用します。
+既定の起動ではすべてのツールセットを登録します。**33 のツール** です。`--read-only` では **21** です。すべてのツールは `nwd_*` プレフィックスを使用します。
 
 ### 1. ターゲット/メタツール (3)
 * `nwd_list_available_targets` — 検出されたすべてのアクティブな Navisworks セッションを一覧表示します。
@@ -98,7 +98,7 @@ Navisworks は MCP コマンドごとに 1 枚のアクティビティカード�
 * `nwd_unhide_all` *(書き込み)* — 非表示の全要素を表示状態にリセットします。
 
 ### 8. エスケープハッチスクリプティング (1)
-* `nwd_send_code` *(書き込み、既定でオン)* — Navisworks の UI スレッドで C# スクリプトを実行します（`doc` はアクティブなドキュメント）。最後の式を `result`、コンソール出力を `stdout` として返します。実行中 Navisworks は待機します。
+* `nwd_send_code` *(書き込み)* — Navisworks の UI スレッドで C# スクリプトを実行します（`doc` はアクティブなドキュメント）。最後の式を `result`、コンソール出力を `stdout` として返します。実行中 Navisworks は待機します。
 
 ### 9. ToolBaker 管理ツール (6)
 * `nwd_list_baked_tools` — 検証済みのコンパイル済み再利用可能ツールをすべて一覧表示します。
@@ -117,9 +117,6 @@ Navisworks は MCP コマンドごとに 1 枚のアクティビティカード�
 - 書き込み可能なツールセットはすべて登録から除外されます。
 - 混合ツール（`nwd_execute_search_set` など）は読み取り専用パラメータ範囲を強制するよう変更され（`select=false`）、`read_only_enforced` 応答マーカーを出力します。
 - 読み取り専用モードのツールサーフェスは正確に **21 ツール** です。`nwd_list_recent_files` は残り、`nwd_open_file` と `nwd_import_model` は外れます。
-
-### send_code
-`nwd_send_code` は**既定でオン**です。`--read-only` でもこのツールは外れます。サーバーでは `--disable-send-code` または `BIMWRIGHT_NWD_ENABLE_SEND_CODE=0`、Navisworks プロセスでは `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0` でオフにします。どちらか一方がオフなら実行されません。`--enable-send-code` または `=1` で再びオンになります。認識できない値はオフです。
 
 ### ツール呼び出しの記録（Record）
 **Record** は**既定でオフ**です。リボンのトグル、Status のチェック、`nwdmcp.config.json` の `recordCalls`、`BIMWRIGHT_NWD_RECORD_CALLS` は、すべてのツールに対する一つのスイッチです。オンの間、各呼び出しは設定ファイルの隣の `mcp-calls.jsonl` に追記されます。`send_code` のソースは書かれず、行には `code_length` と `code_sha256` が入ります。

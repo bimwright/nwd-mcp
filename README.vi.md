@@ -47,15 +47,15 @@ Navisworks hiện một thẻ cho các lệnh MCP. Thẻ bật sẵn và ở l�
 
 ## Cài đặt
 
-Tải [GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest) (`NwdMcp.Setup-*-win-x64.zip`). v0.1.2 gồm plugin Manage **2025**. `install.ps1` trong ZIP; trỏ MCP vào `nwd-mcp.exe` đã cài. Không `dotnet tool install -g Bimwright.Nwd.Server`.
+Tải [GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest) (`NwdMcp.Setup-*-win-x64.zip`). v1.0.0 gồm plugin Manage **2025**. `install.ps1` trong ZIP; trỏ MCP vào `nwd-mcp.exe` đã cài. Gói NuGet `Bimwright.Nwd.Server` chỉ chứa máy chủ: không có plug-in Navisworks. Cài từ ZIP cài đặt; chỉ dùng `dotnet tool install -g Bimwright.Nwd.Server` khi plug-in đã được cài từ ZIP và bạn muốn máy chủ dưới dạng .NET tool toàn cục (lệnh `bimwright-nwd`).
 
-Cờ: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`. `nwd_send_code` bật sẵn. Tắt bằng `--disable-send-code` (hoặc `BIMWRIGHT_NWD_ENABLE_SEND_CODE=0`) và `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0` trên tiến trình Navisworks — xem [Cấu hình an toàn](#cấu-hình-an-toàn).
+Cờ: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`.
 
 ---
 
 ## Danh Sách Công Cụ (Tool Surface)
 
-Một lần chạy mặc định đăng ký đủ mọi nhóm: **33 công cụ**, gồm `nwd_send_code`. `--disable-send-code` còn **32**. `--read-only` còn **21**. Mỗi công cụ dùng tiền tố `nwd_*`.
+Một lần chạy mặc định đăng ký đủ mọi nhóm: **33 công cụ**. `--read-only` còn **21**. Mỗi công cụ dùng tiền tố `nwd_*`.
 
 ### 1. Công cụ Quản lý / Meta (3)
 * `nwd_list_available_targets` — Liệt kê tất cả các phiên chạy Navisworks đang hoạt động.
@@ -98,7 +98,7 @@ Một lần chạy mặc định đăng ký đủ mọi nhóm: **33 công cụ**
 * `nwd_unhide_all` *(Ghi)* — Khôi phục trạng thái hiển thị của tất cả các phần tử bị ẩn.
 
 ### 8. Viết mã Kịch bản / Escape Hatch (1)
-* `nwd_send_code` *(Ghi, bật sẵn)* — Chạy script C# trên UI thread của Navisworks, với `doc` là tài liệu đang mở. Trả biểu thức cuối trong `result` và nội dung Console trong `stdout`; Navisworks chờ trong lúc script chạy.
+* `nwd_send_code` *(Ghi)* — Chạy script C# trên UI thread của Navisworks, với `doc` là tài liệu đang mở. Trả biểu thức cuối trong `result` và nội dung Console trong `stdout`; Navisworks chờ trong lúc script chạy.
 
 ### 9. Công cụ Đóng gói ToolBaker (6)
 * `nwd_list_baked_tools` — Liệt kê danh sách các công cụ tự viết đã được xác thực, biên dịch và đăng ký.
@@ -117,9 +117,6 @@ Có thể kích hoạt chế độ chỉ đọc nghiêm ngặt bằng cờ `--re
 - Các công cụ có khả năng ghi hoặc thay đổi mô hình sẽ bị ẩn hoàn toàn khỏi danh sách đăng ký MCP.
 - Các công cụ hỗn hợp (như `nwd_execute_search_set`) sẽ bị ép buộc tham số an toàn (`select=false`) và trả về cờ đánh dấu `read_only_enforced` trong phản hồi.
 - Tổng số lượng công cụ khả dụng ở chế độ chỉ đọc là đúng **21 công cụ**. `nwd_list_recent_files` vẫn còn; `nwd_open_file` và `nwd_import_model` bị gỡ.
-
-### send_code
-`nwd_send_code` **bật sẵn**. `--read-only` vẫn gỡ công cụ này. Tắt bằng `--disable-send-code` hoặc `BIMWRIGHT_NWD_ENABLE_SEND_CODE=0` trên máy chủ, và `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0` trong tiến trình Navisworks. Một trong hai phía tắt là lệnh không chạy. `--enable-send-code` hoặc `=1` bật lại. Giá trị không nhận ra được coi là tắt.
 
 ### Ghi lệnh (Record)
 **Record** **tắt sẵn**. Nút trên ribbon, ô trong cửa sổ Status, khóa `recordCalls` trong `nwdmcp.config.json` và `BIMWRIGHT_NWD_RECORD_CALLS` là cùng một công tắc cho mọi công cụ. Khi bật, mỗi lệnh được ghi thêm vào `mcp-calls.jsonl` cạnh file cấu hình đó. Mã `send_code` không được ghi; dòng nhật ký lưu `code_length` và `code_sha256`.

@@ -1,9 +1,10 @@
 # Changelog
 
-## Unreleased
+## v1.0.0 - 2026-09-30
+
+Client setup ZIP: `NwdMcp.Setup-v1.0.0-win-x64.zip` (self-contained `nwd-mcp.exe`). **Plugin year in this ZIP:** Navisworks Manage **2025**. Source still supports 2022–2027. NuGet `Bimwright.Nwd.Server` 1.0.0 is server-only (no plug-in).
 
 ### Changed
-- `nwd_send_code` is on by default. `--disable-send-code` or `BIMWRIGHT_NWD_ENABLE_SEND_CODE=0`, and `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0`, turn it off. `--read-only` still removes it.
 - Destructive tools now say what they change and how to undo it: `nwd_open_file` (discarding unsaved changes cannot be undone), `nwd_hide_items`, `nwd_unhide_all`, `nwd_run_baked_tool`, `nwd_dismiss_bake_suggestion`.
 - The server instructions end with a **Safety & permissions** paragraph: confirm exact files or items before discarding or changing user files, and do not retry a denied call through a baked tool or `nwd_send_code`.
 - The server installs at the fixed path `%LOCALAPPDATA%\Bimwright\nwd-mcp\server\current\nwd-mcp.exe` instead of a versioned folder, matching the other bimwright gateways. Reinstalls swap the whole `current` folder so no stale files remain; earlier `server\<version>` copies are kept and reported — repoint MCP client entries to the new path.
@@ -11,10 +12,10 @@
 ### Added
 - Response-size policy on every tool result (rvt-mcp parity, enforced server-side). Over 64 KiB adds a `_response_warning` field to the result JSON (stronger above 256 KiB); past the 1 MiB budget a read tool is rejected with `RESPONSE_TOO_LARGE`, while a completed write returns a compacted success (`ok`, `response_compacted`, `mutation_applied`) instead of a false failure. `nwd_send_code` and `nwd_run_baked_tool` report `mutation_applied: null` when the outcome is indeterminate.
 - `output=file` on `nwd_get_model_tree` (JSON), `nwd_batch_get_properties` (SQLite), `nwd_find_items_by_name` (NDJSON) and `nwd_run_baked_tool` (auto-detected format) writes the full result to `%LOCALAPPDATA%\Bimwright\nwd-mcp\spill` and returns its path, schema and a preview. `nwd_send_code` output above 1 MiB auto-spills the same way; there is no `output` parameter on it. Spill files are kept 24 hours, capped at 50, and removed on uninstall. A spill that cannot be written reports `SPILL_FAILED` with `operation_completed` rather than pretending the call failed.
-- MCP tool annotations on every tool except `nwd_send_code`: `readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint=false`. Claude Desktop can allow the 23 read tools once; `nwd_open_file`, `nwd_hide_items`, `nwd_unhide_all`, `nwd_run_baked_tool`, and `nwd_dismiss_bake_suggestion` always ask. **Migration:** no parameters or defaults changed. Clients that honor annotations may now ask before those five tools.
-- README **Permissions & auto mode** section with a Claude Code `permissions.allow` list of the read-only tools, and a warning against `mcp__nwd-mcp__*`.
+- MCP tool annotations on every tool except `nwd_send_code` (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint=false`) for Claude Code's permission auto mode, and Claude Desktop: the 23 read tools can be allowed once, while `nwd_open_file`, `nwd_hide_items`, `nwd_unhide_all`, `nwd_run_baked_tool`, and `nwd_dismiss_bake_suggestion` always ask. README **Permissions & auto mode** has the `permissions.allow` list of the read-only tools and a warning against `mcp__nwd-mcp__*`. **Migration:** no parameters or defaults changed.
 - **Record** switch for every tool call, off by default. The ribbon, Status window, `recordCalls` in `nwdmcp.config.json`, and `BIMWRIGHT_NWD_RECORD_CALLS` share it. While on, calls append to `%LOCALAPPDATA%\Bimwright\nwd-mcp\mcp-calls.jsonl`. `send_code` stores length and SHA-256 instead of the script.
 - `nwd_list_recent_files`, `nwd_open_file`, and `nwd_import_model`. A default launch registers every toolset (33 tools). Open refuses unsaved changes unless `discard_changes` is true. Import `append` adds a model; `merge` combines it. Open and import wait up to 5 minutes.
+- Live benchmark of all 33 tools on Navisworks Manage 2025 (duration, result size, estimated tokens, size policy, spill-to-file): `docs/benchmarks/2026-09-30-navisworks-manage-2025.md`.
 
 ### Fixed
 - Item ids below a model root were empty, so `nwd_get_model_tree`, `nwd_find_items`, `nwd_find_items_by_name`, and `nwd_get_current_selection` returned no usable ids and `nwd_hide_items` / `nwd_get_item_properties` could not target them. Ids now look like `0:0:6:3`, and each parent's children are numbered once per call: on a 10,717-item model, `nwd_get_model_tree` depth 6 / 5,000 nodes takes ~0.1 s and `nwd_find_items_by_name` 500 hits ~0.3 s.

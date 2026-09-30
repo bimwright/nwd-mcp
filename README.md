@@ -49,7 +49,7 @@ Navisworks shows one activity card for MCP commands. Toasts are on by default an
 
 ## Install
 
-Download the client setup ZIP from [GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest). It includes a self-contained MCP server and the Navisworks Manage plugin years compiled for that release (see `manifest.json`). The v0.1.2 ZIP ships **2025** only. Other years: build from source against that year’s Manage SDK.
+Download the client setup ZIP from [GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest). It includes a self-contained MCP server and the Navisworks Manage plugin years compiled for that release (see `manifest.json`). The v1.0.0 ZIP ships **2025** only. Other years: build from source against that year’s Manage SDK.
 
 ```powershell
 $tag = (Invoke-RestMethod https://api.github.com/repos/bimwright/nwd-mcp/releases/latest).tag_name
@@ -64,17 +64,17 @@ powershell -ExecutionPolicy Bypass -File "$dir\install.ps1"
 
 Deploys `%APPDATA%\Autodesk\ApplicationPlugins\Bimwright.Nwd.bundle\` and `nwd-mcp.exe` at the fixed path `%LOCALAPPDATA%\Bimwright\nwd-mcp\server\current\`. Restart Navisworks Manage. Point your MCP client at that `nwd-mcp.exe` path. Pin a year with `--target 2025` or `BIMWRIGHT_NWD_TARGET=2025` when multiple instances may run.
 
-Do **not** `dotnet tool install -g Bimwright.Nwd.Server` — that is not the supported client install.
+The NuGet package `Bimwright.Nwd.Server` is server-only: it has no Navisworks plug-in. Install from the setup ZIP; use `dotnet tool install -g Bimwright.Nwd.Server` only if the plug-in is already installed from the ZIP and you want the server as a global .NET tool (command `bimwright-nwd`).
 
 **Developer:** `dotnet build` a `plugin-navisNN` project, then `pwsh scripts\install-bundle.ps1 -Year 2025 -Configuration Release`.
 
-Useful flags after wiring: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`. `nwd_send_code` is on unless you pass `--disable-send-code` (or `BIMWRIGHT_NWD_ENABLE_SEND_CODE=0`) and set `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0` on the Navisworks process (see [Safety](#safety-configurations)).
+Useful flags after wiring: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`.
 
 ---
 
 ## Tool Surface
 
-A default launch registers every toolset: **33 tools**, including `nwd_send_code`. `--disable-send-code` leaves **32**. `--read-only` leaves **21**. Every tool uses the `nwd_*` prefix.
+A default launch registers every toolset: **33 tools**. `--read-only` leaves **21**. Every tool uses the `nwd_*` prefix.
 
 ### 1. Target/Meta Tools (3)
 * `nwd_list_available_targets` — List all active discovered Navisworks sessions.
@@ -117,7 +117,7 @@ A default launch registers every toolset: **33 tools**, including `nwd_send_code
 * `nwd_unhide_all` *(Write)* — Reset all hidden elements to visible.
 
 ### 8. Escape Hatch Scripting (1)
-* `nwd_send_code` *(Write, on by default)* — Run a C# script on the Navisworks UI thread with `doc` as the active document. Returns the last expression as `result` and Console output as `stdout`; Navisworks waits while it runs.
+* `nwd_send_code` *(Write)* — Run a C# script on the Navisworks UI thread with `doc` as the active document. Returns the last expression as `result` and Console output as `stdout`; Navisworks waits while it runs.
 
 ### 9. ToolBaker Governed Tools (6)
 * `nwd_list_baked_tools` — List all verified compiled reusable tools.
@@ -136,9 +136,6 @@ Strict read-only mode can be enforced via the `--read-only` flag or the `BIMWRIG
 - All write-capable toolsets are omitted from registration.
 - Mixed tools (e.g. `nwd_execute_search_set`) are modified to force read-only parameter bounds (`select=false`) and output a `read_only_enforced` response marker.
 - The total read-only tool surface is exactly **21 tools**. `nwd_list_recent_files` stays; `nwd_open_file` and `nwd_import_model` do not.
-
-### Send code
-`nwd_send_code` is **on by default**. `--read-only` still removes it. Turn it off with `--disable-send-code` or `BIMWRIGHT_NWD_ENABLE_SEND_CODE=0` on the server, and `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0` in the Navisworks process. Either side off blocks execution. `--enable-send-code` or `=1` turns it back on. An unrecognized value is off.
 
 ### Tool-call record
 **Record** is **off by default**. The ribbon toggle, the Status checkbox, `recordCalls` in `nwdmcp.config.json`, and `BIMWRIGHT_NWD_RECORD_CALLS` share one switch for every tool. While it is on, each call is appended to `mcp-calls.jsonl` next to that config file. The `send_code` script is not written; the line stores `code_length` and `code_sha256`.
