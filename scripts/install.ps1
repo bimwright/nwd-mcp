@@ -16,7 +16,7 @@ $setupVersion = 'dev'
 if (Test-Path (Join-Path $PSScriptRoot 'manifest.json')) {
     $setupVersion = ((Get-Content -Raw (Join-Path $PSScriptRoot 'manifest.json')) | ConvertFrom-Json).version
 }
-$serverInstallRoot = Join-Path $env:LOCALAPPDATA "Bimwright\nwd-mcp\server\$setupVersion"
+$serverInstallRoot = Join-Path $env:LOCALAPPDATA 'Bimwright\nwd-mcp\server\current'
 
 if ($Uninstall) {
     if ($PSCmdlet.ShouldProcess($targetRoot, 'Remove Navisworks bundle')) {
@@ -45,11 +45,40 @@ if ($PSCmdlet.ShouldProcess($targetRoot, 'Install nwd-mcp plugin bundle')) {
 $exeSrc = Join-Path $PSScriptRoot 'server\nwd-mcp.exe'
 if (Test-Path $exeSrc) {
     if ($PSCmdlet.ShouldProcess($serverInstallRoot, 'Install nwd-mcp.exe')) {
-        New-Item -ItemType Directory -Path $serverInstallRoot -Force | Out-Null
-        Copy-Item (Join-Path $PSScriptRoot 'server\*') $serverInstallRoot -Force
+        # Replace the whole current\ folder: stage beside it, swap with two
+        # renames, restore the backup on failure. A plain copy would leave
+        # stale files from the previous release behind.
+        $serverParent = Split-Path -Parent $serverInstallRoot
+        New-Item -ItemType Directory -Path $serverParent -Force | Out-Null
+        $stageDir = $serverInstallRoot + '.staging-' + [guid]::NewGuid().ToString('N')
+        $backupDir = $serverInstallRoot + '.backup-' + [guid]::NewGuid().ToString('N')
+        New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
+        Copy-Item (Join-Path $PSScriptRoot 'server\*') $stageDir -Recurse -Force
+        $backupMoved = $false
+        try {
+            if (Test-Path -LiteralPath $serverInstallRoot) {
+                Move-Item -LiteralPath $serverInstallRoot -Destination $backupDir
+                $backupMoved = $true
+            }
+            Move-Item -LiteralPath $stageDir -Destination $serverInstallRoot
+        } catch {
+            if ($backupMoved -and -not (Test-Path -LiteralPath $serverInstallRoot)) {
+                Move-Item -LiteralPath $backupDir -Destination $serverInstallRoot
+            }
+            Remove-Item -LiteralPath $stageDir -Recurse -Force -ErrorAction SilentlyContinue
+            throw
+        }
+        if ($backupMoved) { Remove-Item -LiteralPath $backupDir -Recurse -Force }
         $exe = Join-Path $serverInstallRoot 'nwd-mcp.exe'
         Write-Host "Installed server: $exe"
         Write-Host "MCP command: $exe"
+        # Older installers wrote versioned copies (server\<version>\). Keep them,
+        # but tell the user clients should point at the fixed current path.
+        $versioned = @(Get-ChildItem -LiteralPath $serverParent -Directory -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -ne 'current' })
+        if ($versioned.Count) {
+            Write-Host ("Kept earlier server copies: {0}. Repoint MCP client entries to {1}" -f ($versioned.Name -join ', '), $exe)
+        }
     }
 }
 
