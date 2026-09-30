@@ -11,10 +11,6 @@ public static class ModelItemHelper
     public static string GetModelItemId(ModelItem item, Document doc)
     {
         if (item == null || doc == null) return string.Empty;
-        var model = item.Model;
-        if (model == null) return string.Empty;
-        int modelIndex = doc.Models.IndexOf(model);
-        if (modelIndex < 0) return string.Empty;
 
         var indexes = new List<int>();
         var current = item;
@@ -22,10 +18,16 @@ public static class ModelItemHelper
         {
             var parent = current.Parent;
             int childIndex = IndexOfChild(parent, current);
-            if (childIndex < 0) break;
+            if (childIndex < 0) return string.Empty;
             indexes.Insert(0, childIndex);
             current = parent;
         }
+
+        // ModelItem.Model is only set on a model's root item, so resolve it after the walk.
+        var model = current.Model;
+        if (model == null) return string.Empty;
+        int modelIndex = doc.Models.IndexOf(model);
+        if (modelIndex < 0) return string.Empty;
         return modelIndex + ":" + string.Join(":", indexes);
     }
 
@@ -43,6 +45,7 @@ public static class ModelItemHelper
 
         for (int i = 1; i < parts.Length; i++)
         {
+            if (parts[i].Length == 0) continue; // a model root is "N:"
             if (!int.TryParse(parts[i], out int childIndex)) return null;
             var next = ChildAt(current, childIndex);
             if (next == null) return null;
@@ -57,7 +60,8 @@ public static class ModelItemHelper
         int index = 0;
         foreach (ModelItem candidate in parent.Children)
         {
-            if (ReferenceEquals(candidate, child))
+            // The API hands out a new wrapper per enumeration; compare by value.
+            if (candidate.Equals(child))
                 return index;
             index++;
         }
