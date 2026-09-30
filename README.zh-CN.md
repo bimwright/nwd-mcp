@@ -38,7 +38,7 @@ Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最�
 | 组件 | 状态 |
 |---|---|
 | MCP gateway server（.NET 8） | ✅ 编译无警告（Debug + Release） |
-| 单元测试（89 个 xUnit） | ✅ 全部通过 |
+| 单元测试（142 个 xUnit） | ✅ 全部通过 |
 | Plug-in handler 实现 | ✅ 已在真实 Navisworks Manage 会话中验证 |
 | Plug-in 项目（net48） | ✅ 可针对 Navisworks Manage SDK 编译 |
 
