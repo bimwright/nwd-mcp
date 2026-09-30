@@ -92,6 +92,8 @@ public sealed class PluginClient
         if (await Task.WhenAny(readTask, Task.Delay(wait, ct)) != readTask)
             throw new NwdGatewayException("TIMEOUT", $"request {command} timed out after {wait} ms");
         var response = await readTask ?? throw new NwdGatewayException("TARGET_UNAVAILABLE", "plug-in closed the connection");
+        if (!ResponseSizeGuard.Check(response, _config.MaxResponseBytes, out var tooLarge))
+            throw new NwdGatewayException(tooLarge!.Code, tooLarge.Message);
 
         var result = JsonConvert.DeserializeObject<NwdCommandResult>(response)
                      ?? throw new NwdGatewayException("API_ERROR", "unparseable response");

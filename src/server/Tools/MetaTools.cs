@@ -15,18 +15,18 @@ public sealed class MetaTools
 
     [McpServerTool(Name = "nwd_list_available_targets", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false), Description("List live Navisworks Manage instances (target id, year, document).")]
     public string ListAvailableTargets()
-        => JsonConvert.SerializeObject(_client.ListTargets().Select(t => new { t.TargetId, t.NavisworksYear, t.DocumentTitle }), Formatting.Indented);
+        => JsonConvert.SerializeObject(_client.ListTargets().Select(t => new { t.TargetId, t.NavisworksYear, t.DocumentTitle }), Formatting.None);
 
     [McpServerTool(Name = "nwd_get_current_target", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false), Description("Show which Navisworks instance the gateway is currently pointed at.")]
     public string GetCurrentTarget()
     {
         var t = _client.CurrentTarget;
         return t is null
-            ? JsonConvert.SerializeObject(new { ok = false, error = new { code = "NO_TARGET", message = "no live target" } }, Formatting.Indented)
-            : JsonConvert.SerializeObject(new { t.TargetId, t.NavisworksYear, t.DocumentTitle }, Formatting.Indented);
+            ? JsonConvert.SerializeObject(new { ok = false, error = new { code = "NO_TARGET", message = "no live target" } }, Formatting.None)
+            : JsonConvert.SerializeObject(new { t.TargetId, t.NavisworksYear, t.DocumentTitle }, Formatting.None);
     }
 
     [McpServerTool(Name = "nwd_switch_target", ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false), Description("Point the gateway at a specific target id from nwd_list_available_targets. Use 4-digit years (2022..2027), never R-codes.")]
     public string SwitchTarget(string targetId)
-        => JsonConvert.SerializeObject(new { ok = _client.SwitchTarget(targetId), target_id = targetId }, Formatting.Indented);
+        => JsonConvert.SerializeObject(new { ok = _client.SwitchTarget(targetId), target_id = targetId }, Formatting.None);
 }

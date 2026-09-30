@@ -19,7 +19,8 @@ builder.Services.AddSingleton<PluginClient>();
 
 var mcp = builder.Services
     .AddMcpServer(o => o.ServerInstructions = ServerInstructions.Text)
-    .WithStdioServerTransport();
+    .WithStdioServerTransport()
+    .WithRequestFilters(f => f.AddCallToolFilter(next => async (request, ct) => ToolErrorFlag.Apply(await next(request, ct))));
 mcp = Program.RegisterToolsets(mcp, Program.ResolveToolTypesForRegistration(config));
 
 await builder.Build().RunAsync();

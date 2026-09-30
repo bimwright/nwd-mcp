@@ -116,6 +116,28 @@ public sealed class ToolShellTests
     }
 
     [Fact]
+    public async Task ServerRejectsAReplyOverMaxResponseBytes()
+    {
+        using var plugin = new FakePlugin
+        {
+            Reply = env => NwdCommandResult.Success(env.Id, new JObject { ["roots"] = new string('x', 4096) }, new NwdResponseMeta())
+        };
+        plugin.Config.MaxResponseBytes = 1024;
+
+        var result = JObject.Parse(await new QueryTools(plugin.Client).GetModelTree(30, 1000000, Ct));
+
+        Assert.Equal("RESPONSE_TOO_LARGE", (string?)result["error"]?["code"]);
+    }
+
+    [Fact]
+    public async Task ToolResultsAreCompactJson()
+    {
+        using var plugin = new FakePlugin();
+        var text = await new QueryTools(plugin.Client).HealthCheck(Ct);
+        Assert.DoesNotContain("\n", text);
+    }
+
+    [Fact]
     public async Task NoLiveTargetFailsWithoutThrowing()
     {
         using var plugin = new FakePlugin();

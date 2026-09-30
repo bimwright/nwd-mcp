@@ -15,7 +15,7 @@ public sealed class CodeTools
     private readonly PluginClient _client;
     public CodeTools(PluginClient client) => _client = client;
 
-    [McpServerTool(Name = "nwd_send_code"), Description("Execute a C# code snippet in-process within the Navisworks plug-in context.")]
+    [McpServerTool(Name = "nwd_send_code"), Description("Run a C# script inside Navisworks on its UI thread. doc is the active Document; the value of the last expression comes back as result and Console output as stdout. Navisworks is blocked while the script runs, so keep it short and do not await.")]
     public Task<string> SendCode(string code, CancellationToken ct)
         => Call("send_code", new JObject { ["code"] = code }, ct);
 
@@ -24,11 +24,11 @@ public sealed class CodeTools
         try
         {
             var data = await _client.SendAsync(command, p, ct);
-            return JsonConvert.SerializeObject(data, Formatting.Indented);
+            return JsonConvert.SerializeObject(data, Formatting.None);
         }
         catch (NwdGatewayException ex)
         {
-            return JsonConvert.SerializeObject(new { ok = false, error = new { code = ex.Code, message = ex.Message } }, Formatting.Indented);
+            return JsonConvert.SerializeObject(new { ok = false, error = new { code = ex.Code, message = ex.Message } }, Formatting.None);
         }
     }
 }

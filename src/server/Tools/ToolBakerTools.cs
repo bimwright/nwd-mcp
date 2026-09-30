@@ -37,7 +37,7 @@ public sealed class ToolBakerTools
                 created_at = record.CreatedAt
             })
             .ToArray();
-        return JsonConvert.SerializeObject(new { tools }, Formatting.Indented);
+        return JsonConvert.SerializeObject(new { tools }, Formatting.None);
     }
 
     [McpServerTool(Name = "nwd_list_bake_suggestions", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false), Description("List active suggestions generated from recurrent workflows.")]
@@ -82,6 +82,6 @@ public sealed class ToolBakerTools
         {
             ok = true,
             issue = new { title, body }
-        }, Formatting.Indented);
+        }, Formatting.None);
     }
 }

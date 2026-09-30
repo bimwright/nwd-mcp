@@ -33,11 +33,11 @@ public sealed class QueryTools
     public Task<string> BatchGetProperties(string[] itemIds, int maxItems = 200, CancellationToken ct = default)
         => Call("batch_get_properties", new JObject { ["item_ids"] = new JArray(itemIds), ["max_items"] = maxItems }, ct);
 
-    [McpServerTool(Name = "nwd_find_items", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false), Description("Find items by property/category/name filters.")]
+    [McpServerTool(Name = "nwd_find_items", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false), Description("Find items with the Navisworks search engine. filtersJson is one filter or an array: {category (default Item), property (default Name), operator equals|contains|startsWith|endsWith (case-insensitive except equals), value}. Returns the top-most matching items only; children of a match are not listed. Use nwd_find_items_by_name to list every item whose name matches.")]
     public Task<string> FindItems(string filtersJson, int maxItems = 500, CancellationToken ct = default)
         => Call("find_items", new JObject { ["filters"] = JToken.Parse(filtersJson), ["max_items"] = maxItems }, ct);
 
-    [McpServerTool(Name = "nwd_find_items_by_name", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false), Description("Find items whose display name contains or equals a string.")]
+    [McpServerTool(Name = "nwd_find_items_by_name", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false), Description("Find every item (at any depth) whose display name contains, or with exact=true equals, a string, case-insensitive.")]
     public Task<string> FindItemsByName(string name, bool exact = false, int maxItems = 500, CancellationToken ct = default)
         => Call("find_items_by_name", new JObject { ["name"] = name, ["exact"] = exact, ["max_items"] = maxItems }, ct);
 
@@ -49,11 +49,11 @@ public sealed class QueryTools
         try
         {
             var data = await _client.SendAsync(command, p, ct);
-            return JsonConvert.SerializeObject(data, Formatting.Indented);
+            return JsonConvert.SerializeObject(data, Formatting.None);
         }
         catch (NwdGatewayException ex)
         {
-            return JsonConvert.SerializeObject(new { ok = false, error = new { code = ex.Code, message = ex.Message } }, Formatting.Indented);
+            return JsonConvert.SerializeObject(new { ok = false, error = new { code = ex.Code, message = ex.Message } }, Formatting.None);
         }
     }
 }
