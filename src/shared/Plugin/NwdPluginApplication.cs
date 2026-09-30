@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using Bimwright.Nwd.Shared.Config;
+using Bimwright.Nwd.Shared.Logging;
 using Bimwright.Nwd.Shared.Transport;
 using Bimwright.Nwd.Shared.Infrastructure;
 using NW = Autodesk.Navisworks.Api;
@@ -47,6 +49,7 @@ public sealed class NwdPluginApplication : NWP.EventWatcherPlugin
 
         var options = new PluginOptions(year, enableSendCode, 0);
         _server = new TcpTransportServer(options, descriptorDir);
+        NwdCallLog.SetEnabled(PluginSettings.LoadRecordCalls());
         NwdActivityToast.Attach(_server, year);
 
         var handlers = NwdCommandRegistry.Build(options);

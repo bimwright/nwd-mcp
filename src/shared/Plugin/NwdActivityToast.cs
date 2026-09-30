@@ -1,6 +1,7 @@
 using System;
 using System.Windows.Interop;
 using Bimwright.Nwd.Shared.Config;
+using Bimwright.Nwd.Shared.Logging;
 using Bimwright.Nwd.Shared.Transport;
 using Bimwright.Nwd.Shared.Views;
 using Bimwright.Nwd.Shared.Views.Toast;
@@ -25,6 +26,8 @@ internal static class NwdActivityToast
     public static bool Enabled => _enabled;
 
     public static bool ShowBranding => _notifier?.ShowBranding ?? PluginSettings.LoadShowBranding();
+
+    public static bool RecordCalls => NwdCallLog.Enabled;
 
     public static void Attach(TcpTransportServer server, int year)
     {
@@ -101,6 +104,19 @@ internal static class NwdActivityToast
             return;
         var persisted = PluginSettings.SaveShowBranding(show);
         _notifier?.SetShowBranding(show);
+        if (!persisted)
+            _notifier?.OnPreferenceSaveFailed();
+    }
+
+    public static void ToggleRecord()
+    {
+        ApplyRecord(!RecordCalls);
+    }
+
+    public static void ApplyRecord(bool record)
+    {
+        var persisted = PluginSettings.SaveRecordCalls(record);
+        NwdCallLog.SetEnabled(record);
         if (!persisted)
             _notifier?.OnPreferenceSaveFailed();
     }

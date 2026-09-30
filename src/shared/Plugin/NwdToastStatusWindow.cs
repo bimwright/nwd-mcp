@@ -12,6 +12,7 @@ internal sealed class NwdToastStatusWindow : Window
 {
     private readonly CheckBox _toastEnabled;
     private readonly CheckBox _showBranding;
+    private readonly CheckBox _recordCalls;
     private readonly ComboBox _idle;
     private readonly Button _apply;
     private int _savedIdle;
@@ -32,6 +33,7 @@ internal sealed class NwdToastStatusWindow : Window
         _savedIdle = PluginSettings.LoadToastIdleSeconds();
         _toastEnabled = new CheckBox { Content = L.T("settings.toast.enabled"), Margin = new Thickness(0, 0, 0, 4) };
         _showBranding = new CheckBox { Content = L.T("settings.toast.brand"), Margin = new Thickness(0, 8, 0, 4) };
+        _recordCalls = new CheckBox { Content = L.T("settings.record"), Margin = new Thickness(0, 8, 0, 4) };
         _idle = new ComboBox { Margin = new Thickness(0, 4, 0, 8), IsEditable = false };
         foreach (var seconds in PluginSettings.ToastIdleChoices)
         {
@@ -60,6 +62,8 @@ internal sealed class NwdToastStatusWindow : Window
         root.Children.Add(Help(L.T("settings.toast.enabled.help")));
         root.Children.Add(_showBranding);
         root.Children.Add(Help(L.T("settings.toast.brand.help")));
+        root.Children.Add(_recordCalls);
+        root.Children.Add(Help(L.T("settings.record.help")));
         root.Children.Add(new TextBlock { Text = L.T("settings.toast.idle"), Margin = new Thickness(0, 8, 0, 0) });
         root.Children.Add(_idle);
         root.Children.Add(Help(L.T("settings.toast.idle.help")));
@@ -68,6 +72,7 @@ internal sealed class NwdToastStatusWindow : Window
 
         _toastEnabled.IsChecked = NwdActivityToast.Enabled;
         _showBranding.IsChecked = NwdActivityToast.ShowBranding;
+        _recordCalls.IsChecked = NwdActivityToast.RecordCalls;
         SyncBrandEnabled();
         _ready = true;
 
@@ -75,6 +80,8 @@ internal sealed class NwdToastStatusWindow : Window
         _toastEnabled.Unchecked += (_, _) => OnToastToggled();
         _showBranding.Checked += (_, _) => OnBrandToggled();
         _showBranding.Unchecked += (_, _) => OnBrandToggled();
+        _recordCalls.Checked += (_, _) => OnRecordToggled();
+        _recordCalls.Unchecked += (_, _) => OnRecordToggled();
         _idle.SelectionChanged += (_, _) => SyncApply();
         _apply.Click += (_, _) => ApplyIdle();
         close.Click += (_, _) => Close();
@@ -105,6 +112,13 @@ internal sealed class NwdToastStatusWindow : Window
         if (!_ready || !_showBranding.IsEnabled)
             return;
         NwdActivityToast.ApplyBranding(_showBranding.IsChecked == true);
+    }
+
+    private void OnRecordToggled()
+    {
+        if (!_ready)
+            return;
+        NwdActivityToast.ApplyRecord(_recordCalls.IsChecked == true);
     }
 
     private void SyncBrandEnabled()

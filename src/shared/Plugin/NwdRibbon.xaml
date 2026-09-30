@@ -10,6 +10,8 @@
             Text="Toasts" Size="Large" ShowText="True" ShowImage="False" Orientation="Vertical" />
         <nw:NWRibbonToggleButton x:Uid="ID_Bimwright_Nwd_ToastBrand" Id="ID_Bimwright_Nwd_ToastBrand"
             Text="Toast Brand" Size="Large" ShowText="True" ShowImage="False" Orientation="Vertical" />
+        <nw:NWRibbonToggleButton x:Uid="ID_Bimwright_Nwd_Record" Id="ID_Bimwright_Nwd_Record"
+            Text="Record" Size="Large" ShowText="True" ShowImage="False" Orientation="Vertical" />
         <nw:NWRibbonButton x:Uid="ID_Bimwright_Nwd_Status" Id="ID_Bimwright_Nwd_Status"
             Text="Status" Size="Large" ShowText="True" ShowImage="False" Orientation="Vertical" />
       </RibbonPanelSource>

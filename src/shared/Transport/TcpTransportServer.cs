@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using Bimwright.Nwd.Shared.Infrastructure;
+using Bimwright.Nwd.Shared.Logging;
 using Bimwright.Nwd.Shared.Plugin;
 using Bimwright.Nwd.Shared.Views.Toast;
 using Newtonsoft.Json;
@@ -110,6 +111,8 @@ public sealed class TcpTransportServer : IDisposable
                 {
                     string responseJson = "";
                     string? commandName = null;
+                    string? paramsJson = null;
+                    var clock = Stopwatch.StartNew();
                     try
                     {
                         var env = JsonConvert.DeserializeObject<NwdCommandEnvelope>(line);
@@ -124,6 +127,7 @@ public sealed class TcpTransportServer : IDisposable
                         else
                         {
                             commandName = env.Command;
+                            paramsJson = env.Params != null ? env.Params.ToString(Formatting.None) : null;
                             NwdCommandResult? result = null;
                             void Dispatch()
                             {
@@ -148,15 +152,19 @@ public sealed class TcpTransportServer : IDisposable
                             TouchLastCommand();
                             responseJson = JsonConvert.SerializeObject(result);
                             NotifyCompleted(commandName, responseJson, result != null && result.Ok, result?.Error?.Message);
+                            clock.Stop();
+                            NwdCallLog.Record(commandName, paramsJson, result != null && result.Ok, clock.ElapsedMilliseconds, result?.Error?.Message, responseJson);
                         }
                     }
                     catch (Exception ex)
                     {
+                        clock.Stop();
                         responseJson = ErrorJson("API_ERROR", $"dispatch error: {ex.Message}");
                         if (commandName != null)
                         {
                             TouchLastCommand();
                             NotifyCompleted(commandName, responseJson, false, ex.Message);
+                            NwdCallLog.Record(commandName, paramsJson, false, clock.ElapsedMilliseconds, ex.Message, responseJson);
                         }
                     }
                     writer.WriteLine(responseJson);

@@ -11,7 +11,9 @@ namespace Bimwright.Nwd.Shared.Config;
 public static class PluginSettings
 {
     public const string EnvEnableToast = "BIMWRIGHT_NWD_ENABLE_TOAST";
+    public const string EnvRecordCalls = "BIMWRIGHT_NWD_RECORD_CALLS";
     public const bool DefaultEnableToast = true;
+    public const bool DefaultRecordCalls = false;
     public const int DefaultToastIdleSeconds = 20;
     public const bool DefaultShowBranding = false;
     public static readonly int[] ToastIdleChoices = { 10, 20, 30, 60 };
@@ -65,6 +67,14 @@ public static class PluginSettings
         return ReadShowBranding(FilePath) ?? DefaultShowBranding;
     }
 
+    public static bool LoadRecordCalls()
+    {
+        var env = ParseBool(Environment.GetEnvironmentVariable(EnvRecordCalls));
+        if (env.HasValue)
+            return env.Value;
+        return ReadRecordCalls(FilePath) ?? DefaultRecordCalls;
+    }
+
     public static bool SaveEnableToast(bool enabled)
     {
         return TryUpdate(root => root["enableToast"] = enabled);
@@ -80,6 +90,11 @@ public static class PluginSettings
     public static bool SaveShowBranding(bool show)
     {
         return TryUpdate(root => root["showBranding"] = show);
+    }
+
+    public static bool SaveRecordCalls(bool record)
+    {
+        return TryUpdate(root => root["recordCalls"] = record);
     }
 
     private static bool TryUpdate(Action<JObject> mutate)
@@ -142,6 +157,11 @@ public static class PluginSettings
         }
     }
 
+    internal static bool? ReadRecordCalls(string path)
+    {
+        return ReadBool(path, "recordCalls");
+    }
+
     internal static bool? ReadEnableToast(string path)
     {
         try
@@ -149,6 +169,20 @@ public static class PluginSettings
             if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
                 return null;
             return JObject.Parse(File.ReadAllText(path))["enableToast"]?.Value<bool?>();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static bool? ReadBool(string path, string name)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+                return null;
+            return JObject.Parse(File.ReadAllText(path))[name]?.Value<bool?>();
         }
         catch
         {

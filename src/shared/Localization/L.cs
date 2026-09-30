@@ -47,6 +47,8 @@ public static class L
         ["settings.toast.brand.help"] = "Appears when you point at the activity card. Applies immediately and is remembered after Navisworks restarts.",
         ["settings.toast.idle"] = "Idle duration",
         ["settings.toast.idle.help"] = "Hides the card when no new results arrive. Hover to keep it open. Applies from the next activity.",
+        ["settings.record"] = "Record tool calls",
+        ["settings.record.help"] = "Appends every tool call to mcp-calls.jsonl. Off until you turn it on. Applies immediately and is remembered after Navisworks restarts.",
         ["settings.toast.idle.seconds"] = "{seconds} seconds",
         ["settings.apply"] = "Apply",
         ["settings.close"] = "Close",

@@ -179,6 +179,7 @@ public sealed class PluginSettingsToastTests : IDisposable
 {
     private readonly string _dir;
     private readonly string? _previousEnv;
+    private readonly string? _previousRecordEnv;
 
     public PluginSettingsToastTests()
     {
@@ -186,7 +187,9 @@ public sealed class PluginSettingsToastTests : IDisposable
         Directory.CreateDirectory(_dir);
         PluginSettings.FilePathOverride = Path.Combine(_dir, "nwdmcp.config.json");
         _previousEnv = Environment.GetEnvironmentVariable(PluginSettings.EnvEnableToast);
+        _previousRecordEnv = Environment.GetEnvironmentVariable(PluginSettings.EnvRecordCalls);
         Environment.SetEnvironmentVariable(PluginSettings.EnvEnableToast, null);
+        Environment.SetEnvironmentVariable(PluginSettings.EnvRecordCalls, null);
     }
 
     [Fact]
@@ -195,6 +198,7 @@ public sealed class PluginSettingsToastTests : IDisposable
         Assert.False(PluginSettings.LoadShowBranding());
         Assert.Equal(20, PluginSettings.LoadToastIdleSeconds());
         Assert.True(PluginSettings.LoadToastEnabled());
+        Assert.False(PluginSettings.LoadRecordCalls());
     }
 
     [Fact]
@@ -238,10 +242,32 @@ public sealed class PluginSettingsToastTests : IDisposable
         Assert.False(PluginSettings.LoadToastEnabled());
     }
 
+    [Fact]
+    public void Record_save_round_trips_and_keeps_other_keys()
+    {
+        File.WriteAllText(PluginSettings.FilePathOverride!, "{ \"enableToast\": true }");
+        Assert.True(PluginSettings.SaveRecordCalls(true));
+        var saved = JObject.Parse(File.ReadAllText(PluginSettings.FilePathOverride!));
+        Assert.True(saved["enableToast"]!.Value<bool>());
+        Assert.True(saved["recordCalls"]!.Value<bool>());
+        Assert.True(PluginSettings.LoadRecordCalls());
+    }
+
+    [Fact]
+    public void Record_env_wins_over_the_file()
+    {
+        File.WriteAllText(PluginSettings.FilePathOverride!, "{ \"recordCalls\": true }");
+        Environment.SetEnvironmentVariable(PluginSettings.EnvRecordCalls, "0");
+        Assert.False(PluginSettings.LoadRecordCalls());
+        Environment.SetEnvironmentVariable(PluginSettings.EnvRecordCalls, "on");
+        Assert.True(PluginSettings.LoadRecordCalls());
+    }
+
     public void Dispose()
     {
         PluginSettings.FilePathOverride = null;
         Environment.SetEnvironmentVariable(PluginSettings.EnvEnableToast, _previousEnv);
+        Environment.SetEnvironmentVariable(PluginSettings.EnvRecordCalls, _previousRecordEnv);
         try { Directory.Delete(_dir, true); } catch { }
     }
 }

@@ -11,6 +11,9 @@ namespace Bimwright.Nwd.Shared.Plugin;
 [Command("ID_Bimwright_Nwd_ToastBrand", DisplayName = "Toast Brand", CanToggle = true,
     CallCanExecute = CallCanExecute.Always, LoadForCanExecute = true,
     ToolTip = "Show the BIMwright wordmark when the pointer is on the card")]
+[Command("ID_Bimwright_Nwd_Record", DisplayName = "Record", CanToggle = true,
+    CallCanExecute = CallCanExecute.Always, LoadForCanExecute = true,
+    ToolTip = "Append every tool call to mcp-calls.jsonl")]
 [Command("ID_Bimwright_Nwd_Status", DisplayName = "Status",
     LoadForCanExecute = true, ToolTip = "Activity toast settings")]
 [AddInPlugin(AddInLocation.None)]
@@ -18,6 +21,7 @@ public sealed class NwdRibbonPlugin : CommandHandlerPlugin
 {
     private const string Toasts = "ID_Bimwright_Nwd_Toasts";
     private const string Brand = "ID_Bimwright_Nwd_ToastBrand";
+    private const string Record = "ID_Bimwright_Nwd_Record";
     private const string Status = "ID_Bimwright_Nwd_Status";
 
     public override int ExecuteCommand(string name, params string[] parameters)
@@ -29,6 +33,9 @@ public sealed class NwdRibbonPlugin : CommandHandlerPlugin
                 break;
             case Brand:
                 NwdActivityToast.ToggleBranding();
+                break;
+            case Record:
+                NwdActivityToast.ToggleRecord();
                 break;
             case Status:
                 NwdActivityToast.ShowStatusWindow();
@@ -48,6 +55,9 @@ public sealed class NwdRibbonPlugin : CommandHandlerPlugin
             case Brand:
                 state.IsEnabled = NwdActivityToast.Enabled;
                 state.IsChecked = NwdActivityToast.ShowBranding;
+                break;
+            case Record:
+                state.IsChecked = NwdActivityToast.RecordCalls;
                 break;
         }
         return state;
