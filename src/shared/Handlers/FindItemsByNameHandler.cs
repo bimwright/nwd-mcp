@@ -27,9 +27,11 @@ public sealed class FindItemsByNameHandler : INwdCommand
         var itemIds = new JArray();
         var ids = new ModelItemIdMap(doc);
         int count = 0;
+        var truncated = false;
         foreach (var mi in AllItems(doc))
         {
             if (count >= maxItems) break;
+            if (ctx.PastDeadline) { truncated = true; break; }
             var dispName = mi.DisplayName ?? string.Empty;
             bool match = exact 
                 ? string.Equals(dispName, name, System.StringComparison.OrdinalIgnoreCase)
@@ -47,6 +49,7 @@ public sealed class FindItemsByNameHandler : INwdCommand
         }
 
         var data = new JObject { ["item_ids"] = itemIds };
+        if (truncated) data["truncated"] = "deadline";
         return NwdCommandResult.Success(System.Guid.Empty, data, meta);
     }
 

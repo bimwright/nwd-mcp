@@ -17,6 +17,7 @@ public sealed class NwdPluginApplication : NWP.EventWatcherPlugin
 
     public override void OnLoaded()
     {
+        PluginAssemblyResolver.Register();
         NavisworksUiThreadInvoker.Capture();
         // Manage-only product: ApplicationPlugins RuntimeRequirements already
         // gates Platform=NAVMAN. HostProduct was removed from the public API in
@@ -94,6 +95,7 @@ public sealed class NwdPluginApplication : NWP.EventWatcherPlugin
     private static void OnIdleToast(object sender, EventArgs e)
     {
         NavisworksUiThreadInvoker.Capture();
+        _server?.RefreshDocumentInfo();
         NwdActivityToast.OnIdle();
     }
 

@@ -27,7 +27,7 @@ public sealed class GetModelTreeHandler : INwdCommand
             if (count >= maxItems) break;
             if (model.RootItem == null) continue;
 
-            var modelNode = BuildNode(model.RootItem, ModelItemHelper.GetModelItemId(model.RootItem, doc), 0, maxDepth, ref count, maxItems);
+            var modelNode = BuildNode(model.RootItem, ModelItemHelper.GetModelItemId(model.RootItem, doc), 0, maxDepth, ref count, maxItems, ctx);
             if (modelNode != null)
             {
                 modelNode["name"] = model.FileName ?? modelNode["name"]?.Value<string>() ?? "Model";
@@ -36,10 +36,11 @@ public sealed class GetModelTreeHandler : INwdCommand
         }
 
         var data = new JObject { ["roots"] = roots };
+        if (ctx.PastDeadline) data["truncated"] = "deadline";
         return NwdCommandResult.Success(System.Guid.Empty, data, meta);
     }
 
-    private static JObject BuildNode(NW.ModelItem item, string id, int currentDepth, int maxDepth, ref int count, int maxItems)
+    private static JObject BuildNode(NW.ModelItem item, string id, int currentDepth, int maxDepth, ref int count, int maxItems, NwdCommandContext ctx)
     {
         if (item == null) return null;
 
@@ -59,10 +60,10 @@ public sealed class GetModelTreeHandler : INwdCommand
             int index = 0;
             foreach (var child in item.Children)
             {
-                if (count >= maxItems) break;
+                if (count >= maxItems || ctx.PastDeadline) break;
                 // Ids follow the walk: numbering children here avoids a parent scan per node.
                 var childId = id.Length == 0 ? string.Empty : ModelItemHelper.ChildId(id, index++);
-                var childNode = BuildNode(child, childId, currentDepth + 1, maxDepth, ref count, maxItems);
+                var childNode = BuildNode(child, childId, currentDepth + 1, maxDepth, ref count, maxItems, ctx);
                 if (childNode != null)
                 {
                     childrenArr.Add(childNode);

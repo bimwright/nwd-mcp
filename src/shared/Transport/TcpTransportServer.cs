@@ -26,6 +26,8 @@ public sealed class TcpTransportServer : IDisposable
     private volatile bool _running;
     private int _activeClients;
     private long _lastCommandUtcTicks;
+    private volatile string? _documentTitle;
+    private volatile string? _documentPath;
     private string _authToken = "";
     private string _targetId = "";
     private CommandDispatcher? _dispatcher;
@@ -67,7 +69,7 @@ public sealed class TcpTransportServer : IDisposable
         _listener.Start();
         Port = ((IPEndPoint)_listener.LocalEndpoint).Port;
 
-        WriteDescriptor();
+        RefreshDocumentInfo(force: true);
         _running = true;
 
         _acceptThread = new Thread(AcceptLoop) { IsBackground = true, Name = "BimwrightNwd-TcpAccept" };
@@ -129,22 +131,34 @@ public sealed class TcpTransportServer : IDisposable
                             commandName = env.Command;
                             paramsJson = env.Params != null ? env.Params.ToString(Formatting.None) : null;
                             NwdCommandResult? result = null;
+                            var deadline = NwdCommandContext.DeadlineFor(DateTime.UtcNow, env.TimeoutMs);
                             void Dispatch()
                             {
+                                // Queued behind other work until the caller gave up: skip it rather than
+                                // run a command nobody will read.
+                                if (DateTime.UtcNow >= deadline)
+                                {
+                                    result = NwdCommandResult.Fail(env.Id, "TIMEOUT",
+                                        "Navisworks was busy until the caller's timeout; the command was skipped.",
+                                        new NwdResponseMeta { TargetId = _targetId, NavisworksYear = _options.NavisworksYear });
+                                    return;
+                                }
                                 var context = new NwdCommandContext
                                 {
                                     ReadOnly = false, // plug-in receives dispatch context
                                     EnableSendCode = _options.EnableSendCode,
                                     NavisworksYear = _options.NavisworksYear,
                                     TargetId = _targetId,
-                                    Commands = _handlers
+                                    Commands = _handlers,
+                                    DeadlineUtc = deadline
                                 };
                                 result = _dispatcher!.Dispatch(context, env);
+                                if (!string.Equals(env.Command, "send_code", StringComparison.Ordinal))
+                                    RefreshDocumentInfo();
                             }
 
-                            // send_code waits up to 30s for its script thread. Doing that wait
-                            // inside SynchronizationContext.Send freezes Navisworks and deadlocks
-                            // a script that calls back onto the UI thread.
+                            // send_code compiles here, off the UI thread, and marshals only the
+                            // script run onto it (SendCodeHandler).
                             if (string.Equals(commandName, "send_code", StringComparison.Ordinal))
                                 Dispatch();
                             else
@@ -206,15 +220,19 @@ public sealed class TcpTransportServer : IDisposable
         return JsonConvert.SerializeObject(r);
     }
 
-    private void WriteDescriptor()
+    /// <summary>
+    /// Reads the active document's title and path. Call on the Navisworks UI thread only
+    /// (Start from OnLoaded, after each dispatched command, and from the Idle hook); the heartbeat
+    /// timer reuses the cached values because the API is not valid on its thread.
+    /// </summary>
+    public void RefreshDocumentInfo(bool force = false)
     {
         string? title = null;
         string? path = null;
         try
         {
-            // Navisworks active document checks
             var doc = NW.Application.ActiveDocument;
-            if (doc != null)
+            if (doc != null && !doc.IsClear)
             {
                 title = doc.Title;
                 path = doc.FileName;
@@ -222,6 +240,18 @@ public sealed class TcpTransportServer : IDisposable
         }
         catch {}
 
+        if (!force && title == _documentTitle && path == _documentPath)
+            return;
+        _documentTitle = title;
+        _documentPath = path;
+        if (force || _running)
+            WriteDescriptor();
+    }
+
+    private void WriteDescriptor()
+    {
+        var title = _documentTitle;
+        var path = _documentPath;
         var d = new TargetDescriptor
         {
             TargetId = _targetId,

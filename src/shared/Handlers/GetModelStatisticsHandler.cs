@@ -18,16 +18,22 @@ public sealed class GetModelStatisticsHandler : INwdCommand
             return NwdCommandResult.Fail(System.Guid.Empty, "NO_DOCUMENT", "no active Navisworks document", meta);
 
         long itemCount = 0;
+        var complete = true;
         foreach (NW.Model model in doc.Models)
         {
             if (model.RootItem == null) continue;
             foreach (NW.ModelItem _ in model.RootItem.DescendantsAndSelf)
-                itemCount++;
+            {
+                // Check the clock every 4096 items; a federated model can have millions.
+                if ((++itemCount & 0xFFF) == 0 && ctx.PastDeadline) { complete = false; break; }
+            }
+            if (!complete) break;
         }
 
         var data = new JObject
         {
             ["item_count"] = itemCount,
+            ["item_count_complete"] = complete,
             ["model_count"] = doc.Models.Count,
             ["current_selection_count"] = doc.CurrentSelection.SelectedItems.Count
         };

@@ -25,9 +25,11 @@ public sealed class BatchGetPropertiesHandler : INwdCommand
 
         var results = new JArray();
         int count = 0;
+        var truncated = false;
         foreach (var t in itemIds)
         {
             if (count >= maxItems) break;
+            if (ctx.PastDeadline) { truncated = true; break; }
             var idStr = t?.Value<string>();
             if (string.IsNullOrEmpty(idStr)) continue;
 
@@ -78,6 +80,7 @@ public sealed class BatchGetPropertiesHandler : INwdCommand
         }
 
         var data = new JObject { ["items"] = results };
+        if (truncated) data["truncated"] = "deadline";
         return NwdCommandResult.Success(System.Guid.Empty, data, meta);
     }
 }
