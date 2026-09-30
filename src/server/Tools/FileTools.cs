@@ -14,7 +14,7 @@ public sealed class FileTools
     private readonly PluginClient _client;
     public FileTools(PluginClient client) => _client = client;
 
-    [McpServerTool(Name = "nwd_list_recent_files"), Description("List recent files for the running Navisworks Manage year, in File menu order. Each entry has path, display name, pinned, last opened time, and whether the file still exists.")]
+    [McpServerTool(Name = "nwd_list_recent_files", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false), Description("List recent files for the running Navisworks Manage year, in File menu order. Each entry has path, display name, pinned, last opened time, and whether the file still exists.")]
     public Task<string> ListRecentFiles(int limit = 25, CancellationToken ct = default)
         => Call("list_recent_files", new JObject { ["limit"] = limit }, ct);
 

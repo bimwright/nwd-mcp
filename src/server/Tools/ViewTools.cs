@@ -15,10 +15,10 @@ public sealed class ViewTools
     private readonly PluginClient _client;
     public ViewTools(PluginClient client) => _client = client;
 
-    [McpServerTool(Name = "nwd_list_viewpoints"), Description("List saved viewpoints and folders Recurse where possible.")]
+    [McpServerTool(Name = "nwd_list_viewpoints", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false), Description("List saved viewpoints and folders Recurse where possible.")]
     public Task<string> ListViewpoints(CancellationToken ct) => Call("list_viewpoints", new JObject(), ct);
 
-    [McpServerTool(Name = "nwd_get_current_viewpoint"), Description("Get camera and display information for the active viewport.")]
+    [McpServerTool(Name = "nwd_get_current_viewpoint", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false), Description("Get camera and display information for the active viewport.")]
     public Task<string> GetCurrentViewpoint(CancellationToken ct) => Call("get_current_viewpoint", new JObject(), ct);
 
     private async Task<string> Call(string command, JObject p, CancellationToken ct)

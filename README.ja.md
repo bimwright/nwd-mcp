@@ -37,7 +37,7 @@ Navisworks は MCP コマンドごとに 1 枚のアクティビティカード�
 | コンポーネント | ステータス |
 |---|---|
 | MCP ゲートウェイサーバー (.NET 8) | ✅ 警告なしでビルド成功 (Debug + Release) |
-| 単体テスト (78 xUnit) | ✅ 全テスト合格 |
+| 単体テスト (89 xUnit) | ✅ 全テスト合格 |
 | プラグインハンドラ実装 | ✅ 実稼働 Navisworks Manage セッションで検証済み |
 | プラグインプロジェクト (net48) | ✅ Navisworks Manage SDK に対してコンパイル成功 |
 
@@ -123,6 +123,45 @@ Navisworks は MCP コマンドごとに 1 枚のアクティビティカード�
 
 ### ツール呼び出しの記録（Record）
 **Record** は**既定でオフ**です。リボンのトグル、Status のチェック、`nwdmcp.config.json` の `recordCalls`、`BIMWRIGHT_NWD_RECORD_CALLS` は、すべてのツールに対する一つのスイッチです。オンの間、各呼び出しは設定ファイルの隣の `mcp-calls.jsonl` に追記されます。`send_code` のソースは書かれず、行には `code_length` と `code_sha256` が入ります。
+
+### 権限と auto mode
+`nwd_send_code` を除くすべてのツールが MCP アノテーション（`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint=false`）を宣言しています。Claude Desktop はこれを使い、読み取りツールは一度許可すれば済み、破壊的なツール（`nwd_open_file`, `nwd_hide_items`, `nwd_unhide_all`, `nwd_run_baked_tool`, `nwd_dismiss_bake_suggestion`）は毎回確認します。
+
+Claude Code の auto mode は MCP 呼び出しごとに分類器でチェックします。読み取り専用ツールでこのチェックを省くには、`.claude/settings.json` の `permissions.allow` に追加してください（MCP エントリ名が `nwd-mcp` 以外なら置き換えてください）：
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "mcp__nwd-mcp__nwd_list_recent_files",
+      "mcp__nwd-mcp__nwd_list_available_targets",
+      "mcp__nwd-mcp__nwd_get_current_target",
+      "mcp__nwd-mcp__nwd_health_check",
+      "mcp__nwd-mcp__nwd_get_document_info",
+      "mcp__nwd-mcp__nwd_get_model_statistics",
+      "mcp__nwd-mcp__nwd_get_model_tree",
+      "mcp__nwd-mcp__nwd_get_item_properties",
+      "mcp__nwd-mcp__nwd_batch_get_properties",
+      "mcp__nwd-mcp__nwd_find_items",
+      "mcp__nwd-mcp__nwd_find_items_by_name",
+      "mcp__nwd-mcp__nwd_get_current_selection",
+      "mcp__nwd-mcp__nwd_clear_selection",
+      "mcp__nwd-mcp__nwd_select_items_by_search",
+      "mcp__nwd-mcp__nwd_list_sets",
+      "mcp__nwd-mcp__nwd_get_selection_set_items",
+      "mcp__nwd-mcp__nwd_execute_search_set",
+      "mcp__nwd-mcp__nwd_list_viewpoints",
+      "mcp__nwd-mcp__nwd_get_current_viewpoint",
+      "mcp__nwd-mcp__nwd_goto_viewpoint",
+      "mcp__nwd-mcp__nwd_list_baked_tools",
+      "mcp__nwd-mcp__nwd_list_bake_suggestions",
+      "mcp__nwd-mcp__nwd_create_bake_issue_draft"
+    ]
+  }
+}
+```
+
+`mcp__nwd-mcp__*` は**使わないでください**。ワイルドカードは `nwd_send_code` とすべての書き込みツールをチェックなしで許可してしまいます。モデルのあるプロジェクトフォルダーでエージェントを起動し、ファイルを開く・変更するよう頼むときは正確なファイル名を示してください。
 
 ### ToolBaker の永続化
 ToolBaker の SQLite ストレージ（`bake.db`）と使用状況監査ログ（`audit.jsonl`）は、以下のローカルパスに永続化されます：

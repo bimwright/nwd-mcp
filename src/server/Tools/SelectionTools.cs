@@ -15,7 +15,7 @@ public sealed class SelectionTools
     private readonly PluginClient _client;
     public SelectionTools(PluginClient client) => _client = client;
 
-    [McpServerTool(Name = "nwd_get_current_selection"), Description("Get a list of currently selected model item ids.")]
+    [McpServerTool(Name = "nwd_get_current_selection", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false), Description("Get a list of currently selected model item ids.")]
     public async Task<string> GetCurrentSelection(CancellationToken ct)
     {
         try

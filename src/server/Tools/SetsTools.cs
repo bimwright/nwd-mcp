@@ -21,14 +21,14 @@ public sealed class SetsTools
         _state = state;
     }
 
-    [McpServerTool(Name = "nwd_list_sets"), Description("List selection and search sets Recurse folders.")]
+    [McpServerTool(Name = "nwd_list_sets", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false), Description("List selection and search sets Recurse folders.")]
     public Task<string> ListSets(CancellationToken ct) => Call("list_sets", new JObject(), ct);
 
-    [McpServerTool(Name = "nwd_get_selection_set_items"), Description("Get items belonging to a selection or search set.")]
+    [McpServerTool(Name = "nwd_get_selection_set_items", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false), Description("Get items belonging to a selection or search set.")]
     public Task<string> GetSelectionSetItems(string setId, CancellationToken ct)
         => Call("get_selection_set_items", new JObject { ["set_id"] = setId }, ct);
 
-    [McpServerTool(Name = "nwd_execute_search_set"), Description("Run a saved search set; optionally select the matches (forced off in read-only mode).")]
+    [McpServerTool(Name = "nwd_execute_search_set", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false), Description("Run a saved search set; optionally select the matches (forced off in read-only mode).")]
     public Task<string> ExecuteSearchSet(string setId, bool select = false, CancellationToken ct = default)
     {
         var p = new JObject { ["set_id"] = setId, ["select"] = _state.ReadOnly ? false : select };

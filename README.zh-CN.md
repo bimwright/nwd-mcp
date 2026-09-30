@@ -38,7 +38,7 @@ Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最�
 | 组件 | 状态 |
 |---|---|
 | MCP gateway server（.NET 8） | ✅ 编译无警告（Debug + Release） |
-| 单元测试（78 个 xUnit） | ✅ 全部通过 |
+| 单元测试（89 个 xUnit） | ✅ 全部通过 |
 | Plug-in handler 实现 | ✅ 已在真实 Navisworks Manage 会话中验证 |
 | Plug-in 项目（net48） | ✅ 可针对 Navisworks Manage SDK 编译 |
 
@@ -137,6 +137,45 @@ Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最�
 ### 工具调用记录（Record）
 
 **Record** **默认关闭**。功能区开关、Status 复选框、`nwdmcp.config.json` 里的 `recordCalls`，以及 `BIMWRIGHT_NWD_RECORD_CALLS`，是覆盖全部工具的同一个开关。打开后，每次调用都会追加到该配置文件旁的 `mcp-calls.jsonl`。`send_code` 的脚本不会写入；该行保存 `code_length` 和 `code_sha256`。
+
+### 权限与 auto mode
+除 `nwd_send_code` 外，每个工具都声明了 MCP 注解（`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint=false`）。Claude Desktop 据此处理：只读工具允许一次即可，破坏性工具（`nwd_open_file`, `nwd_hide_items`, `nwd_unhide_all`, `nwd_run_baked_tool`, `nwd_dismiss_bake_suggestion`）每次都会询问。
+
+Claude Code 的 auto mode 会用分类器检查每次 MCP 调用。若要让只读工具跳过此检查，请把它们加入 `.claude/settings.json` 的 `permissions.allow`（如果你的 MCP 条目名称不是 `nwd-mcp`，请相应替换）：
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "mcp__nwd-mcp__nwd_list_recent_files",
+      "mcp__nwd-mcp__nwd_list_available_targets",
+      "mcp__nwd-mcp__nwd_get_current_target",
+      "mcp__nwd-mcp__nwd_health_check",
+      "mcp__nwd-mcp__nwd_get_document_info",
+      "mcp__nwd-mcp__nwd_get_model_statistics",
+      "mcp__nwd-mcp__nwd_get_model_tree",
+      "mcp__nwd-mcp__nwd_get_item_properties",
+      "mcp__nwd-mcp__nwd_batch_get_properties",
+      "mcp__nwd-mcp__nwd_find_items",
+      "mcp__nwd-mcp__nwd_find_items_by_name",
+      "mcp__nwd-mcp__nwd_get_current_selection",
+      "mcp__nwd-mcp__nwd_clear_selection",
+      "mcp__nwd-mcp__nwd_select_items_by_search",
+      "mcp__nwd-mcp__nwd_list_sets",
+      "mcp__nwd-mcp__nwd_get_selection_set_items",
+      "mcp__nwd-mcp__nwd_execute_search_set",
+      "mcp__nwd-mcp__nwd_list_viewpoints",
+      "mcp__nwd-mcp__nwd_get_current_viewpoint",
+      "mcp__nwd-mcp__nwd_goto_viewpoint",
+      "mcp__nwd-mcp__nwd_list_baked_tools",
+      "mcp__nwd-mcp__nwd_list_bake_suggestions",
+      "mcp__nwd-mcp__nwd_create_bake_issue_draft"
+    ]
+  }
+}
+```
+
+**不要**使用 `mcp__nwd-mcp__*`：通配符会让 `nwd_send_code` 和所有写入工具都跳过检查。请在存放模型的项目文件夹中启动 agent，并在要求打开或修改文件时写明具体文件名。
 
 ### ToolBaker 持久化
 

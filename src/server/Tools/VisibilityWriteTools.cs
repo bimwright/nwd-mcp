@@ -15,11 +15,11 @@ public sealed class VisibilityWriteTools
     private readonly PluginClient _client;
     public VisibilityWriteTools(PluginClient client) => _client = client;
 
-    [McpServerTool(Name = "nwd_hide_items"), Description("Hide specified item ids in the model view.")]
+    [McpServerTool(Name = "nwd_hide_items", ReadOnly = false, Destructive = true, Idempotent = true, OpenWorld = false), Description("Hide the listed item ids in the model view, or show them when hide is false. Changes the document's hidden state; call again with the opposite hide value to revert.")]
     public Task<string> HideItems(string[] itemIds, bool hide = true, CancellationToken ct = default)
         => Call("hide_items", new JObject { ["item_ids"] = new JArray(itemIds), ["hide"] = hide }, ct);
 
-    [McpServerTool(Name = "nwd_unhide_all"), Description("Unhide/show all items in the model view.")]
+    [McpServerTool(Name = "nwd_unhide_all", ReadOnly = false, Destructive = true, Idempotent = true, OpenWorld = false), Description("Show every hidden item in the model view. The previous hidden set is not kept, so restoring it means hiding those item ids again with nwd_hide_items.")]
     public Task<string> UnhideAll(CancellationToken ct) => Call("unhide_all", new JObject(), ct);
 
     private async Task<string> Call(string command, JObject p, CancellationToken ct)

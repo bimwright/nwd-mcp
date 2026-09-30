@@ -4,9 +4,13 @@
 
 ### Changed
 - `nwd_send_code` is on by default. `--disable-send-code` or `BIMWRIGHT_NWD_ENABLE_SEND_CODE=0`, and `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0`, turn it off. `--read-only` still removes it.
+- Destructive tools now say what they change and how to undo it: `nwd_open_file` (discarding unsaved changes cannot be undone), `nwd_hide_items`, `nwd_unhide_all`, `nwd_run_baked_tool`, `nwd_dismiss_bake_suggestion`.
+- The server instructions end with a **Safety & permissions** paragraph: confirm exact files or items before discarding or changing user files, and do not retry a denied call through a baked tool or `nwd_send_code`.
 - The server installs at the fixed path `%LOCALAPPDATA%\Bimwright\nwd-mcp\server\current\nwd-mcp.exe` instead of a versioned folder, matching the other bimwright gateways. Reinstalls swap the whole `current` folder so no stale files remain; earlier `server\<version>` copies are kept and reported — repoint MCP client entries to the new path.
 
 ### Added
+- MCP tool annotations on every tool except `nwd_send_code`: `readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint=false`. Claude Desktop can allow the 23 read tools once; `nwd_open_file`, `nwd_hide_items`, `nwd_unhide_all`, `nwd_run_baked_tool`, and `nwd_dismiss_bake_suggestion` always ask. **Migration:** no parameters or defaults changed. Clients that honor annotations may now ask before those five tools.
+- README **Permissions & auto mode** section with a Claude Code `permissions.allow` list of the read-only tools, and a warning against `mcp__nwd-mcp__*`.
 - **Record** switch for every tool call, off by default. The ribbon, Status window, `recordCalls` in `nwdmcp.config.json`, and `BIMWRIGHT_NWD_RECORD_CALLS` share it. While on, calls append to `%LOCALAPPDATA%\Bimwright\nwd-mcp\mcp-calls.jsonl`. `send_code` stores length and SHA-256 instead of the script.
 - `nwd_list_recent_files`, `nwd_open_file`, and `nwd_import_model`. A default launch registers every toolset (33 tools). Open refuses unsaved changes unless `discard_changes` is true. Import `append` adds a model; `merge` combines it. Open and import wait up to 5 minutes.
 

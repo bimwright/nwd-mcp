@@ -15,11 +15,11 @@ public sealed class ViewWriteTools
     private readonly PluginClient _client;
     public ViewWriteTools(PluginClient client) => _client = client;
 
-    [McpServerTool(Name = "nwd_goto_viewpoint"), Description("Move camera to a saved viewpoint id.")]
+    [McpServerTool(Name = "nwd_goto_viewpoint", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false), Description("Move camera to a saved viewpoint id.")]
     public Task<string> GotoViewpoint(string viewpointId, CancellationToken ct)
         => Call("goto_viewpoint", new JObject { ["viewpoint_id"] = viewpointId }, ct);
 
-    [McpServerTool(Name = "nwd_save_viewpoint"), Description("Save the current viewport state under a given name.")]
+    [McpServerTool(Name = "nwd_save_viewpoint", ReadOnly = false, Destructive = false, Idempotent = false, OpenWorld = false), Description("Save the current viewport state under a given name.")]
     public Task<string> SaveViewpoint(string name, CancellationToken ct)
         => Call("save_viewpoint", new JObject { ["name"] = name }, ct);
 

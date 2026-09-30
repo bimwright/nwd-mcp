@@ -20,7 +20,7 @@ public sealed class ToolBakerTools
         _config = config;
     }
 
-    [McpServerTool(Name = "nwd_list_baked_tools"), Description("List all verified, compiled, and registered baked Navisworks tools.")]
+    [McpServerTool(Name = "nwd_list_baked_tools", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false), Description("List all verified, compiled, and registered baked Navisworks tools.")]
     public string ListBakedTools()
     {
         BakePaths.EnsureDir(_config);
@@ -40,7 +40,7 @@ public sealed class ToolBakerTools
         return JsonConvert.SerializeObject(new { tools }, Formatting.Indented);
     }
 
-    [McpServerTool(Name = "nwd_list_bake_suggestions"), Description("List active suggestions generated from recurrent workflows.")]
+    [McpServerTool(Name = "nwd_list_bake_suggestions", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false), Description("List active suggestions generated from recurrent workflows.")]
     public string ListBakeSuggestions()
     {
         BakePaths.EnsureDir(_config);
@@ -49,7 +49,7 @@ public sealed class ToolBakerTools
         return ListBakeSuggestionsHandler.Handle(db);
     }
 
-    [McpServerTool(Name = "nwd_create_bake_issue_draft"), Description("Create a GitHub issue draft for a ToolBaker suggestion without submitting it.")]
+    [McpServerTool(Name = "nwd_create_bake_issue_draft", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false), Description("Create a GitHub issue draft for a ToolBaker suggestion without submitting it.")]
     public string CreateBakeIssueDraft([Description("Suggestion id from nwd_list_bake_suggestions.")] string id)
     {
         BakePaths.EnsureDir(_config);

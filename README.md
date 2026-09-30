@@ -37,7 +37,7 @@ Navisworks shows one activity card for MCP commands. Toasts are on by default an
 | Component | Status |
 |---|---|
 | MCP gateway server (.NET 8) | ✅ Builds warning-clean (Debug + Release) |
-| Unit tests (78 xUnit) | ✅ All passing |
+| Unit tests (89 xUnit) | ✅ All passing |
 | Plug-in handler implementations | ✅ Verified against a live Navisworks Manage session |
 | Plug-in projects (net48) | ✅ Compile against the Navisworks Manage SDK |
 
@@ -142,6 +142,45 @@ Strict read-only mode can be enforced via the `--read-only` flag or the `BIMWRIG
 
 ### Tool-call record
 **Record** is **off by default**. The ribbon toggle, the Status checkbox, `recordCalls` in `nwdmcp.config.json`, and `BIMWRIGHT_NWD_RECORD_CALLS` share one switch for every tool. While it is on, each call is appended to `mcp-calls.jsonl` next to that config file. The `send_code` script is not written; the line stores `code_length` and `code_sha256`.
+
+### Permissions & auto mode
+Every tool except `nwd_send_code` declares MCP annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint=false`). Claude Desktop uses them: read tools can be allowed once, and destructive tools (`nwd_open_file`, `nwd_hide_items`, `nwd_unhide_all`, `nwd_run_baked_tool`, `nwd_dismiss_bake_suggestion`) always ask.
+
+Claude Code's auto mode checks each MCP call with a classifier. To skip that check for the read-only tools, add them to `permissions.allow` in `.claude/settings.json` (replace `nwd-mcp` if your MCP entry uses another name):
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "mcp__nwd-mcp__nwd_list_recent_files",
+      "mcp__nwd-mcp__nwd_list_available_targets",
+      "mcp__nwd-mcp__nwd_get_current_target",
+      "mcp__nwd-mcp__nwd_health_check",
+      "mcp__nwd-mcp__nwd_get_document_info",
+      "mcp__nwd-mcp__nwd_get_model_statistics",
+      "mcp__nwd-mcp__nwd_get_model_tree",
+      "mcp__nwd-mcp__nwd_get_item_properties",
+      "mcp__nwd-mcp__nwd_batch_get_properties",
+      "mcp__nwd-mcp__nwd_find_items",
+      "mcp__nwd-mcp__nwd_find_items_by_name",
+      "mcp__nwd-mcp__nwd_get_current_selection",
+      "mcp__nwd-mcp__nwd_clear_selection",
+      "mcp__nwd-mcp__nwd_select_items_by_search",
+      "mcp__nwd-mcp__nwd_list_sets",
+      "mcp__nwd-mcp__nwd_get_selection_set_items",
+      "mcp__nwd-mcp__nwd_execute_search_set",
+      "mcp__nwd-mcp__nwd_list_viewpoints",
+      "mcp__nwd-mcp__nwd_get_current_viewpoint",
+      "mcp__nwd-mcp__nwd_goto_viewpoint",
+      "mcp__nwd-mcp__nwd_list_baked_tools",
+      "mcp__nwd-mcp__nwd_list_bake_suggestions",
+      "mcp__nwd-mcp__nwd_create_bake_issue_draft"
+    ]
+  }
+}
+```
+
+Do **not** allow `mcp__nwd-mcp__*`: the wildcard also approves `nwd_send_code` and every write tool without any check. Start the agent in the project folder that holds your models, and name the exact file when you ask it to open or change one.
 
 ### ToolBaker Persistence
 ToolBaker sqlite storage (`bake.db`) and usage audit logs (`audit.jsonl`) are persisted locally under:

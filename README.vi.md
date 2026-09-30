@@ -37,7 +37,7 @@ Navisworks hiện một thẻ cho các lệnh MCP. Thẻ bật sẵn và ở l�
 | Thành phần | Trạng thái |
 |---|---|
 | Máy chủ MCP gateway (.NET 8) | ✅ Biên dịch sạch cảnh báo (Debug + Release) |
-| Unit tests (78 xUnit) | ✅ Tất cả đều qua |
+| Unit tests (89 xUnit) | ✅ Tất cả đều qua |
 | Các triển khai plug-in handler | ✅ Đã xác minh trên một phiên Navisworks Manage thực tế |
 | Các dự án plug-in (net48) | ✅ Biên dịch thành công theo Navisworks Manage SDK |
 
@@ -123,6 +123,45 @@ Có thể kích hoạt chế độ chỉ đọc nghiêm ngặt bằng cờ `--re
 
 ### Ghi lệnh (Record)
 **Record** **tắt sẵn**. Nút trên ribbon, ô trong cửa sổ Status, khóa `recordCalls` trong `nwdmcp.config.json` và `BIMWRIGHT_NWD_RECORD_CALLS` là cùng một công tắc cho mọi công cụ. Khi bật, mỗi lệnh được ghi thêm vào `mcp-calls.jsonl` cạnh file cấu hình đó. Mã `send_code` không được ghi; dòng nhật ký lưu `code_length` và `code_sha256`.
+
+### Quyền (permissions) & auto mode
+Mọi tool trừ `nwd_send_code` đều khai báo annotation MCP (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint=false`). Claude Desktop dựa vào đó: tool đọc chỉ cần cho phép một lần, còn tool destructive (`nwd_open_file`, `nwd_hide_items`, `nwd_unhide_all`, `nwd_run_baked_tool`, `nwd_dismiss_bake_suggestion`) luôn hỏi.
+
+Auto mode của Claude Code kiểm tra từng lời gọi MCP bằng classifier. Muốn bỏ qua bước này cho các tool chỉ đọc, thêm chúng vào `permissions.allow` trong `.claude/settings.json` (đổi `nwd-mcp` nếu mục MCP của bạn dùng tên khác):
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "mcp__nwd-mcp__nwd_list_recent_files",
+      "mcp__nwd-mcp__nwd_list_available_targets",
+      "mcp__nwd-mcp__nwd_get_current_target",
+      "mcp__nwd-mcp__nwd_health_check",
+      "mcp__nwd-mcp__nwd_get_document_info",
+      "mcp__nwd-mcp__nwd_get_model_statistics",
+      "mcp__nwd-mcp__nwd_get_model_tree",
+      "mcp__nwd-mcp__nwd_get_item_properties",
+      "mcp__nwd-mcp__nwd_batch_get_properties",
+      "mcp__nwd-mcp__nwd_find_items",
+      "mcp__nwd-mcp__nwd_find_items_by_name",
+      "mcp__nwd-mcp__nwd_get_current_selection",
+      "mcp__nwd-mcp__nwd_clear_selection",
+      "mcp__nwd-mcp__nwd_select_items_by_search",
+      "mcp__nwd-mcp__nwd_list_sets",
+      "mcp__nwd-mcp__nwd_get_selection_set_items",
+      "mcp__nwd-mcp__nwd_execute_search_set",
+      "mcp__nwd-mcp__nwd_list_viewpoints",
+      "mcp__nwd-mcp__nwd_get_current_viewpoint",
+      "mcp__nwd-mcp__nwd_goto_viewpoint",
+      "mcp__nwd-mcp__nwd_list_baked_tools",
+      "mcp__nwd-mcp__nwd_list_bake_suggestions",
+      "mcp__nwd-mcp__nwd_create_bake_issue_draft"
+    ]
+  }
+}
+```
+
+**Không** dùng `mcp__nwd-mcp__*`: wildcard sẽ duyệt luôn `nwd_send_code` và mọi tool ghi mà không kiểm tra gì. Hãy khởi động agent trong thư mục dự án chứa model, và nêu đúng tên file khi yêu cầu mở hoặc thay đổi file.
 
 ### Lưu trữ ToolBaker
 Cơ sở dữ liệu lưu trữ sqlite (`bake.db`) và nhật ký kiểm tra quy trình (`audit.jsonl`) của ToolBaker được duy trì cục bộ tại:
