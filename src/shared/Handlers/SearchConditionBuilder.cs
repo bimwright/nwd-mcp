@@ -22,15 +22,17 @@ public static class SearchConditionBuilder
             case "=":
                 cond = cond.EqualValue(NW.VariantData.FromDisplayString(value));
                 break;
+            // EqualValue compares literally, so "*" is not a wildcard there. Use the display-string
+            // matchers, case-insensitive like nwd_find_items_by_name.
             case "contains":
             case "~":
-                cond = cond.EqualValue(NW.VariantData.FromDisplayString("*" + value + "*"));
+                cond = cond.DisplayStringContains(value).IgnoreStringValueCase();
                 break;
             case "startswith":
-                cond = cond.EqualValue(NW.VariantData.FromDisplayString(value + "*"));
+                cond = cond.DisplayStringWildcard(value + "*").IgnoreStringValueCase();
                 break;
             case "endswith":
-                cond = cond.EqualValue(NW.VariantData.FromDisplayString("*" + value));
+                cond = cond.DisplayStringWildcard("*" + value).IgnoreStringValueCase();
                 break;
             default:
                 throw new System.ArgumentException(
