@@ -8,20 +8,20 @@ public static class ToolsetFilter
 {
     public static readonly string[] KnownToolsets =
     {
-        "meta", "query", "selection", "selection_write", "sets",
+        "meta", "files", "files_write", "query", "selection", "selection_write", "sets",
         "view", "view_write", "visibility", "code", "toolbaker", "toolbaker_write"
     };
 
     // everything except "code" (send-code is opt-in)
     public static readonly string[] DefaultOn =
     {
-        "meta", "query", "selection", "selection_write", "sets",
+        "meta", "files", "files_write", "query", "selection", "selection_write", "sets",
         "view", "view_write", "visibility", "toolbaker", "toolbaker_write"
     };
 
     public static readonly string[] WriteCapable =
     {
-        "selection_write", "view_write", "visibility", "code", "toolbaker_write"
+        "files_write", "selection_write", "view_write", "visibility", "code", "toolbaker_write"
     };
 
     public static HashSet<string> Resolve(NwdMcpConfig config)

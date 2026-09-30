@@ -39,6 +39,8 @@ internal static partial class Program
     private static IMcpServerBuilder RegisterToolType(IMcpServerBuilder mcp, Type toolType)
     {
         if (toolType == typeof(MetaTools)) return mcp.WithTools<MetaTools>();
+        if (toolType == typeof(FileTools)) return mcp.WithTools<FileTools>();
+        if (toolType == typeof(FileWriteTools)) return mcp.WithTools<FileWriteTools>();
         if (toolType == typeof(QueryTools)) return mcp.WithTools<QueryTools>();
         if (toolType == typeof(SelectionTools)) return mcp.WithTools<SelectionTools>();
         if (toolType == typeof(SelectionWriteTools)) return mcp.WithTools<SelectionWriteTools>();
@@ -60,6 +62,8 @@ internal static partial class Program
         void Add(string toolset, Type t) { if (ts.Contains(toolset)) types.Add(t); }
 
         Add("meta",            typeof(MetaTools));
+        Add("files",           typeof(FileTools));
+        Add("files_write",     typeof(FileWriteTools));
         Add("query",           typeof(QueryTools));
         Add("selection",       typeof(SelectionTools));
         Add("selection_write", typeof(SelectionWriteTools));

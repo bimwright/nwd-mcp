@@ -13,6 +13,9 @@ public static partial class NwdCommandRegistry
         void Add(INwdCommand cmd) => dict.Add(cmd.Name, cmd);
 
         Add(new HealthCheckHandler());
+        Add(new ListRecentFilesHandler());
+        Add(new OpenFileHandler());
+        Add(new ImportModelHandler());
         Add(new GetDocumentInfoHandler());
         Add(new GetModelStatisticsHandler());
         Add(new GetModelTreeHandler());

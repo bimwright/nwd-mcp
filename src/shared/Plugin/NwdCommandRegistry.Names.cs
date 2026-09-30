@@ -7,6 +7,9 @@ public static partial class NwdCommandRegistry
     public static readonly string[] RegisteredNames = new[]
     {
         "health_check",
+        "list_recent_files",
+        "open_file",
+        "import_model",
         "get_document_info",
         "get_model_statistics",
         "get_model_tree",

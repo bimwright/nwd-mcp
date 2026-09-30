@@ -51,15 +51,21 @@ public sealed class PluginClient
         return true;
     }
 
-    public async Task<JToken> SendAsync(string command, object parameters, CancellationToken ct)
+    public const int FileOperationTimeoutMs = 300_000;
+
+    public Task<JToken> SendAsync(string command, object parameters, CancellationToken ct)
+        => SendAsync(command, parameters, _config.TimeoutMs, ct);
+
+    public async Task<JToken> SendAsync(string command, object parameters, int timeoutMs, CancellationToken ct)
     {
+        var wait = Math.Max(timeoutMs, _config.TimeoutMs);
         var target = CurrentTarget ?? throw new NwdGatewayException("NO_TARGET", "No live Navisworks Manage target. Start Navisworks with the nwd plug-in loaded.");
         var env = new NwdCommandEnvelope
         {
             Id = Guid.NewGuid(),
             Command = command,
             Params = parameters as JObject ?? JObject.FromObject(parameters),
-            TimeoutMs = _config.TimeoutMs,
+            TimeoutMs = wait,
             AuthToken = target.AuthToken
         };
 
@@ -83,8 +89,8 @@ public sealed class PluginClient
 
         using var reader = new StreamReader(stream, Encoding.UTF8);
         var readTask = reader.ReadLineAsync();
-        if (await Task.WhenAny(readTask, Task.Delay(_config.TimeoutMs, ct)) != readTask)
-            throw new NwdGatewayException("TIMEOUT", $"request {command} timed out after {_config.TimeoutMs} ms");
+        if (await Task.WhenAny(readTask, Task.Delay(wait, ct)) != readTask)
+            throw new NwdGatewayException("TIMEOUT", $"request {command} timed out after {wait} ms");
         var response = await readTask ?? throw new NwdGatewayException("TARGET_UNAVAILABLE", "plug-in closed the connection");
 
         var result = JsonConvert.DeserializeObject<NwdCommandResult>(response)

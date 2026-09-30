@@ -10,6 +10,9 @@ public static class NwdCommandCatalog
     public static readonly IReadOnlyList<NwdCommandInfo> All = new[]
     {
         new NwdCommandInfo("health_check", true),
+        new NwdCommandInfo("list_recent_files", true),
+        new NwdCommandInfo("open_file", false),
+        new NwdCommandInfo("import_model", false),
         new NwdCommandInfo("get_document_info", true),
         new NwdCommandInfo("get_model_statistics", true),
         new NwdCommandInfo("get_model_tree", true),

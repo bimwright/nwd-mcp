@@ -7,7 +7,7 @@ public sealed class NwdCommandCatalogTests
 {
     private static readonly string[] Expected =
     {
-        "health_check","get_document_info","get_model_statistics","get_model_tree",
+        "health_check","list_recent_files","open_file","import_model","get_document_info","get_model_statistics","get_model_tree",
         "get_item_properties","batch_get_properties","find_items","find_items_by_name",
         "get_current_selection","clear_selection","select_items_by_search",
         "list_sets","get_selection_set_items","execute_search_set",
@@ -25,7 +25,7 @@ public sealed class NwdCommandCatalogTests
     [Fact]
     public void WriteCommandsAreFlaggedNotReadOnly()
     {
-        foreach (var w in new[] { "clear_selection","select_items_by_search","goto_viewpoint","save_viewpoint","hide_items","unhide_all","send_code","run_baked_tool","apply_bake" })
+        foreach (var w in new[] { "open_file","import_model","clear_selection","select_items_by_search","goto_viewpoint","save_viewpoint","hide_items","unhide_all","send_code","run_baked_tool","apply_bake" })
             Assert.False(NwdCommandCatalog.All.Single(c => c.Name == w).IsReadOnly, $"{w} should be write");
     }
 }

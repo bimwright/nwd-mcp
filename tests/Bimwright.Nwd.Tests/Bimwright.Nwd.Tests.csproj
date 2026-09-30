@@ -38,6 +38,8 @@
     <Compile Include="..\..\src\shared\Views\Toast\ToastCommands.cs" Link="ToastCommands.cs" />
     <Compile Include="..\..\src\shared\Views\Toast\ToastContentBuilder.cs" Link="ToastContentBuilder.cs" />
     <Compile Include="..\..\src\shared\Views\Toast\ToolNameFormatter.cs" Link="ToolNameFormatter.cs" />
+    <Compile Include="..\..\src\shared\Files\LocalModelFile.cs" Link="LocalModelFile.cs" />
+    <Compile Include="..\..\src\shared\Files\NavisworksRecentFiles.cs" Link="NavisworksRecentFiles.cs" />
   </ItemGroup>
 
 </Project>
