@@ -15,7 +15,7 @@ public sealed class CodeTools
     private readonly PluginClient _client;
     public CodeTools(PluginClient client) => _client = client;
 
-    [McpServerTool(Name = "nwd_send_code"), Description("Run a C# script inside Navisworks on its UI thread. doc is the active Document; the value of the last expression comes back as result and Console output as stdout. Navisworks is blocked while the script runs, so keep it short and do not await.")]
+    [McpServerTool(Name = "nwd_send_code"), Description("Run a C# script inside Navisworks on its UI thread. doc is the active Document; the value of the last expression comes back as result and Console output as stdout. Navisworks is blocked while the script runs, so keep it short and do not await. Output above 1 MiB auto-spills to a local same-machine file with schema and preview; there is no output parameter.")]
     public Task<string> SendCode(string code, CancellationToken ct)
         => Call("send_code", new JObject { ["code"] = code }, ct);
 

@@ -169,6 +169,11 @@ Cơ sở dữ liệu lưu trữ sqlite (`bake.db`) và nhật ký kiểm tra quy
 %LOCALAPPDATA%\Bimwright\nwd-mcp\baked\
 ```
 
+### Kích thước phản hồi
+Kết quả tool là JSON nén gọn. Trên 64 KiB server thêm trường `_response_warning` vào kết quả (mạnh hơn trên 256 KiB); quá ngân sách 1 MiB kết quả bị từ chối với `RESPONSE_TOO_LARGE` — trừ tool ghi đã chạy xong, khi đó nó trả về bản tóm tắt thành công đã nén (`response_compacted`, `mutation_applied`) thay vì báo lỗi.
+Bốn tool chấp nhận `output=file` để ghi toàn bộ kết quả ra một file cục bộ trên cùng máy và trả về đường dẫn, schema và bản xem trước: `nwd_get_model_tree` (JSON), `nwd_batch_get_properties` (SQLite), `nwd_find_items_by_name` (NDJSON) và `nwd_run_baked_tool` (định dạng tự nhận diện). `nwd_send_code` không có tham số `output`; đầu ra trên 1 MiB tự động spill theo cùng cách.
+Các file spill nằm trong `%LOCALAPPDATA%\Bimwright\nwd-mcp\spill`, được giữ 24 giờ, tối đa 50 file, và bị xóa khi gỡ cài đặt.
+
 ---
 
 ## Phát Triển Cục Bộ & Biên Dịch

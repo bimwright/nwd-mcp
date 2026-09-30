@@ -17,10 +17,13 @@ builder.Services.AddSingleton(config);
 builder.Services.AddSingleton<ServerState>();
 builder.Services.AddSingleton<PluginClient>();
 
+var responseBudget = ResponseBudget.CreateDefault();
+
 var mcp = builder.Services
     .AddMcpServer(o => o.ServerInstructions = ServerInstructions.Text)
     .WithStdioServerTransport()
-    .WithRequestFilters(f => f.AddCallToolFilter(next => async (request, ct) => ToolErrorFlag.Apply(await next(request, ct))));
+    .WithRequestFilters(f => f.AddCallToolFilter(next => async (request, ct) =>
+        ToolErrorFlag.Apply(responseBudget.Apply(request.Params?.Name, request.Params?.Arguments, await next(request, ct)))));
 mcp = Program.RegisterToolsets(mcp, Program.ResolveToolTypesForRegistration(config));
 
 await builder.Build().RunAsync();

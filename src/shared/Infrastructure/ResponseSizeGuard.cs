@@ -12,7 +12,7 @@ public static class ResponseSizeGuard
         {
             Code = "RESPONSE_TOO_LARGE",
             Message = $"Response {size} bytes exceeds the configured limit of {maxBytes} bytes. " +
-                      "Narrow the query (max_items/max_depth) and retry."
+                      "Narrow the request and retry."
         };
         return false;
     }

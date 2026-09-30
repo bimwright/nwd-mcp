@@ -32,7 +32,12 @@ public sealed class CommandDispatcher
             Normalize(env, ctx, result, started);
             var serialized = JsonConvert.SerializeObject(result.Data);
             if (!ResponseSizeGuard.Check(serialized, _maxResponseBytes, out var sizeError))
-                return NwdCommandResult.Fail(env.Id, sizeError!.Code, sizeError.Message, result.Meta);
+            {
+                var message = cmd.IsReadOnly
+                    ? sizeError!.Message
+                    : sizeError!.Message + " The command already ran; do not blindly retry a mutation.";
+                return NwdCommandResult.Fail(env.Id, sizeError!.Code, message, result.Meta);
+            }
             return result;
         }
         catch (Exception ex)

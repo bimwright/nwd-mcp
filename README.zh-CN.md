@@ -185,6 +185,12 @@ ToolBaker 的 sqlite 存储（`bake.db`）与使用审计日志（`audit.jsonl`�
 %LOCALAPPDATA%\Bimwright\nwd-mcp\baked\
 ```
 
+### 响应大小
+
+工具结果为紧凑 JSON。超过 64 KiB 时服务器在结果中加入 `_response_warning` 字段（超过 256 KiB 时警告更强）；超过 1 MiB 预算时结果被拒绝并返回 `RESPONSE_TOO_LARGE`——已完成的写入工具除外，它会返回压缩后的成功摘要（`response_compacted`、`mutation_applied`），而不是误报失败。
+四个工具接受 `output=file`，将完整结果写入本机文件并返回其路径、schema 和预览：`nwd_get_model_tree`（JSON）、`nwd_batch_get_properties`（SQLite）、`nwd_find_items_by_name`（NDJSON）和 `nwd_run_baked_tool`（自动检测格式）。`nwd_send_code` 没有 `output` 参数；超过 1 MiB 的输出会以同样方式自动落盘。
+Spill 文件位于 `%LOCALAPPDATA%\Bimwright\nwd-mcp\spill`，保留 24 小时、最多 50 个文件，卸载时删除。
+
 ---
 
 ## 本地开发与编译

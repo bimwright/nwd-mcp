@@ -13,6 +13,10 @@ public static class ServerInstructions
         "nwd_send_code is ON by default. Turn it off with --disable-send-code " +
         "(or BIMWRIGHT_NWD_ENABLE_SEND_CODE=0) and BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0 " +
         "in the Navisworks process. --read-only also removes it. " +
+        "Large results: a _response_warning field marks results over 64 KiB and the budget is 1 MiB. " +
+        "nwd_get_model_tree, nwd_batch_get_properties, nwd_find_items_by_name and nwd_run_baked_tool " +
+        "accept output=file to write the full result to a local file and return its path, schema and a preview; " +
+        "nwd_send_code output over 1 MiB auto-spills the same way. " +
         SafetyAndPermissions;
 
     public const string SafetyAndPermissions =

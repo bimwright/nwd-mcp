@@ -28,6 +28,11 @@ if ($Uninstall) {
         if (Test-Path $serverParent) { Remove-Item $serverParent -Recurse -Force }
         Write-Host "Removed server installs (if present): $serverParent"
     }
+    $spillDir = Join-Path $env:LOCALAPPDATA 'Bimwright\nwd-mcp\spill'
+    if ($PSCmdlet.ShouldProcess($spillDir, 'Remove spill cache')) {
+        if (Test-Path $spillDir) { Remove-Item $spillDir -Recurse -Force }
+        Write-Host "Removed spill cache (if present): $spillDir"
+    }
     return
 }
 

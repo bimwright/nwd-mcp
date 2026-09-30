@@ -23,9 +23,13 @@ public sealed class ToolBakerWriteTools
         _config = config;
     }
 
-    [McpServerTool(Name = "nwd_run_baked_tool", ReadOnly = false, Destructive = true, Idempotent = false, OpenWorld = false), Description("Run a registered baked tool by name with parameters. A baked tool can change the open document like any write tool; check its description in nwd_list_baked_tools first.")]
-    public async Task<string> RunBakedTool(string name, string paramsJson, CancellationToken ct)
+    [McpServerTool(Name = "nwd_run_baked_tool", ReadOnly = false, Destructive = true, Idempotent = false, OpenWorld = false), Description("Run a registered baked tool by name with parameters. A baked tool can change the open document like any write tool; check its description in nwd_list_baked_tools first. output=file writes the full result to a local same-machine file (%LOCALAPPDATA%\\Bimwright\\nwd-mcp\\spill, kept 24 h) and returns its path, schema and a preview.")]
+    public async Task<string> RunBakedTool(string name, string paramsJson, string output = "inline", CancellationToken ct = default)
     {
+        var invalidOutput = ResponseBudget.InvalidOutput(output);
+        if (invalidOutput != null)
+            return invalidOutput;
+
         JObject parsed;
         try
         {

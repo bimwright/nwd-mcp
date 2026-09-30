@@ -1,5 +1,6 @@
 using System.Reflection;
 using Bimwright.Nwd.Server;
+using Bimwright.Nwd.Server.Bake;
 using Bimwright.Nwd.Server.Tools;
 using Bimwright.Nwd.Shared.Infrastructure;
 using Bimwright.Nwd.Tests.Helpers;
@@ -34,11 +35,11 @@ public sealed class ToolShellTests
         new("nwd_health_check", "health_check", p => new QueryTools(p.Client).HealthCheck(Ct), "{}"),
         new("nwd_get_document_info", "get_document_info", p => new QueryTools(p.Client).GetDocumentInfo(Ct), "{}"),
         new("nwd_get_model_statistics", "get_model_statistics", p => new QueryTools(p.Client).GetModelStatistics(Ct), "{}"),
-        new("nwd_get_model_tree", "get_model_tree", p => new QueryTools(p.Client).GetModelTree(3, 50, Ct), """{"max_depth":3,"max_items":50}"""),
+        new("nwd_get_model_tree", "get_model_tree", p => new QueryTools(p.Client).GetModelTree(3, 50, "inline", Ct), """{"max_depth":3,"max_items":50}"""),
         new("nwd_get_item_properties", "get_item_properties", p => new QueryTools(p.Client).GetItemProperties("0:0:6", Ct), """{"item_id":"0:0:6"}"""),
-        new("nwd_batch_get_properties", "batch_get_properties", p => new QueryTools(p.Client).BatchGetProperties(new[] { "0:0", "0:1" }, 2, Ct), """{"item_ids":["0:0","0:1"],"max_items":2}"""),
+        new("nwd_batch_get_properties", "batch_get_properties", p => new QueryTools(p.Client).BatchGetProperties(new[] { "0:0", "0:1" }, 2, "inline", Ct), """{"item_ids":["0:0","0:1"],"max_items":2}"""),
         new("nwd_find_items", "find_items", p => new QueryTools(p.Client).FindItems("""{"category":"Item","property":"Name","operator":"contains","value":"Pipe"}""", 5, Ct), """{"filters":{"category":"Item","property":"Name","operator":"contains","value":"Pipe"},"max_items":5}"""),
-        new("nwd_find_items_by_name", "find_items_by_name", p => new QueryTools(p.Client).FindItemsByName("Pipe", true, 5, Ct), """{"name":"Pipe","exact":true,"max_items":5}"""),
+        new("nwd_find_items_by_name", "find_items_by_name", p => new QueryTools(p.Client).FindItemsByName("Pipe", true, 5, "inline", Ct), """{"name":"Pipe","exact":true,"max_items":5}"""),
         // selection / selection_write
         new("nwd_get_current_selection", "get_current_selection", p => new SelectionTools(p.Client).GetCurrentSelection(Ct), "{}"),
         new("nwd_clear_selection", "clear_selection", p => new SelectionWriteTools(p.Client).ClearSelection(Ct), "{}"),
@@ -124,7 +125,7 @@ public sealed class ToolShellTests
         };
         plugin.Config.MaxResponseBytes = 1024;
 
-        var result = JObject.Parse(await new QueryTools(plugin.Client).GetModelTree(30, 1000000, Ct));
+        var result = JObject.Parse(await new QueryTools(plugin.Client).GetModelTree(30, 1000000, "inline", Ct));
 
         Assert.Equal("RESPONSE_TOO_LARGE", (string?)result["error"]?["code"]);
     }
@@ -189,10 +190,61 @@ public sealed class ToolShellTests
         Assert.Empty((JArray)JObject.Parse(read.ListBakedTools())["tools"]!);
         Assert.Empty((JArray)JObject.Parse(read.ListBakeSuggestions())["suggestions"]!);
         Assert.Equal("not_found", (string?)JObject.Parse(read.CreateBakeIssueDraft("missing"))["error_code"]);
-        Assert.Equal("INVALID_ARGUMENT", (string?)JObject.Parse(await write.RunBakedTool("missing", "{}", Ct))["error"]?["code"]);
-        Assert.Equal("INVALID_ARGUMENT", (string?)JObject.Parse(await write.RunBakedTool("missing", "not json", Ct))["error"]?["code"]);
+        Assert.Equal("INVALID_ARGUMENT", (string?)JObject.Parse(await write.RunBakedTool("missing", "{}", "inline", Ct))["error"]?["code"]);
+        Assert.Equal("INVALID_ARGUMENT", (string?)JObject.Parse(await write.RunBakedTool("missing", "not json", "inline", Ct))["error"]?["code"]);
         Assert.Equal("not_found", (string?)JObject.Parse(await write.AcceptBakeSuggestion("missing", "my_tool", Ct))["error_code"]);
         Assert.Equal("not_found", (string?)JObject.Parse(await write.DismissBakeSuggestion("missing", Ct))["error_code"]);
+        Assert.Empty(plugin.Received);
+    }
+
+    [Fact]
+    public async Task OutputFileIsNotForwardedToThePlugin()
+    {
+        using var plugin = new FakePlugin();
+        var query = new QueryTools(plugin.Client);
+
+        await query.GetModelTree(2, 10, "file", Ct);
+        await query.BatchGetProperties(new[] { "0:0" }, 5, "file", Ct);
+        await query.FindItemsByName("Pipe", false, 5, "file", Ct);
+        await RunBakedToolWithFileOutput(plugin);
+
+        var envs = plugin.Received.ToArray();
+        Assert.Equal(4, envs.Length);
+        foreach (var env in envs)
+            Assert.Null(env.Params["output"]);
+    }
+
+    private static async Task RunBakedToolWithFileOutput(FakePlugin plugin)
+    {
+        BakePaths.EnsureDir(plugin.Config);
+        using (var db = new BakeDb(BakePaths.Db(plugin.Config)))
+        {
+            db.Migrate();
+            Assert.True(db.TryInsertRegistryRecord(new Bimwright.Nwd.Shared.ToolBaker.BakedToolRecord
+            {
+                Name = "fake_tool",
+                Description = "test",
+                Source = "test",
+                HandlerTool = "fake_tool"
+            }));
+        }
+
+        await new ToolBakerWriteTools(plugin.Client, plugin.Config).RunBakedTool("fake_tool", "{}", "file", Ct);
+    }
+
+    [Fact]
+    public async Task InvalidOutputIsRejectedWithoutCallingThePlugin()
+    {
+        using var plugin = new FakePlugin();
+        var query = new QueryTools(plugin.Client);
+
+        var tree = JObject.Parse(await query.GetModelTree(2, 10, "weird", Ct));
+        var batch = JObject.Parse(await query.BatchGetProperties(new[] { "0:0" }, 5, "weird", Ct));
+        var find = JObject.Parse(await query.FindItemsByName("Pipe", false, 5, "weird", Ct));
+        var baked = JObject.Parse(await new ToolBakerWriteTools(plugin.Client, plugin.Config).RunBakedTool("x", "{}", "weird", Ct));
+
+        foreach (var result in new[] { tree, batch, find, baked })
+            Assert.Equal("INVALID_ARGUMENT", (string?)result["error"]?["code"]);
         Assert.Empty(plugin.Received);
     }
 }

@@ -188,6 +188,11 @@ ToolBaker sqlite storage (`bake.db`) and usage audit logs (`audit.jsonl`) are pe
 %LOCALAPPDATA%\Bimwright\nwd-mcp\baked\
 ```
 
+### Response size
+Tool results are compact JSON. Over 64 KiB the server adds a `_response_warning` field to the result (stronger above 256 KiB); past the 1 MiB budget a result is rejected with `RESPONSE_TOO_LARGE` — except a completed write tool, which returns a compacted success summary (`response_compacted`, `mutation_applied`) instead of a false failure.
+Four tools accept `output=file` to write the full result to a local same-machine file and return its path, schema and a preview: `nwd_get_model_tree` (JSON), `nwd_batch_get_properties` (SQLite), `nwd_find_items_by_name` (NDJSON) and `nwd_run_baked_tool` (auto-detected format). `nwd_send_code` has no `output` parameter; output above 1 MiB auto-spills the same way.
+Spill files live under `%LOCALAPPDATA%\Bimwright\nwd-mcp\spill`, are kept 24 hours, capped at 50 files, and removed on uninstall.
+
 ---
 
 ## Local Development & Compilation

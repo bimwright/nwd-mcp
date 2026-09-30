@@ -169,6 +169,11 @@ ToolBaker の SQLite ストレージ（`bake.db`）と使用状況監査ログ�
 %LOCALAPPDATA%\Bimwright\nwd-mcp\baked\
 ```
 
+### レスポンスサイズ
+ツールの結果はコンパクトな JSON です。64 KiB を超えるとサーバーは結果に `_response_warning` フィールドを追加します（256 KiB 超でさらに強い警告）。1 MiB の予算を超えると `RESPONSE_TOO_LARGE` で拒否されます——完了済みの書き込みツールは失敗を装わず、圧縮された成功サマリー（`response_compacted`、`mutation_applied`）を返します。
+4 つのツールは `output=file` を受け付け、完全な結果を同一マシンのローカルファイルに書き出してパス・スキーマ・プレビューを返します：`nwd_get_model_tree`（JSON）、`nwd_batch_get_properties`（SQLite）、`nwd_find_items_by_name`（NDJSON）、`nwd_run_baked_tool`（形式は自動判定）。`nwd_send_code` に `output` パラメーターはなく、1 MiB を超える出力は同じ方式で自動的にファイルへ退避します。
+Spill ファイルは `%LOCALAPPDATA%\Bimwright\nwd-mcp\spill` に保存され、24 時間保持・最大 50 ファイルで、アンインストール時に削除されます。
+
 ---
 
 ## ローカル開発とコンパイル
