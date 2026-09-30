@@ -6,30 +6,54 @@ using Autodesk.Navisworks.Api;
 
 namespace Bimwright.Nwd.Shared.Handlers;
 
-public static class ModelItemHelper
+/// <summary>
+/// Item ids for one command. An id is the model index plus the child index at each level
+/// ("0:" is a model root, "0:6:3" its descendant). Each parent's children are numbered once
+/// and cached, so ids for many items cost O(items visited) rather than O(siblings) per item.
+/// Create one per command; ids go stale when the document changes.
+/// </summary>
+public sealed class ModelItemIdMap
 {
-    public static string GetModelItemId(ModelItem item, Document doc)
-    {
-        if (item == null || doc == null) return string.Empty;
+    private readonly Document _doc;
+    private readonly Dictionary<ModelItem, string> _ids = new Dictionary<ModelItem, string>();
 
-        var indexes = new List<int>();
-        var current = item;
-        while (current.Parent != null)
+    public ModelItemIdMap(Document doc) => _doc = doc;
+
+    public string IdOf(ModelItem item)
+    {
+        if (item == null || _doc == null) return string.Empty;
+        if (_ids.TryGetValue(item, out var id)) return id;
+
+        var parent = item.Parent;
+        if (parent == null)
         {
-            var parent = current.Parent;
-            int childIndex = IndexOfChild(parent, current);
-            if (childIndex < 0) return string.Empty;
-            indexes.Insert(0, childIndex);
-            current = parent;
+            // ModelItem.Model is only set on a model's root item.
+            var model = item.Model;
+            int modelIndex = model == null ? -1 : _doc.Models.IndexOf(model);
+            id = modelIndex < 0 ? string.Empty : modelIndex + ":";
+            _ids[item] = id;
+            return id;
         }
 
-        // ModelItem.Model is only set on a model's root item, so resolve it after the walk.
-        var model = current.Model;
-        if (model == null) return string.Empty;
-        int modelIndex = doc.Models.IndexOf(model);
-        if (modelIndex < 0) return string.Empty;
-        return modelIndex + ":" + string.Join(":", indexes);
+        var parentId = IdOf(parent);
+        int index = 0;
+        foreach (ModelItem sibling in parent.Children)
+        {
+            _ids[sibling] = parentId.Length == 0 ? string.Empty : ModelItemHelper.ChildId(parentId, index);
+            index++;
+        }
+        return _ids.TryGetValue(item, out id) ? id : string.Empty;
     }
+}
+
+public static class ModelItemHelper
+{
+    /// <summary>One-off lookup. Use <see cref="ModelItemIdMap"/> when resolving many items.</summary>
+    public static string GetModelItemId(ModelItem item, Document doc)
+        => new ModelItemIdMap(doc).IdOf(item);
+
+    public static string ChildId(string parentId, int index)
+        => parentId.EndsWith(":", StringComparison.Ordinal) ? parentId + index : parentId + ":" + index;
 
     public static ModelItem ResolveModelItemId(string id, Document doc)
     {
@@ -52,20 +76,6 @@ public static class ModelItemHelper
             current = next;
         }
         return current;
-    }
-
-    private static int IndexOfChild(ModelItem parent, ModelItem child)
-    {
-        if (parent == null || child == null) return -1;
-        int index = 0;
-        foreach (ModelItem candidate in parent.Children)
-        {
-            // The API hands out a new wrapper per enumeration; compare by value.
-            if (candidate.Equals(child))
-                return index;
-            index++;
-        }
-        return -1;
     }
 
     private static ModelItem ChildAt(ModelItem parent, int index)

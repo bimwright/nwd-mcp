@@ -32,9 +32,10 @@ public sealed class GetSelectionSetItemsHandler : INwdCommand
         }
 
         var itemIds = new JArray();
+        var ids = new ModelItemIdMap(doc);
         foreach (NW.ModelItem mi in items)
         {
-            var id = ModelItemHelper.GetModelItemId(mi, doc);
+            var id = ids.IdOf(mi);
             if (!string.IsNullOrEmpty(id))
             {
                 itemIds.Add(id);

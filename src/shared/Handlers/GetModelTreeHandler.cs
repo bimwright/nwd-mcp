@@ -27,7 +27,7 @@ public sealed class GetModelTreeHandler : INwdCommand
             if (count >= maxItems) break;
             if (model.RootItem == null) continue;
 
-            var modelNode = BuildNode(model.RootItem, doc, 0, maxDepth, ref count, maxItems);
+            var modelNode = BuildNode(model.RootItem, ModelItemHelper.GetModelItemId(model.RootItem, doc), 0, maxDepth, ref count, maxItems);
             if (modelNode != null)
             {
                 modelNode["name"] = model.FileName ?? modelNode["name"]?.Value<string>() ?? "Model";
@@ -39,13 +39,13 @@ public sealed class GetModelTreeHandler : INwdCommand
         return NwdCommandResult.Success(System.Guid.Empty, data, meta);
     }
 
-    private static JObject BuildNode(NW.ModelItem item, NW.Document doc, int currentDepth, int maxDepth, ref int count, int maxItems)
+    private static JObject BuildNode(NW.ModelItem item, string id, int currentDepth, int maxDepth, ref int count, int maxItems)
     {
         if (item == null) return null;
 
         var node = new JObject
         {
-            ["id"] = ModelItemHelper.GetModelItemId(item, doc),
+            ["id"] = id,
             ["name"] = item.DisplayName ?? item.ClassDisplayName ?? "Unnamed",
             ["type"] = item.ClassDisplayName ?? "Node",
             ["has_geometry"] = item.HasGeometry
@@ -56,10 +56,13 @@ public sealed class GetModelTreeHandler : INwdCommand
         if (currentDepth < maxDepth && ModelItemHelper.HasChildren(item) && count < maxItems)
         {
             var childrenArr = new JArray();
+            int index = 0;
             foreach (var child in item.Children)
             {
                 if (count >= maxItems) break;
-                var childNode = BuildNode(child, doc, currentDepth + 1, maxDepth, ref count, maxItems);
+                // Ids follow the walk: numbering children here avoids a parent scan per node.
+                var childId = id.Length == 0 ? string.Empty : ModelItemHelper.ChildId(id, index++);
+                var childNode = BuildNode(child, childId, currentDepth + 1, maxDepth, ref count, maxItems);
                 if (childNode != null)
                 {
                     childrenArr.Add(childNode);

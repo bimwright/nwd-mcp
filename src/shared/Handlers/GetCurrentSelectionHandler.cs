@@ -18,9 +18,10 @@ public sealed class GetCurrentSelectionHandler : INwdCommand
             return NwdCommandResult.Fail(System.Guid.Empty, "NO_DOCUMENT", "no active Navisworks document", meta);
 
         var itemIds = new JArray();
+        var ids = new ModelItemIdMap(doc);
         foreach (var item in doc.CurrentSelection.SelectedItems)
         {
-            var id = ModelItemHelper.GetModelItemId(item, doc);
+            var id = ids.IdOf(item);
             if (!string.IsNullOrEmpty(id))
             {
                 itemIds.Add(id);

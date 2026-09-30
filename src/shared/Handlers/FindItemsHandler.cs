@@ -52,11 +52,12 @@ public sealed class FindItemsHandler : INwdCommand
         NW.ModelItemCollection matches = search.FindAll(doc, false);
 
         var itemIds = new JArray();
+        var ids = new ModelItemIdMap(doc);
         int count = 0;
         foreach (NW.ModelItem mi in matches)
         {
             if (count >= maxItems) break;
-            var id = ModelItemHelper.GetModelItemId(mi, doc);
+            var id = ids.IdOf(mi);
             if (!string.IsNullOrEmpty(id))
             {
                 itemIds.Add(id);

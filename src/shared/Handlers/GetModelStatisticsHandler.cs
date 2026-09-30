@@ -17,8 +17,17 @@ public sealed class GetModelStatisticsHandler : INwdCommand
         if (doc is null)
             return NwdCommandResult.Fail(System.Guid.Empty, "NO_DOCUMENT", "no active Navisworks document", meta);
 
+        long itemCount = 0;
+        foreach (NW.Model model in doc.Models)
+        {
+            if (model.RootItem == null) continue;
+            foreach (NW.ModelItem _ in model.RootItem.DescendantsAndSelf)
+                itemCount++;
+        }
+
         var data = new JObject
         {
+            ["item_count"] = itemCount,
             ["model_count"] = doc.Models.Count,
             ["current_selection_count"] = doc.CurrentSelection.SelectedItems.Count
         };
