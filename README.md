@@ -10,7 +10,7 @@
   <a href="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
   <a href="#capabilities--architecture"><img src="https://img.shields.io/badge/Navisworks-2022--2027-2D9B9B" alt="Navisworks 2022-2027" /></a>
-  <a href="#tool-surface"><img src="https://img.shields.io/badge/MCP-29%20or%2030%20tools-6C47FF" alt="MCP tools" /></a>
+  <a href="#tool-surface"><img src="https://img.shields.io/badge/MCP-33%20tools-6C47FF" alt="MCP tools" /></a>
 </p>
 
 <p align="center">
@@ -28,7 +28,7 @@
 - **Security First:** Per-session random cryptographic token validation, loopback-only binding for the TCP transport, and absolute file path sanitization in error messages returned to the model.
 - **Multi-Instance Routing:** Automatically detects multiple running Navisworks Manage instances and supports switching targets dynamically.
 
-Navisworks shows one activity card for MCP commands. Toasts are on by default and stay up for 20 seconds after the latest result (10, 20, 30, or 60). Hover pauses the card; leaving it starts the selected interval again. The BIMwright wordmark stays off unless Show branding is turned on. `nwd_health_check` does not appear on the card. The **Bimwright** ribbon tab has **Toasts**, **Toast Brand**, and **Status**. Settings are stored in `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwdmcp.config.json`. `BIMWRIGHT_NWD_ENABLE_TOAST` overrides the on/off switch at the next launch.
+Navisworks shows one activity card for MCP commands. Toasts are on by default and stay up for 20 seconds after the latest result (10, 20, 30, or 60). Hover pauses the card; leaving it starts the selected interval again. The BIMwright wordmark stays off unless Show branding is turned on. `nwd_health_check` does not appear on the card. The **Bimwright** ribbon tab has **Toasts**, **Toast Brand**, **Record**, and **Status**. **Record** is off until you turn it on; it then appends every tool call to `%LOCALAPPDATA%\Bimwright\nwd-mcp\mcp-calls.jsonl`. `send_code` is stored as a length and SHA-256, not the script. Settings live in `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwdmcp.config.json`. `BIMWRIGHT_NWD_ENABLE_TOAST` and `BIMWRIGHT_NWD_RECORD_CALLS` override those switches at the next launch.
 
 ---
 
@@ -37,7 +37,7 @@ Navisworks shows one activity card for MCP commands. Toasts are on by default an
 | Component | Status |
 |---|---|
 | MCP gateway server (.NET 8) | ✅ Builds warning-clean (Debug + Release) |
-| Unit tests (63 xUnit) | ✅ All passing |
+| Unit tests (78 xUnit) | ✅ All passing |
 | Plug-in handler implementations | ✅ Verified against a live Navisworks Manage session |
 | Plug-in projects (net48) | ✅ Compile against the Navisworks Manage SDK |
 
@@ -62,26 +62,31 @@ powershell -ExecutionPolicy Bypass -File "$dir\install.ps1" -WhatIf
 powershell -ExecutionPolicy Bypass -File "$dir\install.ps1"
 ```
 
-Deploys `%APPDATA%\Autodesk\ApplicationPlugins\Bimwright.Nwd.bundle\` and `nwd-mcp.exe` under `%LOCALAPPDATA%\Bimwright\nwd-mcp\server\<version>\`. Restart Navisworks Manage. Point your MCP client at that `nwd-mcp.exe` path. Pin a year with `--target 2025` or `BIMWRIGHT_NWD_TARGET=2025` when multiple instances may run.
+Deploys `%APPDATA%\Autodesk\ApplicationPlugins\Bimwright.Nwd.bundle\` and `nwd-mcp.exe` at the fixed path `%LOCALAPPDATA%\Bimwright\nwd-mcp\server\current\`. Restart Navisworks Manage. Point your MCP client at that `nwd-mcp.exe` path. Pin a year with `--target 2025` or `BIMWRIGHT_NWD_TARGET=2025` when multiple instances may run.
 
 Do **not** `dotnet tool install -g Bimwright.Nwd.Server` — that is not the supported client install.
 
 **Developer:** `dotnet build` a `plugin-navisNN` project, then `pwsh scripts\install-bundle.ps1 -Year 2025 -Configuration Release`.
 
-Useful flags after wiring: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`; dual opt-in for `nwd_send_code` via `--enable-send-code` (or `BIMWRIGHT_NWD_ENABLE_SEND_CODE=1`) **and** `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=1` on the plug-in process (see [Safety](#safety-configurations)).
+Useful flags after wiring: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`. `nwd_send_code` is on unless you pass `--disable-send-code` (or `BIMWRIGHT_NWD_ENABLE_SEND_CODE=0`) and set `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0` on the Navisworks process (see [Safety](#safety-configurations)).
 
 ---
 
 ## Tool Surface
 
-Phase 1 provides **29 tools** when all toolsets are enabled, or **30 tools** when both --toolsets all and --enable-send-code are specified. Every tool uses the `nwd_*` prefix.
+A default launch registers every toolset: **33 tools**, including `nwd_send_code`. `--disable-send-code` leaves **32**. `--read-only` leaves **21**. Every tool uses the `nwd_*` prefix.
 
 ### 1. Target/Meta Tools (3)
 * `nwd_list_available_targets` — List all active discovered Navisworks sessions.
 * `nwd_get_current_target` — Report which session the server is currently pointed at.
 * `nwd_switch_target` — Point the gateway at a different active session.
 
-### 2. Query/Read Tools (8)
+### 2. File Tools (3)
+* `nwd_list_recent_files` — List recent files for the running Manage year, in File menu order.
+* `nwd_open_file` *(Write)* — Open a file. Refuses while the current file has unsaved changes unless `discard_changes` is true.
+* `nwd_import_model` *(Write)* — Bring a model into the open document. `append` (default) adds it; `merge` combines it.
+
+### 3. Query/Read Tools (8)
 * `nwd_health_check` — Check active session status and heartbeat.
 * `nwd_get_document_info` — Retrieve active document name, file path, and model count.
 * `nwd_get_model_statistics` — Retrieve counts of elements, models, and selections.
@@ -91,30 +96,30 @@ Phase 1 provides **29 tools** when all toolsets are enabled, or **30 tools** whe
 * `nwd_find_items` — Query elements using advanced property/category filters.
 * `nwd_find_items_by_name` — Search elements by display name.
 
-### 3. Selection Tools (3)
+### 4. Selection Tools (3)
 * `nwd_get_current_selection` — Retrieve element IDs of the active user selection.
 * `nwd_clear_selection` *(Write)* — Clear the active selection.
 * `nwd_select_items_by_search` *(Write)* — Select items matching property/name filters.
 
-### 4. Selection Sets Tools (3)
+### 5. Selection Sets Tools (3)
 * `nwd_list_sets` — Retrieve selection and search sets, recursing folders.
 * `nwd_get_selection_set_items` — Retrieve elements inside a set.
 * `nwd_execute_search_set` *(Mixed)* — Execute a search set; optionally select matches.
 
-### 5. Viewpoint/Navigation Tools (4)
+### 6. Viewpoint/Navigation Tools (4)
 * `nwd_list_viewpoints` — Enumerate saved viewpoints and folders.
 * `nwd_get_current_viewpoint` — Retrieve current camera and view state.
 * `nwd_goto_viewpoint` *(Write)* — Navigate the viewport camera to a saved viewpoint.
 * `nwd_save_viewpoint` *(Write)* — Save the active view as a named viewpoint.
 
-### 6. Visibility Tools (2)
+### 7. Visibility Tools (2)
 * `nwd_hide_items` *(Write)* — Hide/show specified elements.
 * `nwd_unhide_all` *(Write)* — Reset all hidden elements to visible.
 
-### 7. Escape Hatch Scripting (1)
-* `nwd_send_code` *(Write, Opt-in)* — Compile and execute in-process C# code against the Navisworks API.
+### 8. Escape Hatch Scripting (1)
+* `nwd_send_code` *(Write, on by default)* — Compile and execute in-process C# code against the Navisworks API.
 
-### 8. ToolBaker Governed Tools (6)
+### 9. ToolBaker Governed Tools (6)
 * `nwd_list_baked_tools` — List all verified compiled reusable tools.
 * `nwd_run_baked_tool` *(Write)* — Run an accepted baked tool by name with parameters.
 * `nwd_list_bake_suggestions` — List adaptive workflow suggestions.
@@ -130,10 +135,13 @@ Phase 1 provides **29 tools** when all toolsets are enabled, or **30 tools** whe
 Strict read-only mode can be enforced via the `--read-only` flag or the `BIMWRIGHT_NWD_READ_ONLY=1` environment variable.
 - All write-capable toolsets are omitted from registration.
 - Mixed tools (e.g. `nwd_execute_search_set`) are modified to force read-only parameter bounds (`select=false`) and output a `read_only_enforced` response marker.
-- The total read-only tool surface is exactly **20 tools**.
+- The total read-only tool surface is exactly **21 tools**. `nwd_list_recent_files` stays; `nwd_open_file` and `nwd_import_model` do not.
 
-### SendCode Opt-in
-Dynamic C# scripting (`nwd_send_code`) is **disabled by default**. The MCP server exposes it only when booted with `--enable-send-code` or `BIMWRIGHT_NWD_ENABLE_SEND_CODE=1` — this server-side gate is the authoritative control that prevents the tool from being registered. The plug-in additionally reads `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=1` from its environment as a second, documented opt-in signal.
+### Send code
+`nwd_send_code` is **on by default**. `--read-only` still removes it. Turn it off with `--disable-send-code` or `BIMWRIGHT_NWD_ENABLE_SEND_CODE=0` on the server, and `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0` in the Navisworks process. Either side off blocks execution. `--enable-send-code` or `=1` turns it back on. An unrecognized value is off.
+
+### Tool-call record
+**Record** is **off by default**. The ribbon toggle, the Status checkbox, `recordCalls` in `nwdmcp.config.json`, and `BIMWRIGHT_NWD_RECORD_CALLS` share one switch for every tool. While it is on, each call is appended to `mcp-calls.jsonl` next to that config file. The `send_code` script is not written; the line stores `code_length` and `code_sha256`.
 
 ### ToolBaker Persistence
 ToolBaker sqlite storage (`bake.db`) and usage audit logs (`audit.jsonl`) are persisted locally under:

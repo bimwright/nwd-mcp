@@ -33,10 +33,10 @@ Follow this numbered checklist on a machine with Autodesk Navisworks Manage inst
     Call `nwd_list_viewpoints` and confirm that any saved viewpoints/folders are enumerated.
 11. **Test Element Visibility**
     Call `nwd_hide_items` with a few element IDs, and confirm they disappear in the active viewport. Call `nwd_unhide_all` to confirm they are restored.
-12. **Gated Code Safety**
-    By default, verify that `nwd_send_code` is absent or returns an error.
-13. **Enable send_code Gating**
-    Start the server with `--enable-send-code` (or `BIMWRIGHT_NWD_ENABLE_SEND_CODE=1`) and set the plug-in's environment variable `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=1` before starting Navisworks.
+12. **Send code is on**
+    With a default server and plug-in, `nwd_send_code` is registered.
+13. **Turn send_code off**
+    Restart the server with `--disable-send-code` (or `BIMWRIGHT_NWD_ENABLE_SEND_CODE=0`) and start Navisworks with `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0`. The tool is absent, or a call returns `SEND_CODE_DISABLED`.
 14. **Execute dynamic C#**
     Call `nwd_send_code` with a harmless script:
     ```csharp

@@ -3,14 +3,11 @@
 `nwd-mcp` ships with the **ToolBaker** self-evolution platform. This allows AI agents to write, compile, register, and run reusable C# tools dynamically inside the Navisworks Manage plug-in process, governed by a multi-layered safety policy.
 
 ## The send_code Escape Hatch
-`nwd_send_code` is the direct execution command. It compiles and evaluates raw C# code in-process using Roslyn Scripting. Because this is a high-privilege escape hatch, it is protected by a two-sided opt-in gate.
+`nwd_send_code` is the direct execution command. It compiles and evaluates raw C# code in-process using Roslyn Scripting. It is **on by default**. Both the server and the plug-in can turn it off; either side off blocks the call with `SEND_CODE_DISABLED` or by not registering the tool.
 
-### Two-Sided Opt-in Gating
-Dynamic execution is **disabled by default**. To enable it:
-1. **Server-side opt-in:** The MCP server must be booted with the `--enable-send-code` CLI flag or the `BIMWRIGHT_NWD_ENABLE_SEND_CODE=1` environment variable.
-2. **Plug-in-side opt-in:** The target Navisworks plug-in process must detect the `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=1` (or `1`, `true`, `yes`, `on`) environment variable.
-
-If either side lacks the opt-in flag, all `nwd_send_code` requests are blocked with a `SEND_CODE_DISABLED` error.
+### Turning send_code off
+1. **Server:** start with `--disable-send-code`, or set `BIMWRIGHT_NWD_ENABLE_SEND_CODE=0`. `--enable-send-code` or `=1` turns it back on. `--read-only` removes it with the other write tools.
+2. **Plug-in:** set `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0` (also `false`, `no`, or `off`) in the Navisworks process. Unset means on. Any other value means off.
 
 ---
 

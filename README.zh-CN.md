@@ -10,7 +10,7 @@
   <a href="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
   <a href="#能力--架构"><img src="https://img.shields.io/badge/Navisworks-2022--2027-2D9B9B" alt="Navisworks 2022-2027" /></a>
-  <a href="#工具面"><img src="https://img.shields.io/badge/MCP-29%20or%2030%20tools-6C47FF" alt="MCP tools" /></a>
+  <a href="#工具面"><img src="https://img.shields.io/badge/MCP-33%20tools-6C47FF" alt="MCP tools" /></a>
 </p>
 
 <p align="center">
@@ -29,7 +29,7 @@
 - **安全优先：** 每会话随机加密 token 校验、TCP 传输仅绑定 loopback，以及对返回给模型的错误消息中的绝对文件路径进行净化。
 - **多实例路由：** 自动检测多个正在运行的 Navisworks Manage 实例，并支持动态切换目标。
 
-Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最新结果之后停留 20 秒（可选 10、20、30 或 60）。悬停暂停；离开后重新计满该间隔。BIMwright 字标默认关闭，需打开 Show branding 才会出现。`nwd_health_check` 不会进入卡片。**Bimwright** 功能区有 **Toasts**、**Toast Brand** 和 **Status**。设置写在 `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwdmcp.config.json`。`BIMWRIGHT_NWD_ENABLE_TOAST` 在下次启动时覆盖开关。
+Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最新结果之后停留 20 秒（可选 10、20、30 或 60）。悬停暂停；离开后重新计满该间隔。BIMwright 字标默认关闭，需打开 Show branding 才会出现。`nwd_health_check` 不会进入卡片。**Bimwright** 功能区有 **Toasts**、**Toast Brand**、**Record** 和 **Status**。**Record** 在打开之前保持关闭；打开后，每次工具调用都会追加到 `%LOCALAPPDATA%\Bimwright\nwd-mcp\mcp-calls.jsonl`。`send_code` 只保存长度和 SHA-256，不保存脚本。设置写在 `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwdmcp.config.json`。`BIMWRIGHT_NWD_ENABLE_TOAST` 和 `BIMWRIGHT_NWD_RECORD_CALLS` 在下次启动时覆盖对应开关。
 
 ---
 
@@ -38,7 +38,7 @@ Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最�
 | 组件 | 状态 |
 |---|---|
 | MCP gateway server（.NET 8） | ✅ 编译无警告（Debug + Release） |
-| 单元测试（63 个 xUnit） | ✅ 全部通过 |
+| 单元测试（78 个 xUnit） | ✅ 全部通过 |
 | Plug-in handler 实现 | ✅ 已在真实 Navisworks Manage 会话中验证 |
 | Plug-in 项目（net48） | ✅ 可针对 Navisworks Manage SDK 编译 |
 
@@ -50,13 +50,13 @@ Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最�
 
 从 [GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest) 下载 `NwdMcp.Setup-*-win-x64.zip`。v0.1.2 含 Manage **2025** 插件。解压后运行 `install.ps1`，MCP 指向已安装的 `nwd-mcp.exe`。不要 `dotnet tool install -g Bimwright.Nwd.Server`。
 
-常用开关：`--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`。`nwd_send_code` 需双侧 opt-in——见 [安全配置](#安全配置)。
+常用开关：`--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`。`nwd_send_code` 默认开启。用 `--disable-send-code`（或 `BIMWRIGHT_NWD_ENABLE_SEND_CODE=0`）以及 Navisworks 进程上的 `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0` 关闭它——见 [安全配置](#安全配置)。
 
 ---
 
 ## 工具面
 
-Phase 1 在启用全部 toolsets 时默认提供 **29 个工具**，在同时指定 --toolsets all 和 --enable-send-code 时提供 **30 个工具**。每个工具都使用 `nwd_*` 前缀。
+默认启动注册全部 toolset，共 **33 个工具**，其中包括 `nwd_send_code`。`--disable-send-code` 为 **32 个**。`--read-only` 为 **21 个**。每个工具都使用 `nwd_*` 前缀。
 
 ### 1. 目标/元工具（3 个）
 
@@ -64,7 +64,13 @@ Phase 1 在启用全部 toolsets 时默认提供 **29 个工具**，在同时指
 * `nwd_get_current_target` —— 报告 server 当前指向的会话。
 * `nwd_switch_target` —— 将 gateway 指向另一个活跃的会话。
 
-### 2. 查询/读取工具（8 个）
+### 2. 文件工具（3 个）
+
+* `nwd_list_recent_files` —— 按文件菜单顺序，列出当前 Manage 年份的最近文件。
+* `nwd_open_file` *(写入)* —— 打开一个文件。当前文件有未保存更改时拒绝，除非 `discard_changes` 为 true。
+* `nwd_import_model` *(写入)* —— 把模型导入当前打开的文档。`append`（默认）作为独立模型加入；`merge` 则合并进去。
+
+### 3. 查询/读取工具（8 个）
 
 * `nwd_health_check` —— 检查活跃会话状态与心跳。
 * `nwd_get_document_info` —— 获取当前文档名称、文件路径与模型数量。
@@ -75,35 +81,35 @@ Phase 1 在启用全部 toolsets 时默认提供 **29 个工具**，在同时指
 * `nwd_find_items` —— 使用高级属性/分类过滤器查询图元。
 * `nwd_find_items_by_name` —— 按显示名称搜索图元。
 
-### 3. 选择工具（3 个）
+### 4. 选择工具（3 个）
 
 * `nwd_get_current_selection` —— 获取当前用户选择的图元 ID。
 * `nwd_clear_selection` *(写入)* —— 清除当前选择。
 * `nwd_select_items_by_search` *(写入)* —— 选择匹配属性/名称过滤器的图元。
 
-### 4. 选择集工具（3 个）
+### 5. 选择集工具（3 个）
 
 * `nwd_list_sets` —— 获取选择集与搜索集，递归遍历文件夹。
 * `nwd_get_selection_set_items` —— 获取某个集合内的图元。
 * `nwd_execute_search_set` *(混合)* —— 执行搜索集；可选地选中匹配项。
 
-### 5. 视点/导航工具（4 个）
+### 6. 视点/导航工具（4 个）
 
 * `nwd_list_viewpoints` —— 枚举已保存的视点与文件夹。
 * `nwd_get_current_viewpoint` —— 获取当前相机与视图状态。
 * `nwd_goto_viewpoint` *(写入)* —— 将视口相机导航到已保存的视点。
 * `nwd_save_viewpoint` *(写入)* —— 将当前视图保存为命名的视点。
 
-### 6. 可见性工具（2 个）
+### 7. 可见性工具（2 个）
 
 * `nwd_hide_items` *(写入)* —— 隐藏/显示指定的图元。
 * `nwd_unhide_all` *(写入)* —— 把所有隐藏的图元恢复为可见。
 
-### 7. 逃生舱脚本（1 个）
+### 8. 逃生舱脚本（1 个）
 
-* `nwd_send_code` *(写入，需 opt-in)* —— 针对 Navisworks API 编译并执行进程内 C# 代码。
+* `nwd_send_code` *(写入，默认开启)* —— 针对 Navisworks API 编译并执行进程内 C# 代码。
 
-### 8. ToolBaker 治理工具（6 个）
+### 9. ToolBaker 治理工具（6 个）
 
 * `nwd_list_baked_tools` —— 列出所有已验证、已编译的可复用工具。
 * `nwd_run_baked_tool` *(写入)* —— 按名称并携带参数运行一个已接受的烘焙工具。
@@ -122,11 +128,15 @@ Phase 1 在启用全部 toolsets 时默认提供 **29 个工具**，在同时指
 
 - 所有具备写入能力的 toolsets 都不会被注册。
 - 混合工具（例如 `nwd_execute_search_set`）会被修改为强制只读参数边界（`select=false`），并输出一个 `read_only_enforced` 响应标记。
-- 只读工具面恰好为 **20 个工具**。
+- 只读工具面恰好为 **21 个工具**。`nwd_list_recent_files` 保留；`nwd_open_file` 和 `nwd_import_model` 会被移除。
 
-### SendCode 的 opt-in
+### send_code
 
-动态 C# 脚本（`nwd_send_code`）**默认禁用**。MCP server 仅在以 `--enable-send-code` 或 `BIMWRIGHT_NWD_ENABLE_SEND_CODE=1` 启动时才会暴露该工具 —— 这一 server 端开关是阻止该工具被注册的权威控制。plug-in 还会从其环境中读取 `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=1`，作为第二重、有文档记录的 opt-in 信号。
+`nwd_send_code` **默认开启**。`--read-only` 仍会移除它。在 server 上用 `--disable-send-code` 或 `BIMWRIGHT_NWD_ENABLE_SEND_CODE=0` 关闭，在 Navisworks 进程中用 `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0` 关闭。任一侧关闭都会阻止执行。`--enable-send-code` 或 `=1` 会重新打开。无法识别的值视为关闭。
+
+### 工具调用记录（Record）
+
+**Record** **默认关闭**。功能区开关、Status 复选框、`nwdmcp.config.json` 里的 `recordCalls`，以及 `BIMWRIGHT_NWD_RECORD_CALLS`，是覆盖全部工具的同一个开关。打开后，每次调用都会追加到该配置文件旁的 `mcp-calls.jsonl`。`send_code` 的脚本不会写入；该行保存 `code_length` 和 `code_sha256`。
 
 ### ToolBaker 持久化
 

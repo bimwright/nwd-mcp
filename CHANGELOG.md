@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Changed
+- `nwd_send_code` is on by default. `--disable-send-code` or `BIMWRIGHT_NWD_ENABLE_SEND_CODE=0`, and `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0`, turn it off. `--read-only` still removes it.
+- The server installs at the fixed path `%LOCALAPPDATA%\Bimwright\nwd-mcp\server\current\nwd-mcp.exe` instead of a versioned folder, matching the other bimwright gateways. Reinstalls swap the whole `current` folder so no stale files remain; earlier `server\<version>` copies are kept and reported — repoint MCP client entries to the new path.
+
+### Added
+- **Record** switch for every tool call, off by default. The ribbon, Status window, `recordCalls` in `nwdmcp.config.json`, and `BIMWRIGHT_NWD_RECORD_CALLS` share it. While on, calls append to `%LOCALAPPDATA%\Bimwright\nwd-mcp\mcp-calls.jsonl`. `send_code` stores length and SHA-256 instead of the script.
+- `nwd_list_recent_files`, `nwd_open_file`, and `nwd_import_model`. A default launch registers every toolset (33 tools). Open refuses unsaved changes unless `discard_changes` is true. Import `append` adds a model; `merge` combines it. Open and import wait up to 5 minutes.
+
 ## v0.1.2 - First GitHub Release
 
 Client setup ZIP: `NwdMcp.Setup-v0.1.2-win-x64.zip` (self-contained `nwd-mcp.exe`). **Plugin year in this ZIP:** Navisworks Manage **2025** (the only Manage install on the pack machine). Source still supports 2022–2027.

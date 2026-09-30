@@ -10,7 +10,7 @@
   <a href="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
   <a href="#tính-năng--kiến-trúc"><img src="https://img.shields.io/badge/Navisworks-2022--2027-2D9B9B" alt="Navisworks 2022-2027" /></a>
-  <a href="#danh-sách-công-cụ-tool-surface"><img src="https://img.shields.io/badge/MCP-29%20or%2030%20tools-6C47FF" alt="MCP tools" /></a>
+  <a href="#danh-sách-công-cụ-tool-surface"><img src="https://img.shields.io/badge/MCP-33%20tools-6C47FF" alt="MCP tools" /></a>
 </p>
 
 <p align="center">
@@ -28,7 +28,7 @@
 - **Bảo mật Tối đa:** Xác thực qua mã token ngẫu nhiên tạo theo từng phiên, chỉ liên kết với loopback TCP (`127.0.0.1`), và tự động ẩn/lọc đường dẫn tệp tuyệt đối trong các thông báo lỗi trả về cho mô hình AI.
 - **Điều hướng Nhiều Phiên chạy:** Tự động phát hiện nhiều tiến trình Navisworks đang chạy đồng thời và cho phép chuyển đổi mục tiêu điều khiển linh hoạt.
 
-Navisworks hiện một thẻ cho các lệnh MCP. Thẻ bật sẵn và ở lại 20 giây sau kết quả mới nhất (chọn 10, 20, 30 hoặc 60). Đưa chuột vào thì tạm dừng; rời thẻ thì đếm lại đủ khoảng chờ. Wordmark BIMwright tắt cho đến khi bật Show branding. `nwd_health_check` không lên thẻ. Tab ribbon **Bimwright** có **Toasts**, **Toast Brand** và **Status**. Cấu hình nằm ở `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwdmcp.config.json`. `BIMWRIGHT_NWD_ENABLE_TOAST` ghi đè bật/tắt ở lần mở sau.
+Navisworks hiện một thẻ cho các lệnh MCP. Thẻ bật sẵn và ở lại 20 giây sau kết quả mới nhất (chọn 10, 20, 30 hoặc 60). Đưa chuột vào thì tạm dừng; rời thẻ thì đếm lại đủ khoảng chờ. Wordmark BIMwright tắt cho đến khi bật Show branding. `nwd_health_check` không lên thẻ. Tab ribbon **Bimwright** có **Toasts**, **Toast Brand**, **Record** và **Status**. **Record** tắt cho đến khi bạn bật; khi bật, mọi lệnh được ghi thêm vào `%LOCALAPPDATA%\Bimwright\nwd-mcp\mcp-calls.jsonl`. `send_code` chỉ lưu độ dài và SHA-256, không lưu mã nguồn. Cấu hình nằm ở `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwdmcp.config.json`. `BIMWRIGHT_NWD_ENABLE_TOAST` và `BIMWRIGHT_NWD_RECORD_CALLS` ghi đè hai công tắc đó ở lần mở sau.
 
 ---
 
@@ -37,7 +37,7 @@ Navisworks hiện một thẻ cho các lệnh MCP. Thẻ bật sẵn và ở l�
 | Thành phần | Trạng thái |
 |---|---|
 | Máy chủ MCP gateway (.NET 8) | ✅ Biên dịch sạch cảnh báo (Debug + Release) |
-| Unit tests (63 xUnit) | ✅ Tất cả đều qua |
+| Unit tests (78 xUnit) | ✅ Tất cả đều qua |
 | Các triển khai plug-in handler | ✅ Đã xác minh trên một phiên Navisworks Manage thực tế |
 | Các dự án plug-in (net48) | ✅ Biên dịch thành công theo Navisworks Manage SDK |
 
@@ -49,20 +49,25 @@ Navisworks hiện một thẻ cho các lệnh MCP. Thẻ bật sẵn và ở l�
 
 Tải [GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest) (`NwdMcp.Setup-*-win-x64.zip`). v0.1.2 gồm plugin Manage **2025**. `install.ps1` trong ZIP; trỏ MCP vào `nwd-mcp.exe` đã cài. Không `dotnet tool install -g Bimwright.Nwd.Server`.
 
-Cờ: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`. `nwd_send_code` cần opt-in hai phía — xem [Cấu hình an toàn](#cấu-hình-an-toàn).
+Cờ: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`. `nwd_send_code` bật sẵn. Tắt bằng `--disable-send-code` (hoặc `BIMWRIGHT_NWD_ENABLE_SEND_CODE=0`) và `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0` trên tiến trình Navisworks — xem [Cấu hình an toàn](#cấu-hình-an-toàn).
 
 ---
 
 ## Danh Sách Công Cụ (Tool Surface)
 
-Phiên bản đầu tiên cung cấp chính xác **29 công cụ** khi tất cả bộ công cụ được bật, hoặc **30 công cụ** khi bật cả --toolsets all và --enable-send-code. Mỗi công cụ đều sử dụng tiền tố `nwd_*`.
+Một lần chạy mặc định đăng ký đủ mọi nhóm: **33 công cụ**, gồm `nwd_send_code`. `--disable-send-code` còn **32**. `--read-only` còn **21**. Mỗi công cụ dùng tiền tố `nwd_*`.
 
 ### 1. Công cụ Quản lý / Meta (3)
 * `nwd_list_available_targets` — Liệt kê tất cả các phiên chạy Navisworks đang hoạt động.
 * `nwd_get_current_target` — Báo cáo phiên chạy hiện tại mà máy chủ đang kết nối.
 * `nwd_switch_target` — Chuyển đổi cổng điều khiển sang một phiên chạy tích cực khác.
 
-### 2. Công cụ Truy vấn / Đọc (8)
+### 2. Công cụ tệp (3)
+* `nwd_list_recent_files` — Liệt kê file gần đây của năm Manage đang chạy, theo thứ tự menu File.
+* `nwd_open_file` *(Ghi)* — Mở một file. Từ chối khi file hiện tại còn thay đổi chưa lưu, trừ khi `discard_changes` là true.
+* `nwd_import_model` *(Ghi)* — Đưa một mô hình vào tài liệu đang mở. `append` (mặc định) thêm thành model riêng; `merge` gộp vào tài liệu.
+
+### 3. Công cụ Truy vấn / Đọc (8)
 * `nwd_health_check` — Kiểm tra trạng thái và tín hiệu nhịp tim (heartbeat) của phiên chạy.
 * `nwd_get_document_info` — Lấy thông tin tài liệu hoạt động: tên, đường dẫn tệp, và số lượng mô hình liên kết.
 * `nwd_get_model_statistics` — Lấy số liệu thống kê: số lượng phần tử, số lượng mô hình, và số đối tượng đang được chọn.
@@ -72,30 +77,30 @@ Phiên bản đầu tiên cung cấp chính xác **29 công cụ** khi tất c�
 * `nwd_find_items` — Tìm kiếm phần tử thông qua các bộ lọc nâng cao (thuộc tính/danh mục).
 * `nwd_find_items_by_name` — Tìm kiếm nhanh phần tử theo tên hiển thị.
 
-### 3. Công cụ Lựa chọn / Selection (3)
+### 4. Công cụ Lựa chọn / Selection (3)
 * `nwd_get_current_selection` — Lấy danh sách Element ID của các phần tử đang được chọn trong UI.
 * `nwd_clear_selection` *(Ghi)* — Xóa bỏ các lựa chọn hiện tại.
 * `nwd_select_items_by_search` *(Ghi)* — Tự động chọn các phần tử khớp với bộ lọc thuộc tính/tên.
 
-### 4. Công cụ Tập hợp Lựa chọn / Sets (3)
+### 5. Công cụ Tập hợp Lựa chọn / Sets (3)
 * `nwd_list_sets` — Liệt kê các tập hợp chọn (selection sets) và tìm kiếm (search sets), đệ quy qua các thư mục.
 * `nwd_get_selection_set_items` — Lấy danh sách phần tử thuộc một tập hợp cụ thể.
 * `nwd_execute_search_set` *(Hỗn hợp)* — Thực thi tìm kiếm của một tập hợp tìm kiếm; tùy chọn chọn các phần tử khớp.
 
-### 5. Công cụ Điểm nhìn / Viewpoints (4)
+### 6. Công cụ Điểm nhìn / Viewpoints (4)
 * `nwd_list_viewpoints` — Liệt kê các điểm nhìn đã lưu và các thư mục tương ứng.
 * `nwd_get_current_viewpoint` — Lấy trạng thái máy ảnh và góc nhìn hiện tại.
 * `nwd_goto_viewpoint` *(Ghi)* — Điều hướng máy ảnh đến một điểm nhìn đã lưu.
 * `nwd_save_viewpoint` *(Ghi)* — Lưu góc nhìn hoạt động thành một điểm nhìn có tên.
 
-### 6. Công cụ Hiển thị / Visibility (2)
+### 7. Công cụ Hiển thị / Visibility (2)
 * `nwd_hide_items` *(Ghi)* — Ẩn/hiển thị các phần tử được chỉ định.
 * `nwd_unhide_all` *(Ghi)* — Khôi phục trạng thái hiển thị của tất cả các phần tử bị ẩn.
 
-### 7. Viết mã Kịch bản / Escape Hatch (1)
-* `nwd_send_code` *(Ghi, Kích hoạt tùy chọn)* — Biên dịch và thực thi mã C# trực tiếp đối với Navisworks API.
+### 8. Viết mã Kịch bản / Escape Hatch (1)
+* `nwd_send_code` *(Ghi, bật sẵn)* — Biên dịch và thực thi mã C# trực tiếp đối với Navisworks API.
 
-### 8. Công cụ Đóng gói ToolBaker (6)
+### 9. Công cụ Đóng gói ToolBaker (6)
 * `nwd_list_baked_tools` — Liệt kê danh sách các công cụ tự viết đã được xác thực, biên dịch và đăng ký.
 * `nwd_run_baked_tool` *(Ghi)* — Chạy một công cụ đã đóng gói theo tên kèm theo tham số.
 * `nwd_list_bake_suggestions` — Liệt kê các gợi ý tự động hóa quy trình lặp đi lặp lại.
@@ -111,10 +116,13 @@ Phiên bản đầu tiên cung cấp chính xác **29 công cụ** khi tất c�
 Có thể kích hoạt chế độ chỉ đọc nghiêm ngặt bằng cờ `--read-only` hoặc biến môi trường `BIMWRIGHT_NWD_READ_ONLY=1`.
 - Các công cụ có khả năng ghi hoặc thay đổi mô hình sẽ bị ẩn hoàn toàn khỏi danh sách đăng ký MCP.
 - Các công cụ hỗn hợp (như `nwd_execute_search_set`) sẽ bị ép buộc tham số an toàn (`select=false`) và trả về cờ đánh dấu `read_only_enforced` trong phản hồi.
-- Tổng số lượng công cụ khả dụng ở chế độ chỉ đọc là đúng **20 công cụ**.
+- Tổng số lượng công cụ khả dụng ở chế độ chỉ đọc là đúng **21 công cụ**. `nwd_list_recent_files` vẫn còn; `nwd_open_file` và `nwd_import_model` bị gỡ.
 
-### Cơ chế Kích hoạt send_code
-Viết kịch bản C# động (`nwd_send_code`) bị **tắt theo mặc định**. Máy chủ MCP chỉ hiển thị công cụ này khi chạy kèm cờ `--enable-send-code` hoặc biến môi trường `BIMWRIGHT_NWD_ENABLE_SEND_CODE=1` — cổng phía máy chủ này là cơ chế kiểm soát có hiệu lực thực tế, ngăn công cụ được đăng ký. Plug-in cũng đọc biến môi trường `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=1` như một tín hiệu xác thực thứ hai được tài liệu hóa.
+### send_code
+`nwd_send_code` **bật sẵn**. `--read-only` vẫn gỡ công cụ này. Tắt bằng `--disable-send-code` hoặc `BIMWRIGHT_NWD_ENABLE_SEND_CODE=0` trên máy chủ, và `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0` trong tiến trình Navisworks. Một trong hai phía tắt là lệnh không chạy. `--enable-send-code` hoặc `=1` bật lại. Giá trị không nhận ra được coi là tắt.
+
+### Ghi lệnh (Record)
+**Record** **tắt sẵn**. Nút trên ribbon, ô trong cửa sổ Status, khóa `recordCalls` trong `nwdmcp.config.json` và `BIMWRIGHT_NWD_RECORD_CALLS` là cùng một công tắc cho mọi công cụ. Khi bật, mỗi lệnh được ghi thêm vào `mcp-calls.jsonl` cạnh file cấu hình đó. Mã `send_code` không được ghi; dòng nhật ký lưu `code_length` và `code_sha256`.
 
 ### Lưu trữ ToolBaker
 Cơ sở dữ liệu lưu trữ sqlite (`bake.db`) và nhật ký kiểm tra quy trình (`audit.jsonl`) của ToolBaker được duy trì cục bộ tại:
