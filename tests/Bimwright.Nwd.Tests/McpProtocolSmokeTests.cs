@@ -1,12 +1,35 @@
 using System.Diagnostics;
+using System.Reflection;
 using Bimwright.Nwd.Server;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ModelContextProtocol.Server;
 
 namespace Bimwright.Nwd.Tests;
 
 public sealed class McpProtocolSmokeTests
 {
+    public static IEnumerable<object[]> ToolsetCases()
+        => Program.ToolsetRegistrations.Select(registration => new object[] { registration.Name, registration.ToolType });
+
+    [Theory]
+    [MemberData(nameof(ToolsetCases))]
+    public async Task EachToolsetRegistersItsDeclaredToolsOverStdio(string toolset, Type toolType)
+    {
+        var responses = await RunProtocolHandshake(toolset: toolset);
+        var expected = toolType.GetMethods()
+            .Select(method => method.GetCustomAttribute<McpServerToolAttribute>()?.Name)
+            .Where(name => name is not null)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+        var actual = ((JArray)responses[1]["result"]!["tools"]!)
+            .Select(tool => (string?)tool["name"])
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+        Assert.NotEmpty(expected);
+        Assert.Equal(expected, actual);
+    }
+
     [Fact]
     public async Task Server_exposes_tools_list_over_stdio()
     {
@@ -74,7 +97,7 @@ public sealed class McpProtocolSmokeTests
     }
 
     private static async Task<JObject[]> RunProtocolHandshake(bool checkHealth = false,
-        bool readOnly = false, bool explicitArgument = false)
+        bool readOnly = false, bool explicitArgument = false, string toolset = "all")
     {
         var serverAssembly = typeof(Program).Assembly.Location;
         var startInfo = new ProcessStartInfo
@@ -84,7 +107,7 @@ public sealed class McpProtocolSmokeTests
             RedirectStandardError = true, CreateNoWindow = true,
         };
         startInfo.ArgumentList.Add(serverAssembly);
-        foreach (var arg in new[] { "--toolsets", "all", "--enable-send-code", "--read-only", readOnly ? "true" : "false", "--timeout-ms", "1000" })
+        foreach (var arg in new[] { "--toolsets", toolset, "--enable-send-code", "--read-only", readOnly ? "true" : "false", "--timeout-ms", "1000" })
             startInfo.ArgumentList.Add(arg);
         startInfo.Environment.Remove("BIMWRIGHT_NWD_ENABLE_TOOLBAKER");
 

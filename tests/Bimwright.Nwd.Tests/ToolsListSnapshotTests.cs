@@ -11,6 +11,17 @@ namespace Bimwright.Nwd.Tests;
 
 public sealed class ToolsListSnapshotTests
 {
+    [Fact]
+    public void RegistrationTableCoversKnownToolsetsWithoutDuplicateNamesOrTypes()
+    {
+        var registrations = Program.ToolsetRegistrations;
+        Assert.Equal(
+            ToolsetFilter.KnownToolsets.OrderBy(x => x, StringComparer.Ordinal),
+            registrations.Select(x => x.Name).OrderBy(x => x, StringComparer.Ordinal));
+        Assert.Equal(registrations.Length, registrations.Select(x => x.Name).Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        Assert.Equal(registrations.Length, registrations.Select(x => x.ToolType).Distinct().Count());
+    }
+
     private static string[] ToolNamesFor(NwdMcpConfig config)
     {
         var names = new List<string>();
