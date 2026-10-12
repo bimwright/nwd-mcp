@@ -29,7 +29,7 @@
 - **安全优先：** 每会话随机加密 token 校验、TCP 传输仅绑定 loopback，以及对返回给模型的错误消息中的绝对文件路径进行净化。
 - **多实例路由：** 自动检测多个正在运行的 Navisworks Manage 实例，并支持动态切换目标。
 
-Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最新结果之后停留 20 秒（可选 10、20、30 或 60）。悬停暂停；离开后重新计满该间隔。有意悬停会平滑展开当前卡片的紧凑三行结果视口，每项均有独立边框（工具、结果、成功／失败，以及本地完成时间，采用24小时制 `HH:mm:ss`）。保留该卡片内的所有结果，旧调用在上、新调用在下；初始显示最新三次调用，通过与RVT一致的细滚动条向上滚动可查看更早的调用。移开后平滑收起。新结果会立即追加：位于底部时自动跟随最新调用，向上阅读旧调用时保持滚动位置；回到底部后恢复自动跟随。关闭 branding 也能使用，并遵循减少动态效果设置。有长度上限的摘要仅保留在内存中，关闭或重置卡片时丢弃，不会开启 Record，也不保存原始请求、结果 JSON 或脚本源代码。BIMwright 字标默认关闭，需打开 Show branding 才会出现。`nwd_health_check` 不会进入卡片。**Bimwright** 功能区有 **Toasts**、**Toast Brand**、**Record** 和 **Status**。**Record** 在打开之前保持关闭；打开后，每次工具调用都会追加到 `%LOCALAPPDATA%\Bimwright\nwd-mcp\mcp-calls.jsonl`。`send_code` 只保存长度和 SHA-256，不保存脚本。设置写在 `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwdmcp.config.json`。`BIMWRIGHT_NWD_ENABLE_TOAST` 和 `BIMWRIGHT_NWD_RECORD_CALLS` 在下次启动时覆盖对应开关。
+Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最新结果之后停留 20 秒（可选 10、20、30 或 60）。悬停暂停；离开后重新计满该间隔。有意悬停会平滑展开当前卡片的紧凑三行结果视口，每项均有独立边框（工具、结果、成功／失败，以及本地完成时间，采用24小时制 `HH:mm:ss`）。保留该卡片内的所有结果，旧调用在上、新调用在下；初始显示最新三次调用，通过与RVT一致的细滚动条向上滚动可查看更早的调用。移开后平滑收起。新结果会立即追加：位于底部时自动跟随最新调用，向上阅读旧调用时保持滚动位置；回到底部后恢复自动跟随。关闭 branding 也能使用，并遵循减少动态效果设置。有长度上限的摘要仅保留在内存中，关闭或重置卡片时丢弃，不会开启 Record，也不保存原始请求、结果 JSON 或脚本源代码。BIMwright 字标默认关闭，需打开 Show branding 才会出现。`nwd_health_check` 不会进入卡片。**Bimwright** 功能区有 **Toasts**、**Toast Brand**、**Record** 和 **Status**。**Record** 为旧网关提供主机默认设置；当前网关使用下文介绍的服务器调用日志设置。`send_code` 只保存长度和 SHA-256，不保存脚本。设置写在 `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwdmcp.config.json`。`BIMWRIGHT_NWD_ENABLE_TOAST` 和 `BIMWRIGHT_NWD_RECORD_CALLS` 在下次启动时覆盖对应开关。
 
 **Status → 提示位置：**分别选择左／右与上／下（默认左上）。立即应用并保存；更改角落会清除拖动偏移。启用 **Allow dragging the toast** 后可拖动标题行，普通单击仍关闭卡片。关闭拖动会返回所选角落但保留位置，再次启用可恢复。**Reset position** 删除偏移。位置以相对 Navisworks 窗口的 DIP 保存，并限制在所在显示器的工作区内。底部锚定向上展开；空间不足时使用相反方向。动画遵循 Windows 设置。保存失败在 Status 内提示，新设置仍在当前会话生效。工具／结果的工具提示包含已脱敏的结果、状态、完成时间及可用的执行时长。暂不协调不同应用之间的提示重叠。
 
@@ -146,7 +146,9 @@ Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最�
 
 ### 工具调用记录（Record）
 
-**Record** **默认关闭**。功能区开关、Status 复选框、`nwdmcp.config.json` 里的 `recordCalls`，以及 `BIMWRIGHT_NWD_RECORD_CALLS`，是覆盖全部工具的同一个开关。打开后，每次调用都会追加到该配置文件旁的 `mcp-calls.jsonl`。`send_code` 的脚本不会写入；该行保存 `code_length` 和 `code_sha256`。
+调用日志**默认关闭**。`--enable-call-log` 将全部 MCP 调用（包括本地工具和失败）记录到 `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwd-mcp-calls.jsonl`；转发到插件的命令还会在同目录的 `mcp-calls.jsonl` 中记录原生结果。`--disable-call-log` 阻止此网关创建或追加这两个日志。MCPB 的 `call_log` 默认 false，并传递同样的开关参数。
+
+优先顺序为 CLI → `BIMWRIGHT_NWD_ENABLE_CALL_LOG` → 服务器 JSON 的 `enableCallLog` → false。匹配版本的插件按每个请求的选择覆盖功能区/Status 的 **Record**、已保存的 `recordCalls` 和 `BIMWRIGHT_NWD_RECORD_CALLS`，不会修改这些设置或其他网关。旧网关未传递选择时仍使用主机开关；旧插件不识别此覆盖，因此应使用匹配的构建。`send_code` 参数只保存 `code_length` 和 `code_sha256`，不保存脚本正文。
 
 ### 权限与 auto mode
 除 `nwd_send_code` 外，每个工具都声明了 MCP 注解（`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`）。除可选更新检查会访问GitHub的 `nwd_health_check` 外，open-world均为false；health仍为只读、非破坏性工具。Claude Desktop 据此处理：只读工具允许一次即可，破坏性工具（`nwd_open_file`, `nwd_hide_items`, `nwd_unhide_all`, `nwd_run_baked_tool`, `nwd_dismiss_bake_suggestion`）每次都会询问。

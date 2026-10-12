@@ -39,16 +39,18 @@ public static class NwdCallLog
             if (path == null || path.Trim().Length == 0)
             {
                 return Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    Environment.GetEnvironmentVariable("LOCALAPPDATA") is { Length: > 0 } root
+                        ? root : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "Bimwright", "nwd-mcp");
             }
             return path;
         }
     }
 
-    public static void Record(string? command, string? paramsJson, bool ok, long durationMs, string? error, string? resultJson)
+    public static void Record(string? command, string? paramsJson, bool ok, long durationMs, string? error, string? resultJson,
+        bool? enabled = null, string fileName = FileName)
     {
-        if (!Enabled || command == null || command.Trim().Length == 0)
+        if (!(enabled ?? Enabled) || command == null || command.Trim().Length == 0)
             return;
         try
         {
@@ -63,7 +65,7 @@ public static class NwdCallLog
                 ["result"] = Truncate(resultJson, MaxResultLength)
             };
             var dir = DirectoryPath;
-            var path = Path.Combine(dir, FileName);
+            var path = Path.Combine(dir, fileName);
             var line = entry.ToString(Formatting.None) + "\n";
             lock (Gate)
             {
@@ -86,7 +88,8 @@ public static class NwdCallLog
         if (obj == null)
             return TextToken(Truncate(paramsJson, MaxParamsLength));
 
-        if (string.Equals(command, "send_code", StringComparison.Ordinal))
+        if (string.Equals(command, "send_code", StringComparison.Ordinal) ||
+            string.Equals(command, "nwd_send_code", StringComparison.Ordinal))
         {
             var code = obj["code"]?.Type == JTokenType.String ? obj["code"]!.Value<string>() : null;
             obj.Remove("code");

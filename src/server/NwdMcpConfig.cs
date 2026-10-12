@@ -11,6 +11,7 @@ public sealed class NwdMcpConfig
 {
     public bool ReadOnly { get; set; }
     public bool EnableSendCode { get; set; } = true;
+    public bool EnableCallLog { get; set; }
     public bool EnableToolBaker { get; set; } = true;
     public bool EnableAdaptiveBake { get; set; }
     public int TimeoutMs { get; set; } = 30000;
@@ -18,10 +19,12 @@ public sealed class NwdMcpConfig
     public string? TargetId { get; set; }
     public List<string> Toolsets { get; set; } = new();
 
-    public string DescriptorDirectory { get; set; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Bimwright", "nwd-mcp");
-    public string BakeDirectory { get; set; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Bimwright", "nwd-mcp", "baked");
+    private static string DataDirectory => Path.Combine(
+        Environment.GetEnvironmentVariable("LOCALAPPDATA") is { Length: > 0 } root
+            ? root : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Bimwright", "nwd-mcp");
+    public string DescriptorDirectory { get; set; } = DataDirectory;
+    public string BakeDirectory { get; set; } = Path.Combine(DataDirectory, "baked");
 
     public static NwdMcpConfig Load(string[] args)
     {
@@ -40,6 +43,7 @@ public sealed class NwdMcpConfig
         var o = JObject.Parse(File.ReadAllText(path));
         if (o["readOnly"] is { } ro) c.ReadOnly = ro.Value<bool>();
         if (o["enableSendCode"] is { } sc) c.EnableSendCode = sc.Value<bool>();
+        if (o["enableCallLog"] is { } cl) c.EnableCallLog = cl.Value<bool>();
         if (o["enableToolBaker"] is { } tb) c.EnableToolBaker = tb.Value<bool>();
         if (o["timeoutMs"] is { } tm) c.TimeoutMs = tm.Value<int>();
         if (o["maxResponseBytes"] is { } mb) c.MaxResponseBytes = mb.Value<int>();
@@ -52,6 +56,7 @@ public sealed class NwdMcpConfig
     {
         if (Bool("BIMWRIGHT_NWD_READ_ONLY") is { } ro) c.ReadOnly = ro;
         if (Bool("BIMWRIGHT_NWD_ENABLE_SEND_CODE") is { } sc) c.EnableSendCode = sc;
+        if (Bool("BIMWRIGHT_NWD_ENABLE_CALL_LOG") is { } cl) c.EnableCallLog = cl;
         if (Bool("BIMWRIGHT_NWD_ENABLE_TOOLBAKER") is { } tb) c.EnableToolBaker = tb;
         if (Bool("BIMWRIGHT_NWD_ENABLE_ADAPTIVE_BAKE") is { } ab) c.EnableAdaptiveBake = ab;
         if (Int("BIMWRIGHT_NWD_TIMEOUT_MS") is { } tm) c.TimeoutMs = tm;
@@ -72,6 +77,8 @@ public sealed class NwdMcpConfig
                 case "--read-only":            c.ReadOnly = NextBool(args, ref i, true); break;
                 case "--enable-send-code":     c.EnableSendCode = true; break;
                 case "--disable-send-code":    c.EnableSendCode = false; break;
+                case "--enable-call-log":      c.EnableCallLog = true; break;
+                case "--disable-call-log":     c.EnableCallLog = false; break;
                 case "--disable-toolbaker":    c.EnableToolBaker = false; break;
                 case "--enable-adaptive-bake": c.EnableAdaptiveBake = true; break;
                 case "--toolsets":             c.Toolsets = SplitCsv(Next(args, ref i)); break;

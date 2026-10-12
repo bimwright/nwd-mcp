@@ -114,6 +114,7 @@ public sealed class TcpTransportServer : IDisposable
                     string responseJson = "";
                     string? commandName = null;
                     string? paramsJson = null;
+                    bool? recordCalls = null;
                     var clock = Stopwatch.StartNew();
                     try
                     {
@@ -129,6 +130,7 @@ public sealed class TcpTransportServer : IDisposable
                         else
                         {
                             commandName = env.Command;
+                            recordCalls = env.RecordCalls;
                             paramsJson = env.Params != null ? env.Params.ToString(Formatting.None) : null;
                             NwdCommandResult? result = null;
                             var deadline = NwdCommandContext.DeadlineFor(DateTime.UtcNow, env.TimeoutMs);
@@ -167,7 +169,7 @@ public sealed class TcpTransportServer : IDisposable
                             responseJson = JsonConvert.SerializeObject(result);
                             NotifyCompleted(commandName, responseJson, result != null && result.Ok, result?.Error?.Message);
                             clock.Stop();
-                            NwdCallLog.Record(commandName, paramsJson, result != null && result.Ok, clock.ElapsedMilliseconds, result?.Error?.Message, responseJson);
+                            NwdCallLog.Record(commandName, paramsJson, result != null && result.Ok, clock.ElapsedMilliseconds, result?.Error?.Message, responseJson, recordCalls);
                         }
                     }
                     catch (Exception ex)
@@ -178,7 +180,7 @@ public sealed class TcpTransportServer : IDisposable
                         {
                             TouchLastCommand();
                             NotifyCompleted(commandName, responseJson, false, ex.Message);
-                            NwdCallLog.Record(commandName, paramsJson, false, clock.ElapsedMilliseconds, ex.Message, responseJson);
+                            NwdCallLog.Record(commandName, paramsJson, false, clock.ElapsedMilliseconds, ex.Message, responseJson, recordCalls);
                         }
                     }
                     writer.WriteLine(responseJson);

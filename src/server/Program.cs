@@ -16,12 +16,14 @@ var pluginClient = new PluginClient(config);
 builder.Services.AddSingleton(pluginClient);
 
 var responseBudget = ResponseBudget.CreateDefault();
+var callLog = new ToolCallLog(config.EnableCallLog);
 
 var mcp = builder.Services
     .AddMcpServer(Program.ConfigureMcpServerOptions)
     .WithStdioServerTransport()
     .WithRequestFilters(f => f.AddCallToolFilter(next => async (request, ct) =>
-        ToolErrorFlag.Apply(responseBudget.Apply(request.Params?.Name, request.Params?.Arguments, await next(request, ct)))));
+        await callLog.InvokeAsync(request.Params?.Name, request.Params?.Arguments, async () =>
+            ToolErrorFlag.Apply(responseBudget.Apply(request.Params?.Name, request.Params?.Arguments, await next(request, ct))))));
 mcp = Program.RegisterToolsets(mcp, Program.ResolveToolTypesForRegistration(config), pluginClient.GatewayIdentity);
 
 await builder.Build().RunAsync();

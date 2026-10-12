@@ -28,7 +28,7 @@
 - **セキュリティ第一:** セッションごとのランダム暗号トークン検証、TCP トランスポートのループバック専用バインド、モデルに返されるエラーメッセージにおける絶対ファイルパスのサニタイズ。
 - **マルチインスタンスルーティング:** 実行中の複数の Navisworks Manage インスタンスを自動検出し、動的なターゲット切り替えをサポートします。
 
-Navisworks は MCP コマンドごとに 1 枚のアクティビティカードを表示します。トーストは既定でオンで、直近の結果から 20 秒残ります（10 / 20 / 30 / 60）。ホバーで一時停止し、離れると間隔を最初から数え直します。意図的にホバーすると、現在のカードの結果を、各項目に枠線を付けたコンパクトな3行の表示領域に滑らかに展開します（ツール、結果、成功／失敗、ローカルの完了時刻を24時間形式 `HH:mm:ss` で表示）。カード内の全件を古い順に保持し、最初は下端の最新3件を表示します。RVTと同じ細いスクロールバーで上にスクロールすると過去の呼び出しを確認できます。離れると滑らかに折りたたまれます。新しい結果はすぐに追加され、下端を見ている場合は最新の呼び出しに追従します。過去の呼び出しを読んでいる場合はスクロール位置を保ち、下端に戻ると追従を再開します。branding がオフでも使え、動きを減らす設定にも対応します。長さを制限した要約はメモリ内だけに保持し、カードを閉じるかリセットすると破棄します。Record は有効にせず、生のリクエスト、結果JSON、スクリプトソースは保持しません。BIMwright のワードマークは Show branding をオンにするまで出ません。`nwd_health_check` はカードに出ません。リボンの **Bimwright** タブに **Toasts**、**Toast Brand**、**Record**、**Status** があります。**Record** はオンにするまでオフです。オンにすると、すべてのツール呼び出しを `%LOCALAPPDATA%\Bimwright\nwd-mcp\mcp-calls.jsonl` に追記します。`send_code` はソースではなく長さと SHA-256 を保存します。設定は `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwdmcp.config.json` です。`BIMWRIGHT_NWD_ENABLE_TOAST` と `BIMWRIGHT_NWD_RECORD_CALLS` は次回起動時にそれぞれのスイッチを上書きします。
+Navisworks は MCP コマンドごとに 1 枚のアクティビティカードを表示します。トーストは既定でオンで、直近の結果から 20 秒残ります（10 / 20 / 30 / 60）。ホバーで一時停止し、離れると間隔を最初から数え直します。意図的にホバーすると、現在のカードの結果を、各項目に枠線を付けたコンパクトな3行の表示領域に滑らかに展開します（ツール、結果、成功／失敗、ローカルの完了時刻を24時間形式 `HH:mm:ss` で表示）。カード内の全件を古い順に保持し、最初は下端の最新3件を表示します。RVTと同じ細いスクロールバーで上にスクロールすると過去の呼び出しを確認できます。離れると滑らかに折りたたまれます。新しい結果はすぐに追加され、下端を見ている場合は最新の呼び出しに追従します。過去の呼び出しを読んでいる場合はスクロール位置を保ち、下端に戻ると追従を再開します。branding がオフでも使え、動きを減らす設定にも対応します。長さを制限した要約はメモリ内だけに保持し、カードを閉じるかリセットすると破棄します。Record は有効にせず、生のリクエスト、結果JSON、スクリプトソースは保持しません。BIMwright のワードマークは Show branding をオンにするまで出ません。`nwd_health_check` はカードに出ません。リボンの **Bimwright** タブに **Toasts**、**Toast Brand**、**Record**、**Status** があります。**Record** は旧ゲートウェイのホスト側の既定値です。現在のゲートウェイは下記のサーバー側ログ設定を使います。`send_code` はソースではなく長さと SHA-256 を保存します。設定は `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwdmcp.config.json` です。`BIMWRIGHT_NWD_ENABLE_TOAST` と `BIMWRIGHT_NWD_RECORD_CALLS` は次回起動時にそれぞれのスイッチを上書きします。
 
 **Status → トーストの位置:** 左／右と上／下を個別に選択します（既定：左上）。即時適用・保存し、角を変更するとドラッグ位置を消去します。**Allow dragging the toast** を有効にするとタイトル行をドラッグできます。通常のクリックは引き続きカードを閉じます。無効化しても保存位置は残り、再度有効にすると復元します。**Reset position** はオフセットを削除します。位置は Navisworks ウィンドウからの相対 DIP で保存し、モニターの作業領域内に収めます。下端に配置すると上方向に展開し、空きがなければ逆方向を使います。アニメーションは Windows の設定に従います。保存失敗は Status 内に表示し、新設定は現在のセッションで有効です。ツール／結果のツールチップには機密情報を伏せた結果、状態、完了時刻、取得できた実行時間を表示します。複数アプリのトースト重複調整は含みません。
 
@@ -133,7 +133,9 @@ Navisworks再起動とクライアント再接続後、**同じ接続**の新し
 - 読み取り専用モードのツールサーフェスは正確に **21 ツール** です。`nwd_list_recent_files` は残り、`nwd_open_file` と `nwd_import_model` は外れます。
 
 ### ツール呼び出しの記録（Record）
-**Record** は**既定でオフ**です。リボンのトグル、Status のチェック、`nwdmcp.config.json` の `recordCalls`、`BIMWRIGHT_NWD_RECORD_CALLS` は、すべてのツールに対する一つのスイッチです。オンの間、各呼び出しは設定ファイルの隣の `mcp-calls.jsonl` に追記されます。`send_code` のソースは書かれず、行には `code_length` と `code_sha256` が入ります。
+呼び出しログは**既定でオフ**です。`--enable-call-log` はローカルツールと失敗を含む全 MCP 呼び出しを `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwd-mcp-calls.jsonl` に記録します。プラグインへ送るコマンドは同じフォルダーの `mcp-calls.jsonl` にもネイティブ結果を記録します。`--disable-call-log` は、このゲートウェイによる両ログの作成と追記を止めます。MCPB の `call_log` は既定で false で、同じフラグを渡します。
+
+優先順位は CLI → `BIMWRIGHT_NWD_ENABLE_CALL_LOG` → サーバー JSON の `enableCallLog` → false です。対応するプラグインはリクエストごとの値を優先し、リボン/Status の **Record**、保存された `recordCalls`、`BIMWRIGHT_NWD_RECORD_CALLS` や他のゲートウェイの設定を変更しません。値を送らない旧ゲートウェイはホスト設定を使います。旧プラグインはこの値を認識しないため、対応するビルドを使ってください。`send_code` のパラメーターにはソースの代わりに `code_length` と `code_sha256` を保存します。
 
 ### 権限と auto mode
 `nwd_send_code` を除くすべてのツールが MCP アノテーション（`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`）を宣言しています。任意の更新確認でGitHubに接続する `nwd_health_check` 以外はopen-worldがfalseです。healthは読み取り専用で非破壊的です。Claude Desktop はこれを使い、読み取りツールは一度許可すれば済み、破壊的なツール（`nwd_open_file`, `nwd_hide_items`, `nwd_unhide_all`, `nwd_run_baked_tool`, `nwd_dismiss_bake_suggestion`）は毎回確認します。

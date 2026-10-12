@@ -71,6 +71,36 @@ public sealed class NwdMcpConfigTests
         File.WriteAllText(path, json);
         return path;
     }
+
+    [Fact]
+    public void CallLogDefaultsOffAndRespectsJsonEnvironmentAndCliPrecedence()
+    {
+        using var scope = new EnvScope().Set("BIMWRIGHT_NWD_ENABLE_CALL_LOG", null);
+        Assert.False(NwdMcpConfig.Load(Array.Empty<string>()).EnableCallLog);
+        var path = TempJson("""{ "enableCallLog": true }""");
+        try
+        {
+            Assert.True(NwdMcpConfig.Load(new[] { "--config", path }).EnableCallLog);
+            scope.Set("BIMWRIGHT_NWD_ENABLE_CALL_LOG", "false");
+            Assert.False(NwdMcpConfig.Load(new[] { "--config", path }).EnableCallLog);
+            Assert.True(NwdMcpConfig.Load(new[] { "--config", path, "--enable-call-log" }).EnableCallLog);
+            scope.Set("BIMWRIGHT_NWD_ENABLE_CALL_LOG", "true");
+            Assert.False(NwdMcpConfig.Load(new[] { "--config", path, "--disable-call-log" }).EnableCallLog);
+            Assert.False(NwdMcpConfig.Load(new[] { "--enable-call-log", "--disable-call-log" }).EnableCallLog);
+            Assert.True(NwdMcpConfig.Load(new[] { "--disable-call-log", "--enable-call-log" }).EnableCallLog);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public void DataPathsRespectDisposableLocalAppData()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "nwd-data-" + Guid.NewGuid().ToString("N"));
+        using var scope = new EnvScope().Set("LOCALAPPDATA", root);
+        var config = new NwdMcpConfig();
+        Assert.Equal(Path.Combine(root, "Bimwright", "nwd-mcp"), config.DescriptorDirectory);
+        Assert.Equal(Path.Combine(config.DescriptorDirectory, "baked"), config.BakeDirectory);
+    }
 }
 
 internal sealed class EnvScope : IDisposable
@@ -78,7 +108,7 @@ internal sealed class EnvScope : IDisposable
     private readonly Dictionary<string, string?> previous = new(StringComparer.OrdinalIgnoreCase);
     public EnvScope Set(string name, string? value)
     {
-        previous[name] = Environment.GetEnvironmentVariable(name);
+        if (!previous.ContainsKey(name)) previous[name] = Environment.GetEnvironmentVariable(name);
         Environment.SetEnvironmentVariable(name, value);
         return this;
     }

@@ -70,7 +70,8 @@ public sealed class PluginClient
             Command = command,
             Params = parameters as JObject ?? JObject.FromObject(parameters),
             TimeoutMs = wait,
-            AuthToken = target.AuthToken
+            AuthToken = target.AuthToken,
+            RecordCalls = _config.EnableCallLog
         };
 
         using var client = new TcpClient();

@@ -11,4 +11,6 @@ public sealed class NwdCommandEnvelope
     [JsonProperty("params")] public JObject Params { get; set; } = new();
     [JsonProperty("timeout_ms")] public int TimeoutMs { get; set; } = 30000;
     [JsonProperty("auth_token")] public string? AuthToken { get; set; }
+    // Missing on legacy gateways: retain their host-side Record toggle.
+    [JsonProperty("record_calls", NullValueHandling = NullValueHandling.Ignore)] public bool? RecordCalls { get; set; }
 }

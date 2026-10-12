@@ -32,6 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\shared\Logging\NwdCallLog.cs" LinkBase="Shared\Logging" />
     <Compile Include="..\shared\Infrastructure\NwdCommandEnvelope.cs" LinkBase="Shared\Infrastructure" />
     <Compile Include="..\shared\Infrastructure\NwdCommandResult.cs" LinkBase="Shared\Infrastructure" />
     <Compile Include="..\shared\Infrastructure\NwdCommandCatalog.cs" LinkBase="Shared\Infrastructure" />
