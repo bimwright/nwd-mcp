@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Fixed
+- Call logs are bounded: files rotate before an append would exceed 5 MiB, and each filename group keeps at most 100 MiB for 30 days. Gateway and plug-in startup apply retention even when recording is off; append, rotation and pruning share a cross-process lock and never fall back to unbounded writing.
+- Local transport is bounded: up to 32 TCP connections, 10 MiB request envelopes (rejected by the gateway before connecting), 120-second idle/incomplete frames and a 30-second response write deadline; file operations keep their 300-second timeout. Stopping the plug-in closes its listener and connected sockets, cancels queued work that has not started, and cannot republish or delete a replacement target. See [local transport limits](README.md#local-transport-limits).
 - Empty-document camera reads guard `HasFocalDistance` and return `focal_distance: null` instead of throwing.
 - Saved viewpoint/set names containing literal `/` now round-trip. Lists retain `name` and add `id` and `path`; consumers accept these identifiers. Escaped paths start with `path:/`, encode `~` as `~0` and `/` within a segment as `~1`. GUID-less SDK items use the escaped path as their ID. Legacy unambiguous names/paths still work; ambiguous names fail rather than silently selecting the first match.
 - Active ToolBaker lists exclude accepted/archived/permanently dismissed suggestions and current snoozes. Dismiss persists a UTC deadline exactly 30 days ahead, reports it, and repeated snooze calls do not extend it. Expired snoozes become effectively open without mutating data during a read-only listing. Legacy dismissed rows without a deadline stay hidden.
