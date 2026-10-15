@@ -18,7 +18,6 @@ public static class NwdCallLog
     private const int MaxParamsLength = 4000;
     private const int MaxResultLength = 4000;
     private const int MaxErrorLength = 2000;
-    private static readonly object Gate = new object();
     private static int _enabled;
 
     /// <summary>Test hook. Unset uses %LOCALAPPDATA%\Bimwright\nwd-mcp.</summary>
@@ -29,6 +28,13 @@ public static class NwdCallLog
     public static void SetEnabled(bool enabled)
     {
         Volatile.Write(ref _enabled, enabled ? 1 : 0);
+    }
+
+    /// <summary>Retention is independent of recording; disabled Record calls remain no-ops.</summary>
+    public static void Maintain()
+    {
+        try { BoundedLogFile.Maintain(DirectoryPath); }
+        catch { } // Logging maintenance cannot prevent host or gateway startup.
     }
 
     public static string DirectoryPath
@@ -67,11 +73,7 @@ public static class NwdCallLog
             var dir = DirectoryPath;
             var path = Path.Combine(dir, fileName);
             var line = entry.ToString(Formatting.None) + "\n";
-            lock (Gate)
-            {
-                Directory.CreateDirectory(dir);
-                File.AppendAllText(path, line);
-            }
+            BoundedLogFile.Append(path, line);
         }
         catch
         {

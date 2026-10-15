@@ -41,7 +41,8 @@ public sealed class PluginClient
         get
         {
             var live = _registry.List();
-            if (_current is not null && live.Any(t => t.TargetId == _current.TargetId)) return _current;
+            var refreshed = _current is not null ? live.FirstOrDefault(t => t.TargetId == _current.TargetId) : null;
+            if (refreshed is not null) return _current = refreshed;
             _current = (_config.TargetId is { } id ? live.FirstOrDefault(t => t.TargetId == id) : null) ?? live.FirstOrDefault();
             return _current;
         }
@@ -62,6 +63,11 @@ public sealed class PluginClient
 
     public async Task<JToken> SendAsync(string command, object parameters, int timeoutMs, CancellationToken ct)
     {
+        ct.ThrowIfCancellationRequested();
+        if (_config.TimeoutMs <= 0 || timeoutMs <= 0)
+            throw new NwdGatewayException("INVALID_ARGUMENT", "timeout must be a positive number of milliseconds");
+        if (_config.MaxResponseBytes <= 0)
+            throw new NwdGatewayException("INVALID_ARGUMENT", "maxResponseBytes must be positive");
         var wait = Math.Max(timeoutMs, _config.TimeoutMs);
         var target = CurrentTarget ?? throw new NwdGatewayException("NO_TARGET", "No live Navisworks Manage target. Start Navisworks with the nwd plug-in loaded.");
         var env = new NwdCommandEnvelope
@@ -73,15 +79,21 @@ public sealed class PluginClient
             AuthToken = target.AuthToken,
             RecordCalls = _config.EnableCallLog
         };
+        var serialized = JsonConvert.SerializeObject(env);
+        var requestBytes = Encoding.UTF8.GetBytes(serialized + "\n");
+        if (requestBytes.Length - 1 > NwdCommandEnvelope.MaxSerializedBytes)
+            throw new NwdGatewayException("REQUEST_TOO_LARGE", "Request exceeds 10 MiB. Split large batches or shorten the script before retrying.");
 
         using var client = new TcpClient();
         try
         {
-            var connect = client.ConnectAsync("127.0.0.1", target.Port);
-            if (await Task.WhenAny(connect, Task.Delay(_config.TimeoutMs, ct)) != connect)
-                throw new NwdGatewayException("TIMEOUT", $"connect to target {target.TargetId} timed out");
-            await connect;
+            using var connectTimeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            connectTimeout.CancelAfter(_config.TimeoutMs);
+            await client.ConnectAsync("127.0.0.1", target.Port, connectTimeout.Token);
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (OperationCanceledException)
+        { throw new NwdGatewayException("TIMEOUT", $"connect to target {target.TargetId} timed out"); }
         catch (NwdGatewayException) { throw; }
         catch (Exception ex)
         {
@@ -89,14 +101,19 @@ public sealed class PluginClient
         }
 
         using var stream = client.GetStream();
-        var line = JsonConvert.SerializeObject(env) + "\n";
-        await stream.WriteAsync(Encoding.UTF8.GetBytes(line), ct);
-
-        using var reader = new StreamReader(stream, Encoding.UTF8);
-        var readTask = reader.ReadLineAsync();
-        if (await Task.WhenAny(readTask, Task.Delay(wait, ct)) != readTask)
-            throw new NwdGatewayException("TIMEOUT", $"request {command} timed out after {wait} ms");
-        var response = await readTask ?? throw new NwdGatewayException("TARGET_UNAVAILABLE", "plug-in closed the connection");
+        using var requestTimeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        requestTimeout.CancelAfter(wait);
+        string response;
+        try
+        {
+            await stream.WriteAsync(requestBytes, requestTimeout.Token);
+            response = await ReadResponse(stream, _config.MaxResponseBytes, requestTimeout.Token);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (OperationCanceledException)
+        {
+            throw new NwdGatewayException("TIMEOUT", $"request {command} timed out after {wait} ms; it may already have run, so do not blindly retry writes");
+        }
         if (!ResponseSizeGuard.Check(response, _config.MaxResponseBytes, out var tooLarge))
             throw new NwdGatewayException(tooLarge!.Code, tooLarge.Message);
 
@@ -104,5 +121,29 @@ public sealed class PluginClient
                      ?? throw new NwdGatewayException("API_ERROR", "unparseable response");
         if (!result.Ok) throw new NwdGatewayException(result.Error?.Code ?? "API_ERROR", result.Error?.Message ?? "unknown error");
         return result.Data ?? JValue.CreateNull();
+    }
+
+    private static async Task<string> ReadResponse(Stream stream, int maxBytes, CancellationToken ct)
+    {
+        using var frame = new MemoryStream();
+        var buffer = new byte[8192];
+        while (true)
+        {
+            var count = await stream.ReadAsync(buffer.AsMemory(), ct);
+            if (count == 0) throw new NwdGatewayException("TARGET_UNAVAILABLE", "plug-in closed the connection");
+            var newline = Array.IndexOf(buffer, (byte)'\n', 0, count);
+            var length = newline >= 0 ? newline : count;
+            // Permit the optional CR from StreamWriter's Windows newline, but do
+            // not allocate an unbounded string before checking response size.
+            if (frame.Length + length > (long)maxBytes + 1) throw TooLarge();
+            frame.Write(buffer, 0, length);
+            if (newline < 0) continue;
+            var bytes = frame.ToArray();
+            var contentLength = bytes.Length > 0 && bytes[bytes.Length - 1] == '\r' ? bytes.Length - 1 : bytes.Length;
+            if (contentLength > maxBytes) throw TooLarge();
+            return Encoding.UTF8.GetString(bytes, 0, contentLength);
+        }
+        NwdGatewayException TooLarge() => new("RESPONSE_TOO_LARGE",
+            $"Response exceeds the configured limit of {maxBytes} bytes. A command may already have run; do not blindly retry writes.");
     }
 }

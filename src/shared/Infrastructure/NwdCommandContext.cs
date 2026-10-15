@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Bimwright.Nwd.Shared.Infrastructure;
 
@@ -10,6 +11,7 @@ public sealed class NwdCommandContext
     public int NavisworksYear { get; init; }
     public string? TargetId { get; init; }
     public IReadOnlyDictionary<string, INwdCommand>? Commands { get; init; }
+    public CancellationToken CancellationToken { get; init; }
 
     /// <summary>
     /// When the caller stops waiting (its timeout, less a margin for the reply). Long walks check

@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Threading;
 
 namespace Bimwright.Nwd.Shared.Plugin;
@@ -29,25 +30,37 @@ public static class NavisworksUiThreadInvoker
         _uiDispatcher ??= Dispatcher.CurrentDispatcher;
     }
 
-    public static void Invoke(Action action)
+    public static void Invoke(Action action) => Invoke(action, CancellationToken.None);
+
+    public static void Invoke(Action action, CancellationToken cancellationToken)
     {
         if (action == null)
             return;
+        cancellationToken.ThrowIfCancellationRequested();
         var ui = _ui;
-        if (ui != null)
-        {
-            if (SynchronizationContext.Current == ui)
-                action();
-            else
-                ui.Send(_ => action(), null);
-            return;
-        }
         var dispatcher = _uiDispatcher;
-        if (dispatcher == null || dispatcher.CheckAccess())
+        if ((ui != null && SynchronizationContext.Current == ui)
+            || (ui == null && (dispatcher == null || dispatcher.CheckAccess())))
         {
             action();
             return;
         }
-        dispatcher.Invoke(action);
+        // Unload can run on the UI thread while workers are queued here. Canceling
+        // their wait must not require that same UI thread to process a Send/Invoke.
+        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        void Run()
+        {
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                action();
+                completion.TrySetResult(true);
+            }
+            catch (Exception ex) { completion.TrySetException(ex); }
+        }
+        if (ui != null) ui.Post(_ => Run(), null);
+        else dispatcher!.BeginInvoke((Action)Run);
+        using (cancellationToken.Register(() => completion.TrySetCanceled()))
+            completion.Task.GetAwaiter().GetResult();
     }
 }

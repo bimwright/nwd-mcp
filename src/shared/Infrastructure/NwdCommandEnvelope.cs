@@ -6,6 +6,8 @@ namespace Bimwright.Nwd.Shared.Infrastructure;
 
 public sealed class NwdCommandEnvelope
 {
+    // Includes parameters and envelope metadata; large batches must be split.
+    public const int MaxSerializedBytes = 10 * 1024 * 1024;
     [JsonProperty("id")] public Guid Id { get; set; }
     [JsonProperty("command")] public string Command { get; set; } = "";
     [JsonProperty("params")] public JObject Params { get; set; } = new();

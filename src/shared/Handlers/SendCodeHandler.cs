@@ -54,11 +54,12 @@ public sealed class SendCodeHandler : INwdCommand
                     "Autodesk.Navisworks.Api");
 
             var script = CSharpScript.Create<object>(code, options, typeof(Globals));
-            var errors = script.Compile().Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
+            var errors = script.Compile(ctx.CancellationToken).Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
             if (errors.Length > 0)
                 return ScriptResult(meta, false, "", null, "compile error: " + string.Join("\n", errors.Select(d => d.ToString())));
             runner = script.CreateDelegate();
         }
+        catch (OperationCanceledException) when (ctx.CancellationToken.IsCancellationRequested) { throw; }
         catch (Exception ex)
         {
             return ScriptResult(meta, false, "", null, Describe(ex));
@@ -94,7 +95,7 @@ public sealed class SendCodeHandler : INwdCommand
                 SynchronizationContext.SetSynchronizationContext(previous);
                 Console.SetOut(originalOut);
             }
-        });
+        }, ctx.CancellationToken);
 
         if (noDocument)
             return NwdCommandResult.Fail(System.Guid.Empty, "NO_DOCUMENT", "no active Navisworks document", meta);

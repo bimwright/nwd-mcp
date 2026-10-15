@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 
 var config = NwdMcpConfig.Load(args);
+Bimwright.Nwd.Shared.Logging.NwdCallLog.Maintain();
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.Logging.ClearProviders();

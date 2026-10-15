@@ -17,6 +17,7 @@ public sealed class NwdPluginApplication : NWP.EventWatcherPlugin
 
     public override void OnLoaded()
     {
+        if (_server != null) return;
         PluginAssemblyResolver.Register();
         NavisworksUiThreadInvoker.Capture();
         // Manage-only product: ApplicationPlugins RuntimeRequirements already
@@ -44,12 +45,21 @@ public sealed class NwdPluginApplication : NWP.EventWatcherPlugin
         var descriptorDir = Path.Combine(appData, "Bimwright", "nwd-mcp");
 
         var options = new PluginOptions(year, enableSendCode, 0);
-        _server = new TcpTransportServer(options, descriptorDir);
+        var server = new TcpTransportServer(options, descriptorDir);
         NwdCallLog.SetEnabled(PluginSettings.LoadRecordCalls());
-        NwdActivityToast.Attach(_server, year);
-
-        var handlers = NwdCommandRegistry.Build(options);
-        _server.Start(handlers);
+        NwdCallLog.Maintain();
+        try
+        {
+            NwdActivityToast.Attach(server, year);
+            server.Start(NwdCommandRegistry.Build(options));
+            _server = server;
+        }
+        catch
+        {
+            server.Dispose();
+            NwdActivityToast.Stop();
+            throw;
+        }
 
         if (!_idleHooked)
         {

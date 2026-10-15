@@ -156,6 +156,14 @@ Call logging is **off by default**. `--enable-call-log` records every MCP tool c
 
 Precedence is CLI → `BIMWRIGHT_NWD_ENABLE_CALL_LOG` → server JSON `enableCallLog` → false. Each request carries this choice to the matching plug-in, overriding its ribbon/Status **Record** toggle, saved `recordCalls`, and `BIMWRIGHT_NWD_RECORD_CALLS` without changing those settings or other gateways. The host toggle remains the fallback for legacy gateways that omit the choice; older plug-ins do not understand the override, so use matching builds. `send_code` parameters store `code_length` and `code_sha256` instead of the script body.
 
+New call-log files rotate before an append would exceed 5 MiB. Each of the two filename groups retains at most 100 MiB for 30 days, with unique timestamped `.jsonl` archives beside the active file. Gateway and plug-in startup apply this retention even when recording is off; disabled call-record APIs still create and append nothing. Fresh oversized legacy files are archived intact and remain subject to the age and group budgets. Append, rotation and pruning share a cross-process lock; a locked or unwritable log never changes the tool outcome or falls back to unbounded writing. Maintenance only touches these generated log groups, leaving settings and ToolBaker state alone.
+
+### Local transport limits
+
+The plug-in accepts up to 32 TCP connections. A request envelope, including parameters, may contain up to 10 MiB of UTF-8 data; the gateway rejects larger requests before connecting, so split large item batches or shorten scripts. An idle or incomplete request frame expires after 120 seconds, and a peer that stops reading a response has a 30-second write deadline. These IO deadlines do not shorten an executing command's timeout; file operations keep their 300-second timeout. Response frames are bounded by `maxResponseBytes` while they are read, before allocating the response string.
+
+Stopping the plug-in closes its listener and connected sockets, cancels queued work that has not started, and prevents the old lifetime from republishing or deleting a replacement target. Host work already running is allowed to finish. A timeout or lost connection can leave its result unknown; check the document before retrying a write.
+
 ### Permissions & auto mode
 Every tool except `nwd_send_code` declares MCP annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`). Open-world is false except for `nwd_health_check`, whose optional update check contacts GitHub; health remains read-only and non-destructive. Claude Desktop uses them: read tools can be allowed once, and destructive tools (`nwd_open_file`, `nwd_hide_items`, `nwd_unhide_all`, `nwd_run_baked_tool`, `nwd_dismiss_bake_suggestion`) always ask.
 
