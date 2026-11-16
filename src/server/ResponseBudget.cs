@@ -13,8 +13,9 @@ namespace Bimwright.Nwd.Server;
 /// <summary>
 /// Server-side response-size policy applied to every tool result as a CallTool filter:
 /// explicit output=file and oversized arbitrary-code output spill to a local file first,
-/// then remaining text is warned (64/256 KiB), rejected past the 1 MiB budget, or — for a
-/// completed mutation — compacted into a truthful summary. rvt-mcp parity.
+/// then remaining text is warned (default 64/256 KiB), rejected past the budget (default 1 MiB),
+/// or — for a completed mutation — compacted into a truthful summary. rvt-mcp parity. With the
+/// guard off there are no warnings and the budget is the transport cap (maxResponseBytes).
 /// </summary>
 public sealed class ResponseBudget
 {
@@ -33,15 +34,18 @@ public sealed class ResponseBudget
 
     private readonly ResponseSpillWriter _writer;
     private readonly IReadOnlyDictionary<string, bool> _toolIsWrite;
+    private readonly ResponseSizePolicy.Limits _limits;
 
-    public ResponseBudget(ResponseSpillWriter writer, IReadOnlyDictionary<string, bool> toolIsWrite)
+    public ResponseBudget(ResponseSpillWriter writer, IReadOnlyDictionary<string, bool> toolIsWrite,
+        ResponseSizePolicy.Limits? limits = null)
     {
         _writer = writer ?? throw new ArgumentNullException(nameof(writer));
         _toolIsWrite = toolIsWrite ?? throw new ArgumentNullException(nameof(toolIsWrite));
+        _limits = limits ?? ResponseSizePolicy.Limits.Default;
     }
 
     /// <summary>Default map: every [McpServerTool] in this assembly, isWrite = ReadOnly != true.</summary>
-    public static ResponseBudget CreateDefault(ResponseSpillWriter? writer = null)
+    public static ResponseBudget CreateDefault(ResponseSpillWriter? writer = null, ResponseSizePolicy.Limits? limits = null)
     {
         var map = new Dictionary<string, bool>(StringComparer.Ordinal);
         foreach (var type in typeof(ResponseBudget).Assembly.GetTypes())
@@ -51,7 +55,7 @@ public sealed class ResponseBudget
             if (attribute?.Name is { } name)
                 map[name] = attribute.ReadOnly != true;
         }
-        return new ResponseBudget(writer ?? new ResponseSpillWriter(), map);
+        return new ResponseBudget(writer ?? new ResponseSpillWriter(), map, limits);
     }
 
     public bool IsWrite(string? toolName)
@@ -90,7 +94,7 @@ public sealed class ResponseBudget
 
         text = ApplySpill(toolName, arguments, text, originalFailure, block);
 
-        var decision = ResponseSizePolicy.Evaluate(toolName, text);
+        var decision = ResponseSizePolicy.Evaluate(toolName, text, _limits);
         if (decision.Reject)
         {
             Console.Error.WriteLine(
@@ -107,7 +111,7 @@ public sealed class ResponseBudget
             {
                 obj["_response_warning"] = decision.AgentWarning;
                 var candidate = obj.ToString(Formatting.None);
-                if (Encoding.UTF8.GetByteCount(candidate) <= ResponseSizePolicy.BudgetBytes)
+                if (Encoding.UTF8.GetByteCount(candidate) <= _limits.BudgetBytes)
                     block.Text = candidate;
             }
         }
@@ -136,7 +140,7 @@ public sealed class ResponseBudget
         {
             format = optIn;
         }
-        else if (IsMutationOutcomeIndeterminate(toolName) && originalBytes > ResponseSizePolicy.BudgetBytes)
+        else if (IsMutationOutcomeIndeterminate(toolName) && originalBytes > _limits.BudgetBytes)
         {
             format = ResponseSpillFormat.Auto;
             automatic = true;
@@ -202,7 +206,7 @@ public sealed class ResponseBudget
         if (IsMutationOutcomeIndeterminate(toolName))
             compacted["mutation_applied"] = JValue.CreateNull();
         var compactText = compacted.ToString(Formatting.None);
-        if (Encoding.UTF8.GetByteCount(compactText) <= ResponseSizePolicy.BudgetBytes)
+        if (Encoding.UTF8.GetByteCount(compactText) <= _limits.BudgetBytes)
             return compactText;
 
         // Defensive fallback: compaction itself must never breach the budget.
@@ -247,9 +251,9 @@ public sealed class ResponseBudget
         catch (Newtonsoft.Json.JsonException) { return null; }
     }
 
-    private static void EnsureEnvelopeBudget(JObject envelope)
+    private void EnsureEnvelopeBudget(JObject envelope)
     {
-        if (Encoding.UTF8.GetByteCount(envelope.ToString(Formatting.None)) <= ResponseSizePolicy.BudgetBytes)
+        if (Encoding.UTF8.GetByteCount(envelope.ToString(Formatting.None)) <= _limits.BudgetBytes)
             return;
 
         envelope["preview"] = string.Empty;

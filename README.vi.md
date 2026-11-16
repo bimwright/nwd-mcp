@@ -26,7 +26,7 @@
 - **Các Phiên bản Hỗ trợ:** Từ 2022 đến 2027.
 - **Mô hình Hai Tiến trình:** Máy chủ điều phối `.NET 8` gọn nhẹ giao tiếp với plug-in chạy trực tiếp bên trong Navisworks theo từng phiên bản cụ thể. Truyền tải dữ liệu là **TCP NDJSON over loopback** cho mọi năm được hỗ trợ (2022–2027); toàn bộ sáu plug-in shell đều nhắm tới `.NET Framework 4.8` / `net48`. (Khác với phần còn lại của gia đình bimwright, nwd-mcp **không** sử dụng truyền tải Named Pipe — quy ước loopback-TCP được áp dụng thống nhất trên tất cả các phiên bản.)
 - **Bảo mật Tối đa:** Xác thực qua mã token ngẫu nhiên tạo theo từng phiên, chỉ liên kết với loopback TCP (`127.0.0.1`), và tự động ẩn/lọc đường dẫn tệp tuyệt đối trong các thông báo lỗi trả về cho mô hình AI.
-- **Điều hướng Nhiều Phiên chạy:** Tự động phát hiện nhiều tiến trình Navisworks đang chạy đồng thời và cho phép chuyển đổi mục tiêu điều khiển linh hoạt.
+- **Điều hướng Nhiều Phiên chạy:** Gateway gắn với một instance Navisworks, nhận diện bằng PID và thời điểm khởi động process, và không bao giờ tự chuyển sang instance khác. Có nhiều instance khớp mà chưa chọn thì lệnh trả `AMBIGUOUS_TARGET`. Instance đang gắn thoát thì lệnh trả `TARGET_LOST` hoặc `TARGET_CHANGED` (không gửi đi) cho tới khi bạn xác nhận target bằng `nwd_switch_target`. Selector gồm `pid:<n>`, `id:<target_id>`, năm 2022–2027, hoặc `auto`. Khi chạy nhiều agent hoặc nhiều instance cùng năm, gọi `nwd_list_available_targets` (có `pid` và `window_title`) rồi ghim `nwd_switch_target("pid:<n>")` ở đầu phiên. Năm hoặc `auto` không bao giờ dời binding đang có (`TARGET_REBIND_REQUIRED`), và muốn rời một instance còn sống đã chọn tường minh thì cần `rebind=true`. `nwd_list_available_targets` và `nwd_get_current_target` không bao giờ chọn target. Lệnh ghi chỉ chạy trên document đã xác nhận: hỏi lại người dùng rằng file được báo là file cần sửa, rồi gọi `nwd_switch_target("pid:<n>", verify=true)` một lần. Trước đó lệnh ghi trả `TARGET_UNCONFIRMED`; nếu từ lúc xác nhận đã có file khác được mở thì trả `DOCUMENT_CHANGED` (lệnh chưa chạy). `nwd_open_file` dời xác nhận sang file nó mở. Server và plugin khác bản phát hành thì lệnh ghi trả `PAIRING_REQUIRED`; lệnh đọc vẫn chạy.
 
 Navisworks hiện một thẻ cho các lệnh MCP. Thẻ bật sẵn và ở lại 20 giây sau kết quả mới nhất (chọn 10, 20, 30 hoặc 60). Đưa chuột vào thì tạm dừng; rời thẻ thì đếm lại đủ khoảng chờ. Hover có chủ ý sẽ mở rộng mượt khung ba thẻ kết quả thấp gọn, có viền riêng trong thẻ hiện tại (tool, kết quả, thành công/lỗi và giờ hoàn tất theo giờ máy, định dạng 24 giờ `HH:mm:ss`). Giữ mọi kết quả thuộc thẻ đó, cũ ở trên và mới ở dưới; ban đầu hiện ba call mới nhất, cuộn lên để xem call cũ bằng scrollbar mỏng theo mẫu RVT. Rời chuột thì thu gọn mượt. Call mới được thêm ngay: ở đáy thì khung tự theo call mới nhất; khi cuộn lên đọc call cũ thì giữ nguyên vị trí cuộn. Cuộn lại xuống đáy sẽ tiếp tục tự theo call mới. Khung hoạt động cả khi tắt branding và tôn trọng chế độ giảm chuyển động. Các tóm tắt có giới hạn độ dài chỉ nằm trong RAM, bị bỏ khi đóng hoặc reset thẻ; không bật Record và không giữ request, JSON kết quả hay mã nguồn script thô. Wordmark BIMwright tắt cho đến khi bật Show branding. `nwd_health_check` không lên thẻ. Tab ribbon **Bimwright** có **Toasts**, **Toast Brand**, **Record** và **Status**. **Record** là mặc định phía host cho gateway cũ; gateway hiện tại dùng cấu hình call log phía server, xem phần Ghi lệnh bên dưới. `send_code` chỉ lưu độ dài và SHA-256, không lưu mã nguồn. Cấu hình nằm ở `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwdmcp.config.json`. `BIMWRIGHT_NWD_ENABLE_TOAST` và `BIMWRIGHT_NWD_RECORD_CALLS` ghi đè hai công tắc đó ở lần mở sau.
 
@@ -57,12 +57,12 @@ Cờ: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`.
 
 ## Danh Sách Công Cụ (Tool Surface)
 
-Một lần chạy mặc định đăng ký đủ mọi nhóm: **33 công cụ**. `--read-only` còn **21**. Mỗi công cụ dùng tiền tố `nwd_*`.
+Một lần chạy mặc định đăng ký đủ mọi nhóm: **33 công cụ**. `--read-only` còn **23**. Mỗi công cụ dùng tiền tố `nwd_*`.
 
 ### 1. Công cụ Quản lý / Meta (3)
 * `nwd_list_available_targets` — Liệt kê tất cả các phiên chạy Navisworks đang hoạt động.
 * `nwd_get_current_target` — Báo cáo phiên chạy hiện tại mà máy chủ đang kết nối.
-* `nwd_switch_target` — Chuyển đổi cổng điều khiển sang một phiên chạy tích cực khác.
+* `nwd_switch_target` — Chuyển đổi cổng điều khiển sang một phiên chạy tích cực khác; `verify=true` còn xác nhận document đang mở cho lệnh ghi.
 
 ### 2. Công cụ tệp (3)
 * `nwd_list_recent_files` — Liệt kê file gần đây của năm Manage đang chạy, theo thứ tự menu File.
@@ -128,9 +128,9 @@ Sau restart Navisworks và reconnect client, đối chiếu `initialize.serverIn
 
 ### Chế độ Chỉ Đọc (Read-Only Mode)
 Có thể kích hoạt chế độ chỉ đọc nghiêm ngặt bằng cờ `--read-only` hoặc biến môi trường `BIMWRIGHT_NWD_READ_ONLY=1`.
-- Các công cụ có khả năng ghi hoặc thay đổi mô hình sẽ bị ẩn hoàn toàn khỏi danh sách đăng ký MCP.
+- Chỉ đăng ký các công cụ được đánh dấu chỉ đọc. Ba công cụ giao diện tạm thời vẫn còn: `nwd_goto_viewpoint`, `nwd_clear_selection` và `nwd_select_items_by_search` (chỉ đổi khung nhìn hoặc vùng chọn, không đổi mô hình). `nwd_switch_target` và mọi lệnh ghi bị gỡ; ghim target lúc khởi động bằng `--target pid:<n>`.
 - Các công cụ hỗn hợp (như `nwd_execute_search_set`) sẽ bị ép buộc tham số an toàn (`select=false`) và trả về cờ đánh dấu `read_only_enforced` trong phản hồi.
-- Tổng số lượng công cụ khả dụng ở chế độ chỉ đọc là đúng **21 công cụ**. `nwd_list_recent_files` vẫn còn; `nwd_open_file` và `nwd_import_model` bị gỡ.
+- Tổng số lượng công cụ khả dụng ở chế độ chỉ đọc là đúng **23 công cụ**. `nwd_list_recent_files` vẫn còn; `nwd_open_file` và `nwd_import_model` bị gỡ.
 
 ### Ghi lệnh (Record)
 Call log **tắt mặc định**. `--enable-call-log` ghi mọi lời gọi MCP, kể cả tool cục bộ và lỗi, vào `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwd-mcp-calls.jsonl`; lệnh chuyển tới plugin còn ghi kết quả native vào `mcp-calls.jsonl` cùng thư mục. `--disable-call-log` ngăn tạo hoặc ghi thêm vào cả hai log cho gateway này. Checkbox MCPB `call_log` mặc định false và truyền hai flag đó.
@@ -185,7 +185,8 @@ Cơ sở dữ liệu lưu trữ sqlite (`bake.db`) và nhật ký kiểm tra quy
 ### Kích thước phản hồi
 Kết quả tool là JSON nén gọn. Trên 64 KiB server thêm trường `_response_warning` vào kết quả (mạnh hơn trên 256 KiB); quá ngân sách 1 MiB kết quả bị từ chối với `RESPONSE_TOO_LARGE` — trừ tool ghi đã chạy xong, khi đó nó trả về bản tóm tắt thành công đã nén (`response_compacted`, `mutation_applied`) thay vì báo lỗi.
 Bốn tool chấp nhận `output=file` để ghi toàn bộ kết quả ra một file cục bộ trên cùng máy và trả về đường dẫn, schema và bản xem trước: `nwd_get_model_tree` (JSON), `nwd_batch_get_properties` (SQLite), `nwd_find_items_by_name` (NDJSON) và `nwd_run_baked_tool` (định dạng tự nhận diện). `nwd_send_code` không có tham số `output`; đầu ra trên 1 MiB tự động spill theo cùng cách.
-Các file spill nằm trong `%LOCALAPPDATA%\Bimwright\nwd-mcp\spill`, được giữ 24 giờ, tối đa 50 file, và bị xóa khi gỡ cài đặt.
+Các file spill nằm trong `%LOCALAPPDATA%\Bimwright\nwd-mcp\spill` và bị xóa khi gỡ cài đặt. Mỗi file được giữ 36 giờ kể từ lúc ghi. File chỉ bị xóa vì quá tuổi; không có giới hạn số file. Đổi thời gian bằng `--spill-retention-hours <n>` (1–8760), `BIMWRIGHT_NWD_SPILL_RETENTION_HOURS` hoặc khóa JSON `spillRetentionHours` của server; thiếu hoặc sai giá trị thì dùng 36.
+Guard bật mặc định. `--disable-response-guard` (hoặc `BIMWRIGHT_NWD_ENABLE_RESPONSE_GUARD=0`, JSON `enableResponseGuard: false`) tắt cảnh báo và ngân sách 1 MiB. Trần transport `--max-response-bytes` (mặc định 10 MiB) vẫn áp dụng, nên kết quả vượt trần vẫn bị từ chối hoặc spill. `--response-warn-bytes`, `--response-strong-warn-bytes` và `--response-budget-bytes` (env `BIMWRIGHT_NWD_RESPONSE_WARN_BYTES`, `…_STRONG_WARN_BYTES`, `…_BUDGET_BYTES`; JSON `responseWarnBytes`, `responseStrongWarnBytes`, `responseBudgetBytes`) đặt các ngưỡng. Mỗi ngưỡng phải từ 1024 trở lên và theo thứ tự warn ≤ strong ≤ budget ≤ max, nếu không server không khởi động. Thứ tự ưu tiên của mọi thiết lập là CLI → biến môi trường → JSON.
 
 ## Đo hiệu năng
 

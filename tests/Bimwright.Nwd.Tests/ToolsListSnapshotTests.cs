@@ -24,14 +24,9 @@ public sealed class ToolsListSnapshotTests
 
     private static string[] ToolNamesFor(NwdMcpConfig config)
     {
-        var names = new List<string>();
-        foreach (var type in Program.ResolveToolTypesForRegistration(config))
-            foreach (var m in type.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance))
-            {
-                var attr = m.GetCustomAttribute<McpServerToolAttribute>();
-                if (attr?.Name is { } n) names.Add(n);
-            }
-        return names.OrderBy(x => x, StringComparer.Ordinal).ToArray();
+        return Program.ResolveToolMethodsForRegistration(config)
+            .Select(m => m.GetCustomAttribute<McpServerToolAttribute>()!.Name!)
+            .OrderBy(x => x, StringComparer.Ordinal).ToArray();
     }
 
     private static string[] Golden(string file)
@@ -55,6 +50,6 @@ public sealed class ToolsListSnapshotTests
             ToolNamesFor(new NwdMcpConfig { Toolsets = new() { "all" } }),
             ToolNamesFor(new NwdMcpConfig()));
         Assert.Equal(32, ToolNamesFor(new NwdMcpConfig { EnableSendCode = false }).Length);
-        Assert.Equal(21, ToolNamesFor(new NwdMcpConfig { Toolsets = new() { "all" }, ReadOnly = true, EnableSendCode = true }).Length);
+        Assert.Equal(23, ToolNamesFor(new NwdMcpConfig { Toolsets = new() { "all" }, ReadOnly = true, EnableSendCode = true }).Length);
     }
 }

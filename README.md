@@ -26,7 +26,7 @@
 - **Supported Versions:** 2022, 2023, 2024, 2025, 2026, and 2027.
 - **Two-Process Model:** Lightweight `.NET 8` console server communicating with a version-specific in-process plug-in. Wire transport is **TCP NDJSON over loopback** for every supported year (2022–2027); all six plug-in shells target `.NET Framework 4.8` / `net48`. (Unlike the rest of the bimwright family, nwd-mcp does **not** use Named Pipe transport — the loopback-TCP convention applies uniformly across all versions.)
 - **Security First:** Per-session random cryptographic token validation, loopback-only binding for the TCP transport, and absolute file path sanitization in error messages returned to the model.
-- **Multi-Instance Routing:** Automatically detects multiple running Navisworks Manage instances and supports switching targets dynamically.
+- **Multi-Instance Routing:** The gateway binds to one Navisworks instance, identified by PID and process start time, and never moves to another one on its own. With several matching instances and no choice yet, commands return `AMBIGUOUS_TARGET`. If the bound instance exits, commands return `TARGET_LOST` or `TARGET_CHANGED` (not sent) until you confirm a target with `nwd_switch_target`. Selectors are `pid:<n>`, `id:<target_id>`, a year 2022–2027, or `auto`. When several agents or same-year instances run, call `nwd_list_available_targets` (it shows `pid` and `window_title`) and pin `nwd_switch_target("pid:<n>")` at session start. A year or `auto` never moves an existing binding (`TARGET_REBIND_REQUIRED`), and leaving a live, explicitly chosen instance needs `rebind=true`. `nwd_list_available_targets` and `nwd_get_current_target` never select a target. Writes run only on a confirmed document: check with the user that the reported file is the one to change, then call `nwd_switch_target("pid:<n>", verify=true)` once. Until then writes return `TARGET_UNCONFIRMED`; if another file was opened since, `DOCUMENT_CHANGED` (the command did not start). `nwd_open_file` moves the confirmation to the file it opens. A server and plug-in from different releases return `PAIRING_REQUIRED` for writes; reads still work.
 
 Navisworks shows one activity card for MCP commands. Toasts are on by default and stay up for 20 seconds after the latest result (10, 20, 30, or 60). Hover pauses the card; leaving it starts the selected interval again. A deliberate hover smoothly expands a compact three-row view of the current card's individually bordered outcomes (tool, result, success/failure and local completion time in 24-hour `HH:mm:ss`). Every outcome in that card is retained, oldest above newest; the view starts at the latest three, and scrolling up reaches earlier calls through a thin RVT-style scrollbar. Leaving smoothly collapses it. Incoming outcomes appear immediately: at the bottom, the view follows the newest calls; while reading older calls, it preserves your scroll position. Returning to the bottom resumes following. The preview works with branding off and respects reduced motion. These length-limited summaries live only in memory and are discarded when the card closes or resets; they do not enable Record or retain raw requests, response JSON or script source. The BIMwright wordmark stays off unless Show branding is turned on. `nwd_health_check` does not appear on the card. The **Bimwright** ribbon tab has **Toasts**, **Toast Brand**, **Record**, and **Status**. **Record** supplies the host default for legacy gateways; current gateways use the server call-log setting described below. `send_code` is stored as a length and SHA-256, not the script. Settings live in `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwdmcp.config.json`. `BIMWRIGHT_NWD_ENABLE_TOAST` and `BIMWRIGHT_NWD_RECORD_CALLS` override those switches at the next launch.
 
@@ -76,12 +76,12 @@ Useful flags after wiring: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`.
 
 ## Tool Surface
 
-A default launch registers every toolset: **33 tools**. `--read-only` leaves **21**. Every tool uses the `nwd_*` prefix.
+A default launch registers every toolset: **33 tools**. `--read-only` leaves **23**. Every tool uses the `nwd_*` prefix.
 
 ### 1. Target/Meta Tools (3)
 * `nwd_list_available_targets` — List all active discovered Navisworks sessions.
 * `nwd_get_current_target` — Report which session the server is currently pointed at.
-* `nwd_switch_target` — Point the gateway at a different active session.
+* `nwd_switch_target` — Point the gateway at a different active session; `verify=true` also confirms the open document for writes.
 
 ### 2. File Tools (3)
 * `nwd_list_recent_files` — List recent files for the running Manage year, in File menu order.
@@ -147,9 +147,9 @@ After restarting Navisworks and reconnecting the MCP client, compare `initialize
 
 ### Read-Only Mode
 Strict read-only mode can be enforced via the `--read-only` flag or the `BIMWRIGHT_NWD_READ_ONLY=1` environment variable.
-- All write-capable toolsets are omitted from registration.
+- Only tools annotated read-only register. Three transient UI tools stay: `nwd_goto_viewpoint`, `nwd_clear_selection` and `nwd_select_items_by_search` (they change the view or selection, not the model). `nwd_switch_target` and every write are removed; pin the target at startup with `--target pid:<n>`.
 - Mixed tools (e.g. `nwd_execute_search_set`) are modified to force read-only parameter bounds (`select=false`) and output a `read_only_enforced` response marker.
-- The total read-only tool surface is exactly **21 tools**. `nwd_list_recent_files` stays; `nwd_open_file` and `nwd_import_model` do not.
+- The total read-only tool surface is exactly **23 tools**. `nwd_list_recent_files` stays; `nwd_open_file` and `nwd_import_model` do not.
 
 ### Tool-call record
 Call logging is **off by default**. `--enable-call-log` records every MCP tool call, including local tools and failures, in `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwd-mcp-calls.jsonl`; forwarded commands also record native outcomes in `mcp-calls.jsonl` in the same directory. `--disable-call-log` prevents creation or appending of both logs for this gateway. The MCPB `call_log` checkbox defaults to false and passes these same flags.
@@ -212,7 +212,8 @@ ToolBaker sqlite storage (`bake.db`) and usage audit logs (`audit.jsonl`) are pe
 ### Response size
 Tool results are compact JSON. Over 64 KiB the server adds a `_response_warning` field to the result (stronger above 256 KiB); past the 1 MiB budget a result is rejected with `RESPONSE_TOO_LARGE` — except a completed write tool, which returns a compacted success summary (`response_compacted`, `mutation_applied`) instead of a false failure.
 Four tools accept `output=file` to write the full result to a local same-machine file and return its path, schema and a preview: `nwd_get_model_tree` (JSON), `nwd_batch_get_properties` (SQLite), `nwd_find_items_by_name` (NDJSON) and `nwd_run_baked_tool` (auto-detected format). `nwd_send_code` has no `output` parameter; output above 1 MiB auto-spills the same way.
-Spill files live under `%LOCALAPPDATA%\Bimwright\nwd-mcp\spill`, are kept 24 hours, capped at 50 files, and removed on uninstall.
+Spill files live under `%LOCALAPPDATA%\Bimwright\nwd-mcp\spill` and are removed on uninstall. Each file is kept 36 hours after it is written. Age is the only reason a file is deleted; there is no file-count cap. Change the time with `--spill-retention-hours <n>` (1–8760), `BIMWRIGHT_NWD_SPILL_RETENTION_HOURS` or server JSON `spillRetentionHours`; a missing or invalid value uses 36.
+The guard is on by default. `--disable-response-guard` (or `BIMWRIGHT_NWD_ENABLE_RESPONSE_GUARD=0`, JSON `enableResponseGuard: false`) turns off the warnings and the 1 MiB budget. The transport cap `--max-response-bytes` (default 10 MiB) still applies, so a result above it is still rejected or spilled. `--response-warn-bytes`, `--response-strong-warn-bytes` and `--response-budget-bytes` (env `BIMWRIGHT_NWD_RESPONSE_WARN_BYTES`, `…_STRONG_WARN_BYTES`, `…_BUDGET_BYTES`; JSON `responseWarnBytes`, `responseStrongWarnBytes`, `responseBudgetBytes`) set the thresholds. They must be at least 1024 and ordered warn ≤ strong ≤ budget ≤ max, or the server does not start. Precedence for every setting is CLI → environment → JSON.
 
 ## Benchmark
 

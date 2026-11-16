@@ -256,6 +256,62 @@ public sealed class ResponseBudgetTests : IDisposable
         Assert.True(budget.IsWrite("nwd_send_code"));
     }
 
+    private ResponseBudget Budget(ResponseSizePolicy.Limits limits)
+        => new(new ResponseSpillWriter(_dir), IsWrite, limits);
+
+    [Fact]
+    public void CustomBudgetFromConfigRejectsAboveIt()
+    {
+        var limits = ResponseSizePolicy.Limits.From(new NwdMcpConfig
+        {
+            ResponseWarnBytes = 2048, ResponseStrongWarnBytes = 4096, ResponseBudgetBytes = 8192
+        });
+        var result = Result(BigObject(10_000));
+
+        Budget(limits).Apply("nwd_get_model_tree", null, result);
+
+        var parsed = JObject.Parse(Text(result));
+        Assert.Equal("RESPONSE_TOO_LARGE", (string?)parsed["error"]?["code"]);
+        Assert.Contains("8192-byte", (string?)parsed["error"]?["message"]);
+    }
+
+    [Fact]
+    public void CustomWarningThresholdFromConfigWarns()
+    {
+        var limits = ResponseSizePolicy.Limits.From(new NwdMcpConfig
+        {
+            ResponseWarnBytes = 2048, ResponseStrongWarnBytes = 4096, ResponseBudgetBytes = 1024 * 1024
+        });
+        var result = Result(BigObject(5000));
+
+        Budget(limits).Apply("nwd_health_check", null, result);
+
+        Assert.Contains("strong warning", JObject.Parse(Text(result)).Value<string>("_response_warning"));
+    }
+
+    [Fact]
+    public void GuardOffSkipsWarningsAndTheBudgetButKeepsTheTransportCap()
+    {
+        var limits = ResponseSizePolicy.Limits.From(new NwdMcpConfig
+        {
+            EnableResponseGuard = false, MaxResponseBytes = 2 * 1024 * 1024
+        });
+
+        var overDefaultBudget = Result(BigObject(ResponseSizePolicy.BudgetBytes + 10));
+        Budget(limits).Apply("nwd_health_check", null, overDefaultBudget);
+        var passed = JObject.Parse(Text(overDefaultBudget));
+        Assert.True(passed.Value<bool>("ok"));
+        Assert.Null(passed["_response_warning"]);
+
+        var sendCode = Result($$"""{"ok":true,"result":"{{new string('x', ResponseSizePolicy.BudgetBytes + 10)}}","stdout":"","error":null}""");
+        Budget(limits).Apply("nwd_send_code", Args("""{"code":"x"}"""), sendCode);
+        Assert.Null(JObject.Parse(Text(sendCode))["automatic"]); // inline: under the transport cap
+
+        var overCap = Result(BigObject(2 * 1024 * 1024 + 10));
+        Budget(limits).Apply("nwd_health_check", null, overCap);
+        Assert.Equal("RESPONSE_TOO_LARGE", (string?)JObject.Parse(Text(overCap))["error"]?["code"]);
+    }
+
     public void Dispose()
     {
         try

@@ -27,13 +27,17 @@ public sealed class ToolsetFilterTests
     }
 
     [Fact]
-    public void ReadOnlyRemovesWriteCapableToolsetsButKeepsMeta()
+    public void ReadOnlyFiltersToolsByAnnotationNotByToolset() // family contract D10/D11
     {
-        var set = ToolsetFilter.Resolve(new NwdMcpConfig { Toolsets = new() { "all" }, ReadOnly = true, EnableSendCode = true });
-        foreach (var keep in new[] { "meta","files","query","selection","sets","view","toolbaker" })
-            Assert.Contains(keep, set);
-        foreach (var gone in new[] { "files_write","selection_write","view_write","visibility","code","toolbaker_write" })
-            Assert.DoesNotContain(gone, set);
+        var config = new NwdMcpConfig { Toolsets = new() { "all" }, ReadOnly = true, EnableSendCode = true };
+        var names = Program.ResolveToolMethodsForRegistration(config)
+            .Select(m => System.Reflection.CustomAttributeExtensions.GetCustomAttribute<ModelContextProtocol.Server.McpServerToolAttribute>(m)!.Name)
+            .ToHashSet();
+        foreach (var keep in new[] { "nwd_goto_viewpoint", "nwd_clear_selection", "nwd_select_items_by_search", "nwd_list_available_targets", "nwd_get_current_target" })
+            Assert.Contains(keep, names);
+        foreach (var gone in new[] { "nwd_switch_target", "nwd_send_code", "nwd_hide_items", "nwd_unhide_all", "nwd_save_viewpoint", "nwd_open_file", "nwd_run_baked_tool" })
+            Assert.DoesNotContain(gone, names);
+        Assert.All(Program.ResolveToolMethodsForRegistration(config), m => Assert.True(Program.IsReadOnlyTool(m)));
     }
 
     [Fact]

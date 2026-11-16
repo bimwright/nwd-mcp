@@ -16,7 +16,8 @@ builder.Services.AddSingleton<ServerState>();
 var pluginClient = new PluginClient(config);
 builder.Services.AddSingleton(pluginClient);
 
-var responseBudget = ResponseBudget.CreateDefault();
+var responseBudget = ResponseBudget.CreateDefault(
+    new ResponseSpillWriter(config.SpillRetentionHours), ResponseSizePolicy.Limits.From(config));
 var callLog = new ToolCallLog(config.EnableCallLog);
 
 var mcp = builder.Services
@@ -24,7 +25,12 @@ var mcp = builder.Services
     .WithStdioServerTransport()
     .WithRequestFilters(f => f.AddCallToolFilter(next => async (request, ct) =>
         await callLog.InvokeAsync(request.Params?.Name, request.Params?.Arguments, async () =>
-            ToolErrorFlag.Apply(responseBudget.Apply(request.Params?.Name, request.Params?.Arguments, await next(request, ct))))));
-mcp = Program.RegisterToolsets(mcp, Program.ResolveToolTypesForRegistration(config), pluginClient.GatewayIdentity);
+        {
+            // Pin the binding generation on arrival (BW-TARGET-001 §6.6) and surface target refusals intact.
+            using var targetCall = TargetCallContext.Begin(pluginClient.Generation);
+            var result = TargetErrorPayload.Apply(await next(request, ct));
+            return ToolErrorFlag.Apply(responseBudget.Apply(request.Params?.Name, request.Params?.Arguments, result));
+        })));
+mcp = Program.RegisterToolsets(mcp, Program.ResolveToolTypesForRegistration(config), pluginClient.GatewayIdentity, config.ReadOnly);
 
 await builder.Build().RunAsync();

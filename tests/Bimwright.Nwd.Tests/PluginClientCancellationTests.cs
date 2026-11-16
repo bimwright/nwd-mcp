@@ -91,7 +91,8 @@ public sealed class PluginClientCancellationTests : IDisposable
         using var listener = new TcpListener(IPAddress.Loopback, 0);
         listener.Start();
         var client = Client(listener, 2000);
-        var error = await Assert.ThrowsAsync<NwdGatewayException>(() => client.SendAsync("send_code",
+        // A wire command without a write gate, so the size limit is what refuses it.
+        var error = await Assert.ThrowsAsync<NwdGatewayException>(() => client.SendAsync("test",
             new { code = new string('x', NwdCommandEnvelope.MaxSerializedBytes) }, CancellationToken.None));
         Assert.Equal("REQUEST_TOO_LARGE", error.Code);
         Assert.False(listener.Pending());

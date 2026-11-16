@@ -49,7 +49,7 @@ public sealed class McpProtocolSmokeTests
     {
         var responses = await RunProtocolHandshake(checkHealth: true, readOnly: readOnly, explicitArgument: explicitArgument);
         var tools = (JArray)responses[1]["result"]!["tools"]!;
-        Assert.Equal(readOnly ? 21 : 33, tools.Count);
+        Assert.Equal(readOnly ? 23 : 33, tools.Count);
         var health = Assert.Single(tools, tool => (string?)tool["name"] == "nwd_health_check");
         Assert.Equal("boolean", (string?)health["inputSchema"]?["properties"]?["check_updates"]?["type"]);
         Assert.DoesNotContain("check_updates", health["inputSchema"]?["required"]?.Values<string>() ?? Array.Empty<string>());

@@ -37,7 +37,7 @@ public sealed class ToolRecordTests : IDisposable
         {
             var reply = env.Command == "get_item_properties"
                 ? NwdCommandResult.Fail(env.Id, "FIXTURE_FAILURE", "Expected failure.", new NwdResponseMeta())
-                : NwdCommandResult.Success(env.Id, new JObject { ["ok"] = true }, new NwdResponseMeta());
+                : NwdCommandResult.Success(env.Id, new JObject { ["ok"] = true }, new NwdResponseMeta { DocumentId = FakePlugin.DocumentId });
             NwdCallLog.Record(env.Command, env.Params.ToString(Formatting.None), reply.Ok, 1,
                 reply.Error?.Message, JsonConvert.SerializeObject(reply), env.RecordCalls);
             return reply;
@@ -70,7 +70,7 @@ public sealed class ToolRecordTests : IDisposable
             await Send(process, new JObject { ["jsonrpc"] = "2.0", ["method"] = "notifications/initialized" });
             await Send(process, new JObject { ["jsonrpc"] = "2.0", ["id"] = 2, ["method"] = "tools/list" });
             var catalog = (JArray)(await Read(process))["result"]!["tools"]!;
-            Assert.Equal(readOnly ? 21 : 33, catalog.Count);
+            Assert.Equal(readOnly ? 23 : 33, catalog.Count);
             Assert.Equal(!readOnly, catalog.Any(t => (string?)t["name"] == "nwd_send_code"));
             var calls = new List<(string Name, JObject Args, bool Failure)>
             {
@@ -80,7 +80,12 @@ public sealed class ToolRecordTests : IDisposable
                 ("nwd_get_item_properties", new JObject(), true) // SDK binding failure, no plug-in call.
             };
             const string script = "private-script-for-hash-test";
-            if (!readOnly) calls.Add(("nwd_send_code", new JObject { ["code"] = script }, false));
+            if (!readOnly)
+            {
+                // Writes need a confirmed document (FC-DOC-03); verify sends one health check.
+                calls.Add(("nwd_switch_target", new JObject { ["targetId"] = "pid:" + Environment.ProcessId, ["verify"] = true }, false));
+                calls.Add(("nwd_send_code", new JObject { ["code"] = script }, false));
+            }
             for (var i = 0; i < calls.Count; i++)
             {
                 var call = calls[i];
@@ -93,7 +98,7 @@ public sealed class ToolRecordTests : IDisposable
             await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(10));
             Assert.True(process.ExitCode == 0, await stderr);
             var envelopes = plugin.Received.ToArray();
-            Assert.Equal(readOnly ? 2 : 3, envelopes.Length);
+            Assert.Equal(readOnly ? 2 : 4, envelopes.Length);
             Assert.All(envelopes, e => Assert.Equal(expectedEnabled, e.RecordCalls));
             var gatewayPath = Path.Combine(DataDirectory, ToolCallLog.FileName);
             var hostPath = Path.Combine(DataDirectory, NwdCallLog.FileName);

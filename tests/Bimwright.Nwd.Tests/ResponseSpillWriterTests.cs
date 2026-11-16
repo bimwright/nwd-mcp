@@ -23,41 +23,72 @@ public sealed class ResponseSpillWriterTests : IDisposable
         Assert.Equal(spill.Path, spill.Envelope.Value<string>("path"));
     }
 
-    [Fact]
-    public void CleanupDeletesFilesOlderThan24HoursAndCapsDirectoryAt50Newest()
+    private string Seed(string name, DateTime lastWriteUtc)
     {
         Directory.CreateDirectory(_directory);
-        var now = new DateTime(2026, 8, 21, 12, 0, 0, DateTimeKind.Utc);
-        for (var i = 0; i < 55; i++)
-        {
-            var path = Path.Combine(_directory, "spill-" + i + ".json");
-            File.WriteAllText(path, "{}");
-            File.SetLastWriteTimeUtc(path, now.AddMinutes(-i));
-        }
-        var oldPath = Path.Combine(_directory, "expired.json");
-        File.WriteAllText(oldPath, "{}");
-        File.SetLastWriteTimeUtc(oldPath, now.AddHours(-25));
-
-        var cleanup = new ResponseSpillWriter(_directory).Cleanup(now);
-
-        Assert.Equal(6, cleanup.DeletedCount);
-        Assert.Equal(50, cleanup.RemainingCount);
-        Assert.False(File.Exists(oldPath));
-        Assert.True(File.Exists(Path.Combine(_directory, "spill-0.json")));
-        Assert.False(File.Exists(Path.Combine(_directory, "spill-54.json")));
+        var path = Path.Combine(_directory, name);
+        File.WriteAllText(path, "{}");
+        File.SetLastWriteTimeUtc(path, lastWriteUtc);
+        return path;
     }
 
     [Fact]
-    public void EveryNewSpillRunsCleanupAndKeepsItsReturnedPath()
+    public void DefaultRetentionKeeps35HourFileAndDeletes37HourFile()
     {
-        Directory.CreateDirectory(_directory);
+        var now = new DateTime(2026, 11, 16, 12, 0, 0, DateTimeKind.Utc);
+        var young = Seed("young.json", now.AddHours(-35));
+        var old = Seed("old.json", now.AddHours(-37));
+
+        var writer = new ResponseSpillWriter(_directory);
+        var cleanup = writer.Cleanup(now);
+
+        Assert.Equal(TimeSpan.FromHours(36), writer.Retention);
+        Assert.Equal(1, cleanup.DeletedCount);
+        Assert.True(File.Exists(young));
+        Assert.False(File.Exists(old));
+    }
+
+    [Fact]
+    public void NoFileCountCapDeletesFilesYoungerThanRetention()
+    {
+        var now = new DateTime(2026, 11, 16, 12, 0, 0, DateTimeKind.Utc);
+        for (var i = 0; i < 120; i++)
+            Seed("spill-" + i + ".json", now.AddMinutes(-i * 15)); // newest 0 h, oldest ~29.75 h
+
+        var cleanup = new ResponseSpillWriter(_directory).Cleanup(now);
+
+        Assert.Equal(0, cleanup.DeletedCount);
+        Assert.Equal(120, cleanup.RemainingCount);
+    }
+
+    [Fact]
+    public void CustomRetentionIsHonoured()
+    {
+        var now = new DateTime(2026, 11, 16, 12, 0, 0, DateTimeKind.Utc);
+        var kept = Seed("47h.json", now.AddHours(-47));
+        var removed = Seed("49h.json", now.AddHours(-49));
+
+        var cleanup = new ResponseSpillWriter(_directory, retentionHours: 48).Cleanup(now);
+
+        Assert.Equal(1, cleanup.DeletedCount);
+        Assert.True(File.Exists(kept));
+        Assert.False(File.Exists(removed));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(24 * 365 + 1)]
+    public void OutOfRangeRetentionFallsBackTo36Hours(int hours)
+        => Assert.Equal(TimeSpan.FromHours(36), new ResponseSpillWriter(_directory, hours).Retention);
+
+    [Fact]
+    public void EveryNewSpillRunsCleanupAndKeepsYoungFiles()
+    {
         var now = DateTime.UtcNow;
-        for (var i = 0; i < ResponseSpillWriter.MaxRetainedFiles; i++)
-        {
-            var path = Path.Combine(_directory, "existing-" + i + ".json");
-            File.WriteAllText(path, "{}");
-            File.SetLastWriteTimeUtc(path, now.AddMinutes(-i - 1));
-        }
+        for (var i = 0; i < 60; i++)
+            Seed("existing-" + i + ".json", now.AddMinutes(-i - 1));
+        var expired = Seed("expired.json", now.AddHours(-40));
 
         var spill = new ResponseSpillWriter(_directory).Write(
             "nwd_get_model_tree",
@@ -65,7 +96,8 @@ public sealed class ResponseSpillWriterTests : IDisposable
             ResponseSpillFormat.Json);
 
         Assert.True(File.Exists(spill.Path));
-        Assert.Equal(ResponseSpillWriter.MaxRetainedFiles, Directory.GetFiles(_directory).Length);
+        Assert.False(File.Exists(expired));
+        Assert.Equal(61, Directory.GetFiles(_directory).Length);
     }
 
     public void Dispose()

@@ -45,7 +45,7 @@ public sealed class NwdPluginApplication : NWP.EventWatcherPlugin
         var descriptorDir = Path.Combine(appData, "Bimwright", "nwd-mcp");
 
         var options = new PluginOptions(year, enableSendCode, 0);
-        var server = new TcpTransportServer(options, descriptorDir);
+        var server = new TcpTransportServer(options, descriptorDir) { ReadDocument = NavisworksDocumentIdentity.Read };
         NwdCallLog.SetEnabled(PluginSettings.LoadRecordCalls());
         NwdCallLog.Maintain();
         try
@@ -67,6 +67,7 @@ public sealed class NwdPluginApplication : NWP.EventWatcherPlugin
             NW.Application.GuiCreated += OnGuiCreated;
             _idleHooked = true;
         }
+        NavisworksDocumentIdentity.Attach();
     }
 
     public override void OnUnloading()
@@ -77,6 +78,7 @@ public sealed class NwdPluginApplication : NWP.EventWatcherPlugin
             NW.Application.GuiCreated -= OnGuiCreated;
             _idleHooked = false;
         }
+        NavisworksDocumentIdentity.Detach();
         NwdActivityToast.Stop();
         _server?.Dispose();
         _server = null;

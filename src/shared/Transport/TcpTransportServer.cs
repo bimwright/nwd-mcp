@@ -36,6 +36,8 @@ public sealed class TcpTransportServer : IDisposable
     private volatile string? _documentPath;
     private string _authToken = "";
     private string _targetId = "";
+    private int _processId;
+    private DateTime? _processStartUtc;
     private CommandDispatcher? _dispatcher;
     private IReadOnlyDictionary<string, INwdCommand>? _handlers;
 
@@ -71,6 +73,9 @@ public sealed class TcpTransportServer : IDisposable
         }
     }
 
+    /// <summary>Reads the open document's lifetime id (document_target_v1). Set by the plug-in; UI thread only.</summary>
+    public Func<DocumentStamp>? ReadDocument { get; set; }
+
     /// <summary>Command name, response JSON, success, error message. Skips health_check.</summary>
     public Action<string, string, bool, string?>? CommandCompleted { get; set; }
 
@@ -84,7 +89,13 @@ public sealed class TcpTransportServer : IDisposable
             try
             {
                 _authToken = AuthTokenGenerator.Generate();
-                _targetId = $"navis-{_options.NavisworksYear}-{Process.GetCurrentProcess().Id}";
+                using (var current = Process.GetCurrentProcess())
+                {
+                    _processId = current.Id;
+                    try { _processStartUtc = TruncateToMilliseconds(current.StartTime.ToUniversalTime()); }
+                    catch { _processStartUtc = null; } // Readers then report identity_verified=false.
+                }
+                _targetId = $"navis-{_options.NavisworksYear}-{_processId}";
                 _handlers = handlers;
                 _dispatcher = new CommandDispatcher(handlers, 10 * 1024 * 1024);
                 _listener = new TcpListener(IPAddress.Loopback, 0);
@@ -220,7 +231,9 @@ public sealed class TcpTransportServer : IDisposable
                                     TargetId = _targetId,
                                     Commands = _handlers,
                                     DeadlineUtc = deadline,
-                                    CancellationToken = requestStop.Token
+                                    CancellationToken = requestStop.Token,
+                                    DocumentTarget = env.DocumentTarget,
+                                    ReadDocument = ReadDocument
                                 };
                                 result = _dispatcher!.Dispatch(context, env);
                                 if (!string.Equals(env.Command, "send_code", StringComparison.Ordinal))
@@ -340,9 +353,16 @@ public sealed class TcpTransportServer : IDisposable
         var path = _documentPath;
         var d = new TargetDescriptor
         {
+            SchemaVersion = TargetDescriptor.CurrentSchemaVersion,
+            HostApp = "navisworks",
+            HostYear = _options.NavisworksYear,
+            Pid = _processId,
+            ProcessStartUtc = _processStartUtc,
+            Transport = "tcp",
+            Capabilities = new[] { DocumentTargetPolicy.Protocol },
             TargetId = _targetId,
             NavisworksYear = _options.NavisworksYear,
-            ProcessId = Process.GetCurrentProcess().Id,
+            ProcessId = _processId,
             HostProduct = "Manage",
             Port = Port,
             AuthToken = _authToken,
@@ -352,6 +372,9 @@ public sealed class TcpTransportServer : IDisposable
         };
         TargetDescriptorWriter.Write(_descriptorDir, d, requireOwnership);
     }
+
+    private static DateTime TruncateToMilliseconds(DateTime value)
+        => new DateTime(value.Ticks - value.Ticks % TimeSpan.TicksPerMillisecond, DateTimeKind.Utc);
 
     private sealed class FrameReader
     {

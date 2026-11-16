@@ -22,9 +22,7 @@ public sealed class ToolAnnotationTests
     };
 
     internal static IReadOnlyList<Tool> ToolsFor(NwdMcpConfig config)
-        => Program.ResolveToolTypesForRegistration(config)
-            .SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
-            .Where(m => m.GetCustomAttribute<McpServerToolAttribute>() != null)
+        => Program.ResolveToolMethodsForRegistration(config)
             .Select(m => McpServerTool.Create(m, _ => throw new InvalidOperationException("not invoked")).ProtocolTool)
             .ToList();
 

@@ -68,9 +68,19 @@ public sealed class SendCodeHandler : INwdCommand
         object? value = null;
         Exception? error = null;
         var noDocument = false;
+        (string Code, string Message)? refused = null;
         var captured = new StringWriter();
         NavisworksUiThreadInvoker.Invoke(() =>
         {
+            // FC-DOC-04 on the UI thread, right before the script runs (it compiled off this thread).
+            if (ctx.ReadDocument != null)
+            {
+                var open = ctx.ReadDocument();
+                meta.DocumentId = open.Id;
+                meta.DocumentTitle = open.Title;
+                refused = DocumentTargetPolicy.Check(Name, IsReadOnly, ctx.DocumentTarget, open);
+                if (refused != null) return;
+            }
             var doc = NW.Application.ActiveDocument;
             if (doc is null)
             {
@@ -97,6 +107,8 @@ public sealed class SendCodeHandler : INwdCommand
             }
         }, ctx.CancellationToken);
 
+        if (refused is { } r)
+            return NwdCommandResult.Fail(System.Guid.Empty, r.Code, r.Message, meta);
         if (noDocument)
             return NwdCommandResult.Fail(System.Guid.Empty, "NO_DOCUMENT", "no active Navisworks document", meta);
         if (error != null)

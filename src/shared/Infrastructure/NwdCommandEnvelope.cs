@@ -15,4 +15,6 @@ public sealed class NwdCommandEnvelope
     [JsonProperty("auth_token")] public string? AuthToken { get; set; }
     // Missing on legacy gateways: retain their host-side Record toggle.
     [JsonProperty("record_calls", NullValueHandling = NullValueHandling.Ignore)] public bool? RecordCalls { get; set; }
+    /// <summary>Present from gateways that confirm documents; the plug-in refuses writes without it (PAIRING_REQUIRED).</summary>
+    [JsonProperty("document_target", NullValueHandling = NullValueHandling.Ignore)] public DocumentTargetEnvelope? DocumentTarget { get; set; }
 }

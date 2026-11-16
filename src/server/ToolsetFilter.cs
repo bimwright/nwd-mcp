@@ -19,6 +19,7 @@ public static class ToolsetFilter
         "view", "view_write", "visibility", "code", "toolbaker", "toolbaker_write"
     };
 
+    /// <summary>Toolsets that hold write tools. Under --read-only only their ReadOnly-annotated tools register.</summary>
     public static readonly string[] WriteCapable =
     {
         "files_write", "selection_write", "view_write", "visibility", "code", "toolbaker_write"
@@ -37,7 +38,8 @@ public static class ToolsetFilter
 
         if (!config.EnableSendCode) set.Remove("code");
         if (!config.EnableToolBaker) { set.Remove("toolbaker"); set.Remove("toolbaker_write"); }
-        if (config.ReadOnly) foreach (var w in WriteCapable) set.Remove(w);
+        // --read-only filters individual tools by their ReadOnly annotation (family contract D10/D11),
+        // not whole toolsets: Program.ResolveToolMethodsForRegistration.
 
         return set;
     }

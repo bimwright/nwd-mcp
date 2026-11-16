@@ -13,6 +13,12 @@ public sealed class NwdCommandContext
     public IReadOnlyDictionary<string, INwdCommand>? Commands { get; init; }
     public CancellationToken CancellationToken { get; init; }
 
+    /// <summary>The gateway's document confirmation for this request (null from older gateways).</summary>
+    public DocumentTargetEnvelope? DocumentTarget { get; init; }
+
+    /// <summary>Reads the open document. Navisworks UI thread only; null outside a host (offline tests).</summary>
+    public Func<DocumentStamp>? ReadDocument { get; init; }
+
     /// <summary>
     /// When the caller stops waiting (its timeout, less a margin for the reply). Long walks check
     /// <see cref="PastDeadline"/> and return what they have, so Navisworks is not kept busy for nobody.

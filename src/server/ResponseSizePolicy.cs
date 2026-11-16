@@ -5,7 +5,8 @@ namespace Bimwright.Nwd.Server;
 
 /// <summary>
 /// Agent-facing size policy for tool result text (UTF-8 bytes of the returned JSON).
-/// Warn from 64 KiB, warn strongly above 256 KiB, reject past the 1 MiB budget.
+/// Defaults: warn from 64 KiB, warn strongly above 256 KiB, reject past the 1 MiB budget
+/// (configurable, and the guard can be switched off; see <see cref="Limits"/>).
 /// nwd output is already compact JSON, so the budget applies to the delivered text
 /// directly with no pretty-print headroom. rvt-mcp parity, applied server-side.
 /// </summary>
@@ -16,6 +17,30 @@ public static class ResponseSizePolicy
 
     /// <summary>Delivered-size ceiling the agent's context must stay under.</summary>
     public const int BudgetBytes = 1024 * 1024;
+
+    /// <summary>Effective thresholds. Guard off: no warnings, budget = transport cap.</summary>
+    public sealed class Limits
+    {
+        public int WarnBytes { get; init; } = ResponseSizePolicy.WarnBytes;
+        public int StrongWarnBytes { get; init; } = ResponseSizePolicy.StrongWarnBytes;
+        public int BudgetBytes { get; init; } = ResponseSizePolicy.BudgetBytes;
+
+        public static Limits Default { get; } = new();
+
+        public static Limits From(NwdMcpConfig config) => config.EnableResponseGuard
+            ? new Limits
+            {
+                WarnBytes = config.ResponseWarnBytes,
+                StrongWarnBytes = config.ResponseStrongWarnBytes,
+                BudgetBytes = config.ResponseBudgetBytes
+            }
+            : new Limits
+            {
+                WarnBytes = int.MaxValue,
+                StrongWarnBytes = int.MaxValue,
+                BudgetBytes = config.MaxResponseBytes
+            };
+    }
 
     private const string FallbackHint =
         "Retry with a smaller explicit ID list or a more selective filter supported by this tool.";
@@ -56,23 +81,26 @@ public static class ResponseSizePolicy
     }
 
     public static Decision Evaluate(string? toolName, string? text)
+        => Evaluate(toolName, text, Limits.Default);
+
+    public static Decision Evaluate(string? toolName, string? text, Limits limits)
     {
         var byteCount = Encoding.UTF8.GetByteCount(text ?? string.Empty);
         var decision = new Decision { ByteCount = byteCount };
         var hint = GetNarrowingHint(toolName);
 
-        if (byteCount > BudgetBytes)
+        if (byteCount > limits.BudgetBytes)
         {
             decision.Reject = true;
             decision.RejectMessage =
-                $"Response exceeded the {BudgetBytes}-byte response budget ({byteCount} bytes) for {toolName}. " +
+                $"Response exceeded the {limits.BudgetBytes}-byte response budget ({byteCount} bytes) for {toolName}. " +
                 $"{hint} Do not retry the same unscoped request.";
             return decision;
         }
 
-        if (byteCount >= WarnBytes)
+        if (byteCount >= limits.WarnBytes)
         {
-            var strong = byteCount > StrongWarnBytes;
+            var strong = byteCount > limits.StrongWarnBytes;
             decision.Level = strong ? "strong_warning" : "warning";
             decision.AgentWarning = strong
                 ? $"Oversized response strong warning: {byteCount} bytes. {hint}"

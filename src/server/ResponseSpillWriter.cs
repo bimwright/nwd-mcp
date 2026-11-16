@@ -49,25 +49,34 @@ public sealed class ResponseSpillWriter
 {
     public const int PreviewMaxBytes = 48 * 1024;
     public const int SchemaMaxBytes = 64 * 1024;
-    public const int MaxRetainedFiles = 50;
-    public static readonly TimeSpan MaxFileAge = TimeSpan.FromHours(24);
 
     private static readonly UTF8Encoding Utf8NoBom = new UTF8Encoding(false);
     private readonly string _directory;
 
-    public ResponseSpillWriter()
-        : this(System.IO.Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Bimwright", "nwd-mcp",
-            "spill"))
+    /// <summary>
+    /// How long a spill file is kept. Age is the only reason to delete one: the agent only has a
+    /// preview and the path, so no file-count cap may remove a file younger than this.
+    /// </summary>
+    public TimeSpan Retention { get; }
+
+    public static string DefaultDirectory => System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Bimwright", "nwd-mcp",
+        "spill");
+
+    public ResponseSpillWriter(int retentionHours = NwdMcpConfig.DefaultSpillRetentionHours)
+        : this(DefaultDirectory, retentionHours)
     {
     }
 
-    public ResponseSpillWriter(string directory)
+    public ResponseSpillWriter(string directory, int retentionHours = NwdMcpConfig.DefaultSpillRetentionHours)
     {
         if (string.IsNullOrWhiteSpace(directory))
             throw new ArgumentException("Spill directory is required.", nameof(directory));
+        if (retentionHours < 1 || retentionHours > NwdMcpConfig.MaxSpillRetentionHours)
+            retentionHours = NwdMcpConfig.DefaultSpillRetentionHours;
         _directory = System.IO.Path.GetFullPath(directory);
+        Retention = TimeSpan.FromHours(retentionHours);
     }
 
     public ResponseSpillResult Write(string toolName, object? payload, ResponseSpillFormat format)
@@ -586,9 +595,9 @@ public sealed class ResponseSpillWriter
         var result = new SpillCleanupResult();
         if (!Directory.Exists(_directory))
             return result;
+        var kept = 0;
 
-        var cutoff = utcNow.ToUniversalTime().Subtract(MaxFileAge);
-        var retained = new List<FileInfo>();
+        var cutoff = utcNow.ToUniversalTime().Subtract(Retention);
         foreach (var path in Directory.GetFiles(_directory))
         {
             var file = new FileInfo(path);
@@ -601,25 +610,12 @@ public sealed class ResponseSpillWriter
             }
             else
             {
-                retained.Add(file);
+                kept++;
             }
         }
 
-        var ordered = retained
-            .Where(file => file.Exists)
-            .OrderByDescending(file => protectedPath != null
-                && string.Equals(file.FullName, protectedPath, StringComparison.OrdinalIgnoreCase))
-            .ThenByDescending(file => file.LastWriteTimeUtc)
-            .ThenByDescending(file => file.Name, StringComparer.Ordinal)
-            .ToArray();
-        for (var i = MaxRetainedFiles; i < ordered.Length; i++)
-        {
-            if (TryDelete(ordered[i].FullName)) result.DeletedCount++;
-            else result.FailedCount++;
-        }
-
         try { result.RemainingCount = Directory.GetFiles(_directory).Length; }
-        catch { result.RemainingCount = Math.Min(ordered.Length, MaxRetainedFiles) + result.FailedCount; }
+        catch { result.RemainingCount = kept + result.FailedCount; }
         return result;
     }
 

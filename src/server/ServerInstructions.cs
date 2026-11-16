@@ -5,8 +5,16 @@ public static class ServerInstructions
     public const string Text =
         "nwd-mcp - MCP gateway for Autodesk Navisworks Manage 2022-2027. " +
         "Tools are prefixed nwd_*. Lengths are in the model's display units. " +
-        "Multi-instance: if more than one Navisworks may be open, call nwd_list_available_targets " +
-        "then nwd_switch_target. Versions are 4-digit years (2022..2027). " +
+        "Targeting: the gateway binds to one Navisworks (PID + process start) and never moves on its own. " +
+        "If several may be open or several agents run, call nwd_list_available_targets (pid, window_title) and pin " +
+        "nwd_switch_target(\"pid:<n>\") at session start; list/get never select. Selectors: pid:<n>, id:<target_id>, 2022..2027, auto; never R-codes. " +
+        "AMBIGUOUS_TARGET, TARGET_LOST, TARGET_CHANGED, TARGET_UNAVAILABLE and NO_TARGET mean the command was not sent: inspect error.target.candidates, " +
+        "confirm with nwd_switch_target(\"pid:<n>\"), then call again. TARGET_REBIND_REQUIRED: a year/auto selector cannot move a binding; " +
+        "leaving a live explicit choice needs rebind=true. TARGET_INTERRUPTED: the command was sent and its outcome is unknown; " +
+        "inspect the document before retrying a write. " +
+        "Writes need a confirmed document: after the user confirms the reported file, call nwd_switch_target(\"pid:<n>\", verify=true) once. " +
+        "TARGET_UNCONFIRMED and PAIRING_REQUIRED mean not sent; DOCUMENT_CHANGED means another file is open now and the command did not start: " +
+        "ask the user, then verify again. nwd_open_file moves the confirmation to the file it opens. " +
         "At session start, select the intended target then call nwd_health_check(check_updates=true) once to discover newer stable releases " +
         "and report host state, loaded server/plugin versions, build ids and alignment. If network access is unavailable or disallowed, " +
         "use the offline default and keep the update status not_checked/unknown. Later routine probes stay offline. " +

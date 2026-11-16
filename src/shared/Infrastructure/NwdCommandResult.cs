@@ -31,4 +31,9 @@ public sealed class NwdResponseMeta
     [JsonProperty("navisworks_year")] public int? NavisworksYear { get; set; }
     [JsonProperty("duration_ms")] public long DurationMs { get; set; }
     [JsonProperty("read_only_enforced")] public bool? ReadOnlyEnforced { get; set; }
+    /// <summary>The open document after the command (document_target_v1), or <see cref="DocumentTargetPolicy.NoDocument"/>.</summary>
+    [JsonProperty("document_id", NullValueHandling = NullValueHandling.Ignore)] public string? DocumentId { get; set; }
+    [JsonProperty("document_title", NullValueHandling = NullValueHandling.Ignore)] public string? DocumentTitle { get; set; }
+    /// <summary>Set when open_file moved the confirmed document to the file it opened (owner decision Q-B).</summary>
+    [JsonProperty("repin_document_id", NullValueHandling = NullValueHandling.Ignore)] public string? RepinDocumentId { get; set; }
 }

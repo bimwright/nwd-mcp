@@ -15,6 +15,8 @@ namespace Bimwright.Nwd.Server;
 public sealed class NwdGatewayException : Exception
 {
     public string Code { get; }
+    /// <summary>BW-TARGET-001 §6.10 target payload for targeting refusals; null for other errors.</summary>
+    public JObject? Target { get; init; }
     public NwdGatewayException(string code, string message) : base(message) => Code = code;
 }
 
@@ -22,39 +24,37 @@ public sealed class PluginClient
 {
     private readonly NwdMcpConfig _config;
     private readonly TargetRegistry _registry;
+    private readonly TargetBinding _binding;
     private readonly JObject _gatewayIdentity;
-    private TargetDescriptor? _current;
 
-    public PluginClient(NwdMcpConfig config)
+    public PluginClient(NwdMcpConfig config) : this(config, null, null) { }
+
+    /// <param name="probe">Test seam for process identity (PID + start time).</param>
+    internal PluginClient(NwdMcpConfig config, Func<int, ProcessProbe>? probe, Func<int, string?>? windowTitle = null)
     {
         _config = config;
-        _registry = new TargetRegistry(config.DescriptorDirectory);
+        _registry = new TargetRegistry(config.DescriptorDirectory, probe);
+        if (!TargetSelector.TryParse(config.TargetId, out var selector, out var error))
+            throw new ArgumentException("Invalid target selector: " + error);
+        _binding = new TargetBinding(selector, _registry.List, probe, windowTitle);
         _gatewayIdentity = RuntimeIdentity.Capture(typeof(PluginClient).Assembly, "gateway");
     }
 
     internal JObject GatewayIdentity => (JObject)_gatewayIdentity.DeepClone();
 
+    /// <summary>Current binding generation; the call filter pins it when a tool call arrives.</summary>
+    internal long Generation => _binding.Generation;
+
     public IReadOnlyList<TargetDescriptor> ListTargets() => _registry.List();
 
-    public TargetDescriptor? CurrentTarget
-    {
-        get
-        {
-            var live = _registry.List();
-            var refreshed = _current is not null ? live.FirstOrDefault(t => t.TargetId == _current.TargetId) : null;
-            if (refreshed is not null) return _current = refreshed;
-            _current = (_config.TargetId is { } id ? live.FirstOrDefault(t => t.TargetId == id) : null) ?? live.FirstOrDefault();
-            return _current;
-        }
-    }
+    /// <summary>nwd_list_available_targets rows. Never selects a target.</summary>
+    public JArray ListTargetRows() => _binding.ListRows();
 
-    public bool SwitchTarget(string targetId)
-    {
-        var match = _registry.List().FirstOrDefault(t => t.TargetId == targetId);
-        if (match is null) return false;
-        _current = match;
-        return true;
-    }
+    /// <summary>nwd_get_current_target state. Never selects a target.</summary>
+    public JObject CurrentTargetState() => _binding.Snapshot();
+
+    /// <summary>nwd_switch_target. Throws <see cref="NwdGatewayException"/> with a target payload on refusal.</summary>
+    public JObject SwitchTarget(string? selector, bool rebind = false) => _binding.Switch(selector, rebind);
 
     public const int FileOperationTimeoutMs = 300_000;
 
@@ -63,13 +63,98 @@ public sealed class PluginClient
 
     public async Task<JToken> SendAsync(string command, object parameters, int timeoutMs, CancellationToken ct)
     {
+        var (result, call) = await ExchangeAsync(command, parameters, timeoutMs, ct);
+        // Owner decision Q-B: open_file that replaced the confirmed document moves the confirmation to the new file.
+        if (result.Ok && result.Meta?.RepinDocumentId is { Length: > 0 } repin)
+            _binding.PinDocument(call, repin, result.Meta.DocumentTitle);
+        if (!result.Ok) throw PluginFailure(result);
+        return result.Data ?? JValue.CreateNull();
+    }
+
+    internal static bool SupportsDocumentTarget(TargetDescriptor target)
+        => target.Capabilities?.Contains(DocumentTargetPolicy.Protocol, StringComparer.Ordinal) == true;
+
+    /// <summary>
+    /// nwd_switch_target(verify=true): reads the document open in the bound Navisworks now and confirms it for writes.
+    /// Runs right after the switch, so it pins the new binding generation rather than the tool call's.
+    /// </summary>
+    internal async Task<(string Id, string? Title)> ConfirmDocumentAsync(CancellationToken ct)
+    {
+        using var scope = TargetCallContext.Begin(_binding.Generation);
+        var (result, call) = await ExchangeAsync("health_check", new JObject(), _config.TimeoutMs, ct);
+        if (!result.Ok) throw PluginFailure(result);
+        if (!SupportsDocumentTarget(call.Descriptor) || string.IsNullOrEmpty(result.Meta?.DocumentId))
+            throw PairingRequired(call.Descriptor, "verify");
+        var id = result.Meta!.DocumentId!;
+        if (!_binding.PinDocument(call, id, result.Meta.DocumentTitle))
+            throw new NwdGatewayException("TARGET_CHANGED",
+                $"The binding changed while {call.Descriptor.TargetId} was being verified; call nwd_switch_target again.");
+        return (id, result.Meta.DocumentTitle);
+    }
+
+    /// <summary>
+    /// Family contract FC-PAIR-01 / FC-DOC-03: a write is not sent to a plug-in without document_target_v1, nor
+    /// before a document is confirmed. Returns the confirmed document for the envelope.
+    /// </summary>
+    private (string Id, string? Title)? GateWrite(string command, TargetCall call)
+    {
+        var pinned = _binding.PinnedDocument(call);
+        // Internal or unknown commands are left to the plug-in's own check.
+        if (!NwdCommandCatalog.TryGet(command, out var info) || !DocumentTargetPolicy.NeedsConfirmedTarget(command, info.IsReadOnly))
+            return pinned;
+        var target = call.Descriptor;
+        if (!SupportsDocumentTarget(target))
+            throw PairingRequired(target, command);
+        if (pinned is null)
+            throw NotSent("TARGET_UNCONFIRMED",
+                $"{command} was not sent: writes need a confirmed Navisworks and document. Check with the user that " +
+                (string.IsNullOrEmpty(target.DocumentTitle) ? $"Navisworks {target.Year} (pid {target.ProcessIdNormalized})" : $"'{target.DocumentTitle}'") +
+                $" is what to change, then call nwd_switch_target(\"pid:{target.ProcessIdNormalized}\", verify=true) and repeat the call.",
+                target, "nwd_switch_target");
+        return pinned;
+    }
+
+    private static NwdGatewayException PairingRequired(TargetDescriptor target, string command)
+        => NotSent("PAIRING_REQUIRED",
+            $"{command} was not sent: the Navisworks plug-in of {target.TargetId} does not confirm documents ({DocumentTargetPolicy.Protocol}). " +
+            "Update the nwd-mcp server and the Navisworks plug-in together from the same release, then restart Navisworks and the MCP client. Reads still work.",
+            target, "nwd_health_check");
+
+    /// <summary>A failed plug-in result. Document refusals were not started (FC-DOC-04) and carry a target payload.</summary>
+    private static NwdGatewayException PluginFailure(NwdCommandResult result)
+    {
+        var code = result.Error?.Code ?? "API_ERROR";
+        var message = result.Error?.Message ?? "unknown error";
+        if (code is not ("DOCUMENT_CHANGED" or "DOCUMENT_UNCONFIRMED" or "PAIRING_REQUIRED"))
+            return new NwdGatewayException(code, message);
+        var ex = new NwdGatewayException(code, message)
+        {
+            Target = new JObject
+            {
+                ["code"] = code,
+                ["sent"] = true,
+                ["outcome"] = "not_started",
+                ["document_id"] = result.Meta?.DocumentId,
+                ["document_title"] = result.Meta?.DocumentTitle,
+                ["recommended_next_tool"] = code == "PAIRING_REQUIRED" ? "nwd_health_check" : "nwd_switch_target",
+                ["next_step"] = message
+            }
+        };
+        TargetCallContext.Record(ex);
+        return ex;
+    }
+
+    private async Task<(NwdCommandResult Result, TargetCall Call)> ExchangeAsync(string command, object parameters, int timeoutMs, CancellationToken ct)
+    {
         ct.ThrowIfCancellationRequested();
         if (_config.TimeoutMs <= 0 || timeoutMs <= 0)
             throw new NwdGatewayException("INVALID_ARGUMENT", "timeout must be a positive number of milliseconds");
         if (_config.MaxResponseBytes <= 0)
             throw new NwdGatewayException("INVALID_ARGUMENT", "maxResponseBytes must be positive");
         var wait = Math.Max(timeoutMs, _config.TimeoutMs);
-        var target = CurrentTarget ?? throw new NwdGatewayException("NO_TARGET", "No live Navisworks Manage target. Start Navisworks with the nwd plug-in loaded.");
+        var call = Track(() => _binding.Capture(TargetCallContext.Value?.PinnedGeneration));
+        var target = call.Descriptor;
+        var pinned = GateWrite(command, call);
         var env = new NwdCommandEnvelope
         {
             Id = Guid.NewGuid(),
@@ -77,7 +162,8 @@ public sealed class PluginClient
             Params = parameters as JObject ?? JObject.FromObject(parameters),
             TimeoutMs = wait,
             AuthToken = target.AuthToken,
-            RecordCalls = _config.EnableCallLog
+            RecordCalls = _config.EnableCallLog,
+            DocumentTarget = new DocumentTargetEnvelope { ExpectedDocumentId = pinned?.Id }
         };
         var serialized = JsonConvert.SerializeObject(env);
         var requestBytes = Encoding.UTF8.GetBytes(serialized + "\n");
@@ -93,16 +179,17 @@ public sealed class PluginClient
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (OperationCanceledException)
-        { throw new NwdGatewayException("TIMEOUT", $"connect to target {target.TargetId} timed out"); }
+        { throw NotSent("TIMEOUT", $"connect to target {target.TargetId} timed out; the command was not sent", target); }
         catch (NwdGatewayException) { throw; }
         catch (Exception ex)
         {
-            throw new NwdGatewayException("TARGET_UNAVAILABLE", $"cannot reach target {target.TargetId}: {ex.Message}");
+            throw NotSent("TARGET_UNAVAILABLE", $"cannot reach target {target.TargetId}: {ex.Message}. The command was not sent; the binding is kept.", target);
         }
 
         using var stream = client.GetStream();
         using var requestTimeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         requestTimeout.CancelAfter(wait);
+        Track(() => { _binding.Validate(call); return call; });
         string response;
         try
         {
@@ -114,13 +201,63 @@ public sealed class PluginClient
         {
             throw new NwdGatewayException("TIMEOUT", $"request {command} timed out after {wait} ms; it may already have run, so do not blindly retry writes");
         }
+        catch (Exception ex) when (ex is IOException or SocketException || (ex is NwdGatewayException g && g.Code == "TARGET_UNAVAILABLE"))
+        {
+            var interrupted = Interrupted(command, target);
+            TargetCallContext.Record(interrupted);
+            throw interrupted;
+        }
         if (!ResponseSizeGuard.Check(response, _config.MaxResponseBytes, out var tooLarge))
             throw new NwdGatewayException(tooLarge!.Code, tooLarge.Message);
 
         var result = JsonConvert.DeserializeObject<NwdCommandResult>(response)
                      ?? throw new NwdGatewayException("API_ERROR", "unparseable response");
-        if (!result.Ok) throw new NwdGatewayException(result.Error?.Code ?? "API_ERROR", result.Error?.Message ?? "unknown error");
-        return result.Data ?? JValue.CreateNull();
+        return (result, call);
+    }
+
+    private static TargetCall Track(Func<TargetCall> resolve)
+    {
+        try { return resolve(); }
+        catch (NwdGatewayException ex) { TargetCallContext.Record(ex); throw; }
+    }
+
+    /// <summary>Connect failed before any byte was written (BW-TARGET-001 §6.10, <c>sent: false</c>).</summary>
+    private static NwdGatewayException NotSent(string code, string message, TargetDescriptor target,
+        string recommended = "nwd_get_current_target")
+    {
+        var ex = new NwdGatewayException(code, message)
+        {
+            Target = new JObject
+            {
+                ["code"] = code,
+                ["sent"] = false,
+                ["outcome"] = "not_started",
+                ["previous"] = new JObject { ["target_id"] = target.TargetId, ["pid"] = target.ProcessIdNormalized, ["host_year"] = target.Year },
+                ["recommended_next_tool"] = recommended,
+                ["next_step"] = message
+            }
+        };
+        TargetCallContext.Record(ex);
+        return ex;
+    }
+
+    /// <summary>BW-TARGET-001 §6.7: the request was written but the connection closed before a response.</summary>
+    private static NwdGatewayException Interrupted(string command, TargetDescriptor target)
+    {
+        var message = $"The connection to {target.TargetId} closed after {command} was sent and before a response arrived. "
+            + "The command may or may not have run; inspect the document state before retrying a write.";
+        return new NwdGatewayException("TARGET_INTERRUPTED", message)
+        {
+            Target = new JObject
+            {
+                ["code"] = "TARGET_INTERRUPTED",
+                ["sent"] = true,
+                ["outcome"] = "unknown",
+                ["previous"] = new JObject { ["target_id"] = target.TargetId, ["pid"] = target.ProcessIdNormalized, ["host_year"] = target.Year },
+                ["recommended_next_tool"] = "nwd_get_document_info",
+                ["next_step"] = message
+            }
+        };
     }
 
     private static async Task<string> ReadResponse(Stream stream, int maxBytes, CancellationToken ct)

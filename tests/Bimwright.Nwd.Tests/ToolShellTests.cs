@@ -163,20 +163,27 @@ public sealed class ToolShellTests
     }
 
     [Fact]
-    public void MetaToolsReadTheDescriptorWithoutCallingThePlugin()
+    public async Task MetaToolsReadTheDescriptorWithoutCallingThePlugin()
     {
-        using var plugin = new FakePlugin();
+        using var plugin = new FakePlugin(confirmed: false);
         var meta = new MetaTools(plugin.Client);
 
         var targets = JArray.Parse(meta.ListAvailableTargets());
         var current = JObject.Parse(meta.GetCurrentTarget());
-        var switched = JObject.Parse(meta.SwitchTarget(plugin.TargetId));
-        var unknown = JObject.Parse(meta.SwitchTarget("navis-9999-1"));
+        var switched = JObject.Parse(await meta.SwitchTarget(plugin.TargetId));
+        var unknown = JObject.Parse(await meta.SwitchTarget("navis-9999-1"));
+        var invalid = JObject.Parse(await meta.SwitchTarget("R25"));
+        var after = JObject.Parse(meta.GetCurrentTarget());
 
         Assert.Equal(plugin.TargetId, (string?)Assert.Single(targets)["TargetId"]);
-        Assert.Equal(2025, (int?)current["NavisworksYear"]);
+        Assert.Equal("none", (string?)current["binding_state"]);          // get never selects
+        Assert.Equal(plugin.TargetId, (string?)current["next_target_id"]);
         Assert.True((bool?)switched["ok"]);
         Assert.False((bool?)unknown["ok"]);
+        Assert.Equal("NO_TARGET", (string?)unknown["error"]?["code"]);
+        Assert.Equal("INVALID_TARGET_SELECTOR", (string?)invalid["error"]?["code"]);
+        Assert.Equal(2025, (int?)after["NavisworksYear"]);
+        Assert.Equal(plugin.TargetId, (string?)after["bound_target_id"]);
         Assert.Empty(plugin.Received);
     }
 
