@@ -206,14 +206,11 @@ Các tệp DLL Autodesk Navisworks API **không được phân phối trực ti�
   ```powershell
   dotnet test tests\Bimwright.Nwd.Tests\Bimwright.Nwd.Tests.csproj -c Debug
   ```
-- **Biên dịch Plug-In:** Yêu cầu máy phát triển phải cài đặt sẵn Autodesk Navisworks Manage.
+- **Biên dịch Plug-In:** Không cần cài Navisworks. Project của mỗi năm biên dịch với DLL tham chiếu API của đúng năm đó (có chữ ký Autodesk) lấy từ gói NuGet `Speckle.Navisworks.API`, chỉ dùng lúc biên dịch: các DLL này không bao giờ được chép ra output hay vào bundle.
   ```powershell
-  dotnet build src\plugin-navis26\Bimwright.Nwd.Plugin.Navis26.csproj -c Debug /p:NavisworksInstallDir="C:\Program Files\Autodesk\Navisworks Manage 2026"
+  dotnet build src\plugin-navis26\Bimwright.Nwd.Plugin.Navis26.csproj -c Debug
   ```
-  Nếu Navisworks Manage được cài đặt ở đường dẫn tùy chỉnh, hãy ghi đè thuộc tính chỉ dẫn:
-  ```powershell
-  dotnet build src\plugin-navis26\Bimwright.Nwd.Plugin.Navis26.csproj -c Debug /p:NavisworksInstallDir="D:\Autodesk\Navisworks 2026"
-  ```
+  `scripts\package-client-setup.ps1` build đủ sáu năm (2022–2027) vào ZIP cài đặt.
 
 ---
 

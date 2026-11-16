@@ -223,14 +223,11 @@ Autodesk Navisworks API 的 DLL **不**在本仓库中重新发布。
   ```powershell
   dotnet test tests\Bimwright.Nwd.Tests\Bimwright.Nwd.Tests.csproj -c Debug
   ```
-- **Plug-in 编译：** 需要本地安装 Navisworks Manage。
+- **Plug-in 编译：** 无需安装 Navisworks。每个年份的项目都针对该年份的 API 引用程序集（Autodesk 签名）编译，这些程序集来自 NuGet 包 `Speckle.Navisworks.API`，仅在编译时使用，绝不会复制到输出或 bundle 中。
   ```powershell
-  dotnet build src\plugin-navis26\Bimwright.Nwd.Plugin.Navis26.csproj -c Debug /p:NavisworksInstallDir="C:\Program Files\Autodesk\Navisworks Manage 2026"
+  dotnet build src\plugin-navis26\Bimwright.Nwd.Plugin.Navis26.csproj -c Debug
   ```
-  如果 Navisworks Manage 安装在非默认路径，请覆盖该 hint 属性：
-  ```powershell
-  dotnet build src\plugin-navis26\Bimwright.Nwd.Plugin.Navis26.csproj -c Debug /p:NavisworksInstallDir="D:\Autodesk\Navisworks 2026"
-  ```
+  `scripts\package-client-setup.ps1` 会把全部六个年份（2022–2027）构建进安装 ZIP。
 
 ---
 

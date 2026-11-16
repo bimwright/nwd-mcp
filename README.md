@@ -233,14 +233,11 @@ Autodesk Navisworks API DLLs are **not redistributed** in this repository.
   ```powershell
   dotnet test tests\Bimwright.Nwd.Tests\Bimwright.Nwd.Tests.csproj -c Debug
   ```
-- **Plug-In Compilation:** Requires a local Navisworks Manage installation.
+- **Plug-In Compilation:** Needs no Navisworks installation. Each year's project compiles against that year's Autodesk-signed API reference assemblies from the `Speckle.Navisworks.API` NuGet package, used at compile time only: they are never copied to the output or the bundle.
   ```powershell
-  dotnet build src\plugin-navis26\Bimwright.Nwd.Plugin.Navis26.csproj -c Debug /p:NavisworksInstallDir="C:\Program Files\Autodesk\Navisworks Manage 2026"
+  dotnet build src\plugin-navis26\Bimwright.Nwd.Plugin.Navis26.csproj -c Debug
   ```
-  If Navisworks Manage is installed in a non-default path, override the hint property:
-  ```powershell
-  dotnet build src\plugin-navis26\Bimwright.Nwd.Plugin.Navis26.csproj -c Debug /p:NavisworksInstallDir="D:\Autodesk\Navisworks 2026"
-  ```
+  `scripts\package-client-setup.ps1` builds all six years (2022–2027) into the setup ZIP.
 
 ---
 

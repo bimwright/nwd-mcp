@@ -18,8 +18,27 @@ jobs:
         run: dotnet restore src/NwdMcp.sln
       - name: Build + test (the test project pulls in the server transitively)
         run: dotnet test tests/Bimwright.Nwd.Tests/Bimwright.Nwd.Tests.csproj -c Release
-      # The whole NwdMcp.sln is intentionally NOT built in CI: it contains the net48 plug-in
-      # projects, which only build where Navisworks Manage is installed. The server-only path
-      # builds/tests the server + test projects specifically (matches dwg-mcp / rvt-mcp CI).
-      # Plug-in *shape* (net48, NAVIS20YY, Private=false, ...) is verified by the xUnit
-      # PluginProjectFileTests, which run inside this job without needing Navisworks.
+      # Plug-in *shape* (net48, NAVIS20YY, API reference package, ...) is verified by the xUnit
+      # PluginProjectFileTests; the plug-ins themselves build in the plugin-builds job below.
+
+  plugin-builds:
+    # Every Navisworks year compiles against its own Autodesk API reference assemblies from NuGet
+    # (Speckle.Navisworks.API, compile-time only), so no Navisworks install is needed here.
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        year: [ 22, 23, 24, 25, 26, 27 ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build Navisworks 20${{ matrix.year }} plug-in
+        run: dotnet build src/plugin-navis${{ matrix.year }}/Bimwright.Nwd.Plugin.Navis${{ matrix.year }}.csproj -c Release
+      - name: No Autodesk binaries in the output
+        shell: pwsh
+        run: |
+          $leaked = Get-ChildItem "src/plugin-navis${{ matrix.year }}/bin/Release/net48" -File |
+            Where-Object { $_.Name -match '^(Autodesk\.Navisworks\.|AdWindows\.|navisworks\.)' }
+          if ($leaked) { $leaked.Name; throw "Autodesk binaries reached the plug-in output." }
