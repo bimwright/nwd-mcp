@@ -5,6 +5,7 @@
 First release since v1.0.0. It also ships the v1.0.1 changes below, which were never published on their own.
 
 ### Fixed
+- After `nwd_import_model` appended or merged into a saved file, every later write was refused with `DOCUMENT_CHANGED`: Navisworks clears the file name ("Untitled"), which the plug-in reads as a new document. A successful import into the confirmed document now moves the confirmation to it, as `nwd_open_file` does. Found by the v1.1.0 release benchmark.
 - `nwd_send_code` no longer fails every compile with CS0009 when a loaded DLL's metadata cannot be read (rvt-mcp #38): such references are left out and listed in `skipped_references`.
 - Call logs are bounded: files rotate before an append would exceed 5 MiB, and each filename group keeps at most 100 MiB for 30 days. Gateway and plug-in startup apply retention even when recording is off; append, rotation and pruning share a cross-process lock and never fall back to unbounded writing.
 - Local transport is bounded: up to 32 TCP connections, 10 MiB request envelopes (rejected by the gateway before connecting), 120-second idle/incomplete frames and a 30-second response write deadline; file operations keep their 300-second timeout. Stopping the plug-in closes its listener and connected sockets, cancels queued work that has not started, and cannot republish or delete a replacement target. See [local transport limits](README.md#local-transport-limits).
