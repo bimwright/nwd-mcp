@@ -57,12 +57,16 @@ public sealed class DocumentTargetTests
     }
 
     [Fact]
-    public void Repin_moves_only_from_the_confirmed_document_and_only_for_open_file()
+    public void Repin_moves_only_from_the_confirmed_document_and_only_for_open_file_or_import()
     {
         Assert.Equal("b", DocumentTargetPolicy.Repin("open_file", Envelope("a"), Doc("a"), Doc("b")));
         Assert.Null(DocumentTargetPolicy.Repin("open_file", Envelope("a"), Doc("x"), Doc("b")));   // user opened x in between
         Assert.Null(DocumentTargetPolicy.Repin("open_file", Envelope(null), Doc("a"), Doc("b")));
-        Assert.Null(DocumentTargetPolicy.Repin("import_model", Envelope("a"), Doc("a"), Doc("b")));
+        // Appending into a saved file clears its name, so Navisworks reports a new document: the confirmation follows.
+        Assert.Equal("b", DocumentTargetPolicy.Repin("import_model", Envelope("a"), Doc("a"), Doc("b")));
+        Assert.Null(DocumentTargetPolicy.Repin("import_model", Envelope("a"), Doc("x"), Doc("b")));
+        Assert.Null(DocumentTargetPolicy.Repin("import_model", Envelope("a"), Doc("a"), Doc("a")));   // already untitled: id kept
+        Assert.Null(DocumentTargetPolicy.Repin("hide_items", Envelope("a"), Doc("a"), Doc("b")));
         Assert.Equal("b", DocumentTargetPolicy.Repin("open_file", Envelope(DocumentTargetPolicy.NoDocument), DocumentStamp.None, Doc("b")));
     }
 

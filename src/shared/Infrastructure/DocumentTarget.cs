@@ -39,6 +39,11 @@ public static class DocumentTargetPolicy
 
     private static readonly HashSet<string> OpensDocument = new(StringComparer.Ordinal) { "open_file" };
 
+    // Commands whose own success can give the confirmed document a new id: open_file replaces it, and
+    // import_model (append/merge) clears the file name of a saved document, which Navisworks reports as a new
+    // file ("Untitled"). Verified live on Navisworks Manage 2025, 2026-11-16.
+    private static readonly HashSet<string> MovesConfirmation = new(StringComparer.Ordinal) { "open_file", "import_model" };
+
     // Transient UI state (D11) and writes that change no Navisworks document (apply_bake installs a baked tool).
     private static readonly HashSet<string> Exempt = new(StringComparer.Ordinal)
     {
@@ -77,11 +82,12 @@ public static class DocumentTargetPolicy
     }
 
     /// <summary>
-    /// Q-B: when open_file replaced the document and the confirmed document was the one open before it, the
-    /// confirmation moves to the new document. A file the user opened in between is never adopted.
+    /// Q-B: when open_file replaced the document, or import_model gave it a new id, and the confirmed document
+    /// was the one open before the command, the confirmation moves to the new id. A file the user opened in
+    /// between is never adopted.
     /// </summary>
     public static string? Repin(string command, DocumentTargetEnvelope? target, DocumentStamp before, DocumentStamp after)
-        => OpensOrReplacesDocument(command) && target?.ExpectedDocumentId is { Length: > 0 } expected
+        => MovesConfirmation.Contains(command) && target?.ExpectedDocumentId is { Length: > 0 } expected
             && string.Equals(expected, before.Id, StringComparison.Ordinal)
             && !string.Equals(before.Id, after.Id, StringComparison.Ordinal)
             ? after.Id : null;

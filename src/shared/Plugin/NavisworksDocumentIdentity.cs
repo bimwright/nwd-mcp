@@ -8,7 +8,8 @@ namespace Bimwright.Nwd.Shared.Plugin;
 /// <summary>
 /// Lifetime id of the document open in this Navisworks (document_target_v1). Navisworks keeps one document per
 /// process, so the id changes whenever that document is replaced: a new file opened (even the same path again),
-/// File &gt; New, or the active document swapped. Appending models keeps the id (same document).
+/// File &gt; New, the active document swapped, or the file name cleared: appending or merging a model into a saved
+/// file makes it "Untitled", so it gets a new id too (nwd_import_model moves the confirmation itself).
 /// UI thread only, like every Navisworks API call.
 /// </summary>
 public static class NavisworksDocumentIdentity

@@ -211,7 +211,7 @@ Spill 文件位于 `%LOCALAPPDATA%\Bimwright\nwd-mcp\spill`，卸载时删除。
 
 ## 基准测试
 
-Navisworks Manage 2025 上全部 33 个工具的耗时、结果大小、估计 token 和大小策略结果：[docs/benchmarks/2026-09-30-navisworks-manage-2025.md](docs/benchmarks/2026-09-30-navisworks-manage-2025.md)。
+Navisworks Manage 2025 上全部 35 个工具的耗时、结果大小、估计 token 和大小策略结果：[docs/benchmarks/2026-11-16-navisworks-manage-2025.md](docs/benchmarks/2026-11-16-navisworks-manage-2025.md)。
 
 ---
 

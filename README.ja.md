@@ -195,7 +195,7 @@ Spill ファイルは `%LOCALAPPDATA%\Bimwright\nwd-mcp\spill` に保存され�
 
 ## ベンチマーク
 
-Navisworks Manage 2025 上の 33 ツールすべての所要時間、結果サイズ、推定トークン、サイズポリシーの結果: [docs/benchmarks/2026-09-30-navisworks-manage-2025.md](docs/benchmarks/2026-09-30-navisworks-manage-2025.md)。
+Navisworks Manage 2025 上の 35 ツールすべての所要時間、結果サイズ、推定トークン、サイズポリシーの結果: [docs/benchmarks/2026-11-16-navisworks-manage-2025.md](docs/benchmarks/2026-11-16-navisworks-manage-2025.md)。
 
 ---
 

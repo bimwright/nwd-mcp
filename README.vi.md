@@ -195,7 +195,7 @@ Guard bật mặc định. `--disable-response-guard` (hoặc `BIMWRIGHT_NWD_ENA
 
 ## Đo hiệu năng
 
-Thời gian, kích thước kết quả, token ước tính và kết quả chính sách kích thước của đủ 33 công cụ trên Navisworks Manage 2025: [docs/benchmarks/2026-09-30-navisworks-manage-2025.md](docs/benchmarks/2026-09-30-navisworks-manage-2025.md).
+Thời gian, kích thước kết quả, token ước tính và kết quả chính sách kích thước của đủ 35 công cụ trên Navisworks Manage 2025: [docs/benchmarks/2026-11-16-navisworks-manage-2025.md](docs/benchmarks/2026-11-16-navisworks-manage-2025.md).
 
 ---
 
