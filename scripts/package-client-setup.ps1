@@ -59,8 +59,10 @@ foreach ($year in 2022..2027) {
     if (-not (Test-Path $dll)) { throw "Built but missing $dll" }
     $dest = Join-Path $contentsStage "$year"
     New-Item -ItemType Directory -Path $dest -Force | Out-Null
+    # Autodesk binaries are never redistributed: the API reference package is compile-time only, and this
+    # filter keeps any Navisworks/AdWindows DLL out of the ZIP even if one reaches the output folder.
     Get-ChildItem $outDir -File | Where-Object {
-        $_.Name -notmatch '^Autodesk\.Navisworks\.'
+        $_.Name -notmatch '^(Autodesk\.Navisworks\.|AdWindows\.|navisworks\.)'
     } | Copy-Item -Destination $dest -Force
     $packedYears += $year
 }

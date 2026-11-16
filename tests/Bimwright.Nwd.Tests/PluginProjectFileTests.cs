@@ -50,19 +50,22 @@ public sealed class PluginProjectFileTests
             Assert.Contains($"NAVIS{year}", defineConstants);
             Assert.StartsWith("$(DefineConstants);", defineConstants); // must append
 
-            var installDir = propertyGroup.Element("NavisworksInstallDir")?.Value;
-            Assert.NotNull(installDir);
-            Assert.Contains($"Navisworks Manage {year}", installDir);
-
-            // private checks
+            // Navisworks API: that year's reference package, compile-time only (never copied to the output or bundle).
+            var apiVersion = propertyGroup.Element("NavisworksApiPackageVersion")?.Value;
+            Assert.NotNull(apiVersion);
+            Assert.StartsWith($"{year}.", apiVersion);
             var itemGroups = root.Elements("ItemGroup").ToArray();
-            var references = itemGroups.SelectMany(ig => ig.Elements("Reference")).ToArray();
-            Assert.NotEmpty(references);
-            foreach (var r in references)
-            {
-                var isPrivate = r.Element("Private")?.Value;
-                Assert.Equal("false", isPrivate?.ToLowerInvariant());
-            }
+            var packages = itemGroups.SelectMany(ig => ig.Elements("PackageReference")).ToArray();
+            var api = packages.SingleOrDefault(p => p.Attribute("Include")?.Value == "Speckle.Navisworks.API");
+            Assert.NotNull(api);
+            Assert.Equal("$(NavisworksApiPackageVersion)", api!.Attribute("Version")?.Value);
+            Assert.Equal("runtime", api.Attribute("ExcludeAssets")?.Value);
+            Assert.Equal("all", api.Attribute("PrivateAssets")?.Value);
+            // record/init on net48 needs the IsExternalInit polyfill in every shell.
+            Assert.Contains(packages, p => p.Attribute("Include")?.Value == "IsExternalInit");
+            // No install-path references: every shell builds without Navisworks installed.
+            Assert.Empty(itemGroups.SelectMany(ig => ig.Elements("Reference")));
+            Assert.Null(propertyGroup.Element("NavisworksInstallDir"));
 
             // no net8/net10 TFA
             var allText = File.ReadAllText(csprojPath);

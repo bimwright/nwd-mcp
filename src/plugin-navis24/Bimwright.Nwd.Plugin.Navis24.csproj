@@ -12,36 +12,18 @@
     <Nullable>enable</Nullable>
     <NavisworksYear>2024</NavisworksYear>
     <DefineConstants>$(DefineConstants);NAVIS2024</DefineConstants>
-    <NavisworksInstallDir Condition="'$(NavisworksInstallDir)' == ''">C:\Program Files\Autodesk\Navisworks Manage 2024</NavisworksInstallDir>
+    <!-- Navisworks API reference assemblies (Autodesk-signed) come from NuGet at compile time only:
+         no Navisworks install is needed, and they are never copied to the output or the bundle. -->
+    <NavisworksApiPackageVersion>2024.0.0</NavisworksApiPackageVersion>
   </PropertyGroup>
 
-  <Target Name="ValidateNavisworksReferences" BeforeTargets="ResolveReferences" Condition="'$(SkipNavisworksReferenceCheck)' != 'true'">
-    <Error Condition="!Exists('$(NavisworksInstallDir)\Autodesk.Navisworks.Api.dll')"
-           Text="Navisworks API not found at $(NavisworksInstallDir). Pass /p:NavisworksInstallDir=&quot;C:\Program Files\Autodesk\Navisworks Manage 2024&quot; or /p:SkipNavisworksReferenceCheck=true for project-shape checks." />
-  </Target>
-
   <ItemGroup>
-    <Reference Include="Autodesk.Navisworks.Api">
-      <HintPath>$(NavisworksInstallDir)\Autodesk.Navisworks.Api.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="Autodesk.Navisworks.Api.Controls">
-      <HintPath>$(NavisworksInstallDir)\Autodesk.Navisworks.Api.Controls.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="AdWindows">
-      <HintPath>$(NavisworksInstallDir)\AdWindows.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="navisworks.gui.roamer">
-      <HintPath>$(NavisworksInstallDir)\navisworks.gui.roamer.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
+    <PackageReference Include="Speckle.Navisworks.API" Version="$(NavisworksApiPackageVersion)" ExcludeAssets="runtime" PrivateAssets="all" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.8.0" />
+    <PackageReference Include="IsExternalInit" Version="1.0.3">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
