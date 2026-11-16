@@ -152,15 +152,15 @@ public sealed class ToolShellTests
     }
 
     [Fact]
-    public async Task ExecuteSearchSetForcesSelectOffInReadOnlyMode()
+    public async Task ExecuteSearchSetSelectsInReadOnlyModeLikeTheOtherSelectionTools()
     {
         using var plugin = new FakePlugin(readOnly: true);
 
         await new SetsTools(plugin.Client, new ServerState(plugin.Config)).ExecuteSearchSet("Clash/Pipes", true, Ct);
 
         var env = plugin.Single();
-        Assert.False((bool?)env.Params["select"]);
-        Assert.True((bool?)env.Params["read_only_enforced"]);
+        Assert.True((bool?)env.Params["select"]);
+        Assert.Null(env.Params["read_only_enforced"]);   // a plug-in still honours it from an older gateway
     }
 
     [Fact]

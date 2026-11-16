@@ -38,8 +38,13 @@
     <Compile Include="..\..\src\shared\Infrastructure\CommandDispatcher.cs" />
     <Compile Include="..\..\src\shared\Handlers\ScriptReferences.cs" Link="Handlers\ScriptReferences.cs" />
     <Compile Include="..\..\src\shared\Handlers\SendCodeTask.cs" Link="Handlers\SendCodeTask.cs" />
+    <Compile Include="..\..\src\shared\Handlers\ScriptResultToken.cs" Link="Handlers\ScriptResultToken.cs" />
     <Compile Include="..\..\src\shared\Scripting\McpTaskResult.cs" Link="Scripting\McpTaskResult.cs" />
     <Compile Include="..\..\src\shared\Infrastructure\NwdCommandContext.cs" />
+    <Compile Include="..\..\src\shared\Infrastructure\HostBusyPolicy.cs" Link="Infrastructure\HostBusyPolicy.cs" />
+    <Compile Include="..\..\src\shared\Infrastructure\StartGate.cs" Link="Infrastructure\StartGate.cs" />
+    <Compile Include="..\..\src\shared\Infrastructure\RuntimeIdentity.cs" Link="Infrastructure\RuntimeIdentity.cs" />
+    <Compile Include="..\..\src\shared\Plugin\ModalDialogProbe.cs" Link="Plugin\ModalDialogProbe.cs" />
     <Compile Include="..\..\src\shared\Config\PluginSettings.cs" Link="PluginSettings.cs" />
     <Compile Include="..\..\src\shared\Config\ToastPositionOptions.cs" Link="ToastPositionOptions.cs" />
     <Compile Include="..\..\src\shared\Views\Toast\ToastPlacement.cs" Link="ToastPlacement.cs" />

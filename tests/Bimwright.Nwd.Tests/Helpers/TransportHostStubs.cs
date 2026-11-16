@@ -25,6 +25,13 @@ namespace Bimwright.Nwd.Shared.Plugin
             if (Override is { } invoke) invoke(action);
             else action();
         }
+        /// <summary>The real start gate, with <see cref="Override"/> as the UI thread's queue.</summary>
+        internal static bool TryInvoke(Action action, DateTime startByUtc, CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+            if (Override is not { } invoke) { action(); return true; }
+            return Bimwright.Nwd.Shared.Infrastructure.StartGate.Run(run => Task.Run(() => invoke(run)), action, startByUtc, token);
+        }
         internal static void Invoke(Action action, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();

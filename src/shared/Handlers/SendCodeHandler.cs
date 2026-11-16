@@ -83,8 +83,17 @@ public sealed class SendCodeHandler : INwdCommand
         var noDocument = false;
         (string Code, string Message)? refused = null;
         var captured = new StringWriter();
-        NavisworksUiThreadInvoker.Invoke(() =>
+        // FC-BUSY-01: a modal dialog waits for the user; refuse before queueing the script.
+        if (ModalDialogProbe.IsOpen(out var dialog))
+            return NwdCommandResult.Fail(System.Guid.Empty, HostBusyPolicy.Code, HostBusyPolicy.ModalMessage(Name, dialog), meta);
+        var started = NavisworksUiThreadInvoker.TryInvoke(() =>
         {
+            // A dialog's message loop runs queued work: never start the script inside it.
+            if (ModalDialogProbe.IsOpen(out var uiDialog))
+            {
+                refused = (HostBusyPolicy.Code, HostBusyPolicy.ModalMessage(Name, uiDialog));
+                return;
+            }
             // FC-DOC-04 on the UI thread, right before the script runs (it compiled off this thread).
             if (ctx.ReadDocument != null)
             {
@@ -118,15 +127,19 @@ public sealed class SendCodeHandler : INwdCommand
                 SynchronizationContext.SetSynchronizationContext(previous);
                 Console.SetOut(originalOut);
             }
-        }, ctx.CancellationToken);
+        }, ctx.DeadlineUtc, ctx.CancellationToken);
 
+        if (!started)
+            return NwdCommandResult.Fail(System.Guid.Empty, HostBusyPolicy.Code, HostBusyPolicy.ExpiredMessage(Name, ctx.TimeoutMs), meta);
         if (refused is { } r)
             return NwdCommandResult.Fail(System.Guid.Empty, r.Code, r.Message, meta);
         if (noDocument)
             return NwdCommandResult.Fail(System.Guid.Empty, "NO_DOCUMENT", "no active Navisworks document", meta);
         if (error != null)
             return ScriptResult(meta, false, captured.ToString(), null, Describe(error), contract, completed: false, returned: null, skipped);
-        return ScriptResult(meta, true, captured.ToString(), ToToken(SendCodeTask.ResultValue(contract, value)), null,
+        // Objects come back as JSON (ipt-mcp parity); a Navisworks API object fails the call with a DTO hint.
+        var result = ScriptResultToken.ToResultToken(SendCodeTask.ResultValue(contract, value), out var resultError);
+        return ScriptResult(meta, resultError == null, captured.ToString(), result, resultError,
             contract, completed: true, returned: value, skipped);
     }
 
@@ -151,18 +164,6 @@ public sealed class SendCodeHandler : INwdCommand
     private static string SkippedNote(SkippedScriptReference[] skipped) =>
         skipped.Length == 0 ? string.Empty
             : "\nSkipped references (unreadable metadata): " + string.Join(", ", skipped.Select(s => s.Name));
-
-    /// <summary>Primitive results come back as JSON values; anything else as its ToString().</summary>
-    private static JToken? ToToken(object? value)
-    {
-        if (value == null)
-            return null;
-        if (value is JToken token)
-            return token;
-        if (value is string || value is decimal || value is DateTime || value.GetType().IsPrimitive || value.GetType().IsEnum)
-            return JToken.FromObject(value is Enum ? value.ToString()! : value);
-        return value.ToString();
-    }
 
     /// <summary>Full chain, so a load or type-initializer failure shows its real cause.</summary>
     private static string Describe(Exception ex)

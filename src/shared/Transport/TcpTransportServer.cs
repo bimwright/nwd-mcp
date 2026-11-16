@@ -185,6 +185,7 @@ public sealed class TcpTransportServer : IDisposable
                     string? commandName = null;
                     string? paramsJson = null;
                     bool? recordCalls = null;
+                    var timeoutMs = 0;
                     var clock = Stopwatch.StartNew();
                     try
                     {
@@ -204,8 +205,11 @@ public sealed class TcpTransportServer : IDisposable
                         else
                         {
                             using var requestStop = CancellationTokenSource.CreateLinkedTokenSource(_stop.Token);
-                            requestStop.CancelAfter(Math.Max(1000, env.TimeoutMs));
+                            // A second before the gateway gives up, so the gateway reads this plug-in's own answer
+                            // (HOST_BUSY at the start deadline, or TIMEOUT for a started command).
+                            requestStop.CancelAfter(Math.Max(1000, env.TimeoutMs - 1000));
                             commandName = env.Command;
+                            timeoutMs = env.TimeoutMs;
                             recordCalls = env.RecordCalls;
                             paramsJson = env.Params != null ? env.Params.ToString(Formatting.None) : null;
                             NwdCommandResult? result = null;
@@ -214,13 +218,19 @@ public sealed class TcpTransportServer : IDisposable
                             {
                                 lock (_lifecycle)
                                     if (!_running) throw new OperationCanceledException(_stop.Token);
-                                // Queued behind other work until the caller gave up: skip it rather than
-                                // run a command nobody will read.
+                                // Queued behind other work past its start deadline: never start it late (FC-BUSY-03).
                                 if (DateTime.UtcNow >= deadline)
                                 {
-                                    result = NwdCommandResult.Fail(env.Id, "TIMEOUT",
-                                        "Navisworks was busy until the caller's timeout; the command was skipped.",
-                                        new NwdResponseMeta { TargetId = _targetId, NavisworksYear = _options.NavisworksYear });
+                                    result = NwdCommandResult.Fail(env.Id, HostBusyPolicy.Code,
+                                        HostBusyPolicy.ExpiredMessage(env.Command, env.TimeoutMs), BusyMeta());
+                                    return;
+                                }
+                                // A modal dialog's message loop runs queued work: never start a command inside it.
+                                if (!NwdCommandCatalog.RunsOffUiThread(env.Command)
+                                    && HostBusyPolicy.RefusesForModal(env.Command, ModalDialogProbe.IsOpen(out var uiDialog)))
+                                {
+                                    result = NwdCommandResult.Fail(env.Id, HostBusyPolicy.Code,
+                                        HostBusyPolicy.ModalMessage(env.Command, uiDialog), BusyMeta());
                                     return;
                                 }
                                 var context = new NwdCommandContext
@@ -231,6 +241,7 @@ public sealed class TcpTransportServer : IDisposable
                                     TargetId = _targetId,
                                     Commands = _handlers,
                                     DeadlineUtc = deadline,
+                                    TimeoutMs = env.TimeoutMs,
                                     CancellationToken = requestStop.Token,
                                     DocumentTarget = env.DocumentTarget,
                                     ReadDocument = ReadDocument
@@ -244,8 +255,19 @@ public sealed class TcpTransportServer : IDisposable
                             // onto it (SendCodeHandler); report_task_result touches no Navisworks API.
                             if (NwdCommandCatalog.RunsOffUiThread(commandName))
                                 Dispatch();
-                            else
-                                NavisworksUiThreadInvoker.Invoke(Dispatch, requestStop.Token);
+                            else if (commandName == "health_check")
+                            {
+                                // FC-BUSY-05: health answers while Navisworks is busy, from this thread.
+                                var modal = ModalDialogProbe.IsOpen(out _);
+                                var startBy = DateTime.UtcNow.AddMilliseconds(HostBusyPolicy.HealthUiWaitMs);
+                                if (modal || !NavisworksUiThreadInvoker.TryInvoke(Dispatch, startBy < deadline ? startBy : deadline, requestStop.Token))
+                                    result = BusyHealth(modal);
+                            }
+                            // FC-BUSY-01: refuse before queueing while a modal dialog waits for the user.
+                            else if (HostBusyPolicy.RefusesForModal(commandName, ModalDialogProbe.IsOpen(out var dialog)))
+                                result = NwdCommandResult.Fail(env.Id, HostBusyPolicy.Code, HostBusyPolicy.ModalMessage(commandName, dialog), BusyMeta());
+                            else if (!NavisworksUiThreadInvoker.TryInvoke(Dispatch, deadline, requestStop.Token))
+                                result = NwdCommandResult.Fail(env.Id, HostBusyPolicy.Code, HostBusyPolicy.ExpiredMessage(commandName, env.TimeoutMs), BusyMeta());
                             TouchLastCommand();
                             responseJson = JsonConvert.SerializeObject(result);
                             NotifyCompleted(commandName, responseJson, result != null && result.Ok, result?.Error?.Message);
@@ -255,7 +277,8 @@ public sealed class TcpTransportServer : IDisposable
                     }
                     catch (OperationCanceledException)
                     {
-                        responseJson = ErrorJson("TIMEOUT", "The request wait ended. A command that already started may still have run; do not blindly retry writes.");
+                        // Commands that never started return HOST_BUSY above; this one started (FC-BUSY-04).
+                        responseJson = ErrorJson("TIMEOUT", HostBusyPolicy.StartedTimeoutMessage(commandName ?? "command", timeoutMs));
                     }
                     catch (Exception ex)
                     {
@@ -300,6 +323,31 @@ public sealed class TcpTransportServer : IDisposable
         catch
         {
         }
+    }
+
+    private JObject? _pluginIdentity;
+
+    private NwdResponseMeta BusyMeta() => new() { TargetId = _targetId, NavisworksYear = _options.NavisworksYear };
+
+    /// <summary>
+    /// Health while Navisworks is busy (FC-BUSY-05), built without the UI thread or the Navisworks API: the cached
+    /// document title, no document_id (so verify cannot confirm a document it could not read).
+    /// </summary>
+    private NwdCommandResult BusyHealth(bool modalOpen)
+    {
+        _pluginIdentity ??= RuntimeIdentity.Capture(typeof(TcpTransportServer).Assembly, "plugin", _options.NavisworksYear);
+        var data = new JObject
+        {
+            ["healthy"] = true,
+            ["navisworks_year"] = _options.NavisworksYear,
+            ["process_id"] = _processId,
+            ["has_document"] = _documentTitle != null,
+            ["document_title"] = _documentTitle,
+            ["setup_plugin"] = _pluginIdentity.DeepClone(),
+            ["answered_without_ui_thread"] = true,
+            ["modal_dialog"] = ModalDialogProbe.Probe(),
+        }.WithHostBusy(modalOpen, uiThreadBusy: !modalOpen);
+        return NwdCommandResult.Success(Guid.Empty, data, BusyMeta());
     }
 
     private string ErrorJson(string code, string message)

@@ -28,6 +28,7 @@
 - **双进程模型：** 轻量级 `.NET 8` 控制台 server 与一个按版本拆分的进程内 plug-in 通信。有线传输在每一个受支持年份（2022–2027）均为 **TCP NDJSON over loopback**；六个 plug-in shell 都面向 `.NET Framework 4.8` / `net48`。（与 bimwright 家族其他成员不同，nwd-mcp **不**使用 Named Pipe 传输 —— loopback-TCP 约定在所有版本上统一适用。）
 - **安全优先：** 每会话随机加密 token 校验、TCP 传输仅绑定 loopback，以及对返回给模型的错误消息中的绝对文件路径进行净化。
 - **多实例路由：** 网关绑定到一个 Navisworks 实例（以 PID 和进程启动时间识别），绝不会自行切换到其他实例。存在多个匹配实例且尚未选择时，命令返回 `AMBIGUOUS_TARGET`。已绑定的实例退出后，命令返回 `TARGET_LOST` 或 `TARGET_CHANGED`（未发送），直到你用 `nwd_switch_target` 确认目标。选择器为 `pid:<n>`、`id:<target_id>`、年份 2022–2027 或 `auto`。运行多个代理或同年份的多个实例时，请在会话开始时调用 `nwd_list_available_targets`（显示 `pid` 和 `window_title`），再用 `nwd_switch_target("pid:<n>")` 固定。年份或 `auto` 不会移动已有绑定（`TARGET_REBIND_REQUIRED`），离开一个仍在运行且显式选择的实例需要 `rebind=true`。`nwd_list_available_targets` 和 `nwd_get_current_target` 不会选择目标。写入只在已确认的文档上运行：先与用户确认报告的文件就是要修改的文件，然后调用一次 `nwd_switch_target("pid:<n>", verify=true)`。在此之前写入返回 `TARGET_UNCONFIRMED`；如果确认后打开了其他文件，则返回 `DOCUMENT_CHANGED`（命令未执行）。`nwd_open_file` 会把确认移到它打开的文件。服务器与插件来自不同版本时，写入返回 `PAIRING_REQUIRED`；读取仍可用。
+- **Navisworks 忙碌时：** 当模态对话框正在等待用户，或 UI 线程一直忙到命令的开始期限时，命令返回 `HOST_BUSY`：命令未开始，之后也不会执行，因此 Navisworks 空闲后可以重新发送。`TIMEOUT` 现在只表示命令已经开始但结果未知：重新发送写入前请先检查。`nwd_health_check` 在 Navisworks 忙碌时仍会应答，并返回 `host_busy` 和 `busy_reason`（`modal_dialog` 或 `ui_thread_busy`）。
 
 Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最新结果之后停留 20 秒（可选 10、20、30 或 60）。悬停暂停；离开后重新计满该间隔。有意悬停会平滑展开当前卡片的紧凑三行结果视口，每项均有独立边框（工具、结果、成功／失败，以及本地完成时间，采用24小时制 `HH:mm:ss`）。保留该卡片内的所有结果，旧调用在上、新调用在下；初始显示最新三次调用，通过与RVT一致的细滚动条向上滚动可查看更早的调用。移开后平滑收起。新结果会立即追加：位于底部时自动跟随最新调用，向上阅读旧调用时保持滚动位置；回到底部后恢复自动跟随。关闭 branding 也能使用，并遵循减少动态效果设置。有长度上限的摘要仅保留在内存中，关闭或重置卡片时丢弃，不会开启 Record，也不保存原始请求、结果 JSON 或脚本源代码。BIMwright 字标默认关闭，需打开 Show branding 才会出现。`nwd_health_check` 不会进入卡片。**Bimwright** 功能区有 **Toasts**、**Toast Brand**、**Record** 和 **Status**。**Record** 为旧网关提供主机默认设置；当前网关使用下文介绍的服务器调用日志设置。`send_code` 只保存长度和 SHA-256，不保存脚本。设置写在 `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwdmcp.config.json`。`BIMWRIGHT_NWD_ENABLE_TOAST` 和 `BIMWRIGHT_NWD_RECORD_CALLS` 在下次启动时覆盖对应开关。
 
@@ -143,7 +144,7 @@ Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最�
 可通过 `--read-only` 标志或 `BIMWRIGHT_NWD_READ_ONLY=1` 环境变量强制开启严格只读模式。
 
 - 只注册标注为只读的工具。临时界面工具 `nwd_goto_viewpoint`、`nwd_clear_selection`、`nwd_select_items_by_search` 保留（它们只改变视图或选择，不改变模型）。`nwd_switch_target` 和所有写入工具会被移除；请在启动时用 `--target pid:<n>` 固定目标。
-- 混合工具（例如 `nwd_execute_search_set`）会被修改为强制只读参数边界（`select=false`），并输出一个 `read_only_enforced` 响应标记。
+- `nwd_execute_search_set(select=true)` 仍会选中匹配项：与上面的临时界面工具一样，它只改变选择集，不改变模型。
 - 只读工具面恰好为 **25 个工具**。`nwd_list_recent_files` 保留；`nwd_open_file` 和 `nwd_import_model` 会被移除。
 
 ### 工具调用记录（Record）

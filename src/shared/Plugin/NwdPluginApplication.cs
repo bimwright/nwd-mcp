@@ -107,13 +107,23 @@ public sealed class NwdPluginApplication : NWP.EventWatcherPlugin
     private static void OnIdleToast(object sender, EventArgs e)
     {
         NavisworksUiThreadInvoker.Capture();
+        CaptureMainWindow();
         _server?.RefreshDocumentInfo();
         NwdActivityToast.OnIdle();
+    }
+
+    /// <summary>The main frame HWND for the modal-dialog probe (FC-BUSY-01). UI thread only.</summary>
+    private static void CaptureMainWindow()
+    {
+        if (ModalDialogProbe.MainWindow != IntPtr.Zero) return;
+        try { ModalDialogProbe.MainWindow = NW.Application.Gui?.MainWindow?.Handle ?? IntPtr.Zero; }
+        catch { /* advisory */ }
     }
 
     private static void OnGuiCreated(object sender, EventArgs e)
     {
         NavisworksUiThreadInvoker.Capture();
+        CaptureMainWindow();
         NwdActivityToast.OnIdle();
     }
 }

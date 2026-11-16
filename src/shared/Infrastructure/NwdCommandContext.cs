@@ -24,6 +24,8 @@ public sealed class NwdCommandContext
     /// <see cref="PastDeadline"/> and return what they have, so Navisworks is not kept busy for nobody.
     /// </summary>
     public DateTime DeadlineUtc { get; init; } = DateTime.MaxValue;
+    /// <summary>The caller's timeout, for HOST_BUSY / TIMEOUT messages.</summary>
+    public int TimeoutMs { get; init; }
 
     public bool PastDeadline => DateTime.UtcNow >= DeadlineUtc;
 

@@ -27,8 +27,11 @@ public sealed class HealthCheckHandler : INwdCommand
             ["process_id"] = _identity["process_id"]!.DeepClone(),
             ["has_document"] = hasDoc,
             ["document_title"] = doc?.Title,
-            ["setup_plugin"] = _identity.DeepClone()
+            ["setup_plugin"] = _identity.DeepClone(),
+            // On the UI thread: busy only if a modal dialog's message loop ran this health check (FC-BUSY-05).
+            ["modal_dialog"] = Plugin.ModalDialogProbe.Probe(),
         };
+        data.WithHostBusy(modalOpen: data["modal_dialog"]?["open"]?.Value<bool>() == true, uiThreadBusy: false);
         return NwdCommandResult.Success(System.Guid.Empty, data, meta);
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
+using Bimwright.Nwd.Shared.Infrastructure;
 
 namespace Bimwright.Nwd.Shared.Plugin;
 
@@ -31,6 +32,27 @@ public static class NavisworksUiThreadInvoker
     }
 
     public static void Invoke(Action action) => Invoke(action, CancellationToken.None);
+
+    /// <summary>
+    /// Family contract FC-BUSY-01..04: runs <paramref name="action"/> on the UI thread if the UI thread starts it by
+    /// <paramref name="startByUtc"/>. Returns false when it did not: the queued work is abandoned and never runs later
+    /// (HOST_BUSY). Once started it is waited for until <paramref name="cancellationToken"/>; a cancellation then throws
+    /// OperationCanceledException and the outcome is unknown (TIMEOUT). Exceptions from the action are rethrown.
+    /// </summary>
+    public static bool TryInvoke(Action action, DateTime startByUtc, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var ui = _ui;
+        var dispatcher = _uiDispatcher;
+        if ((ui != null && SynchronizationContext.Current == ui)
+            || (ui == null && (dispatcher == null || dispatcher.CheckAccess())))
+        {
+            action();
+            return true;
+        }
+        if (ui != null) return StartGate.Run(run => ui.Post(_ => run(), null), action, startByUtc, cancellationToken);
+        return StartGate.Run(run => dispatcher!.BeginInvoke(run), action, startByUtc, cancellationToken);
+    }
 
     public static void Invoke(Action action, CancellationToken cancellationToken)
     {

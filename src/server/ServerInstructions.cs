@@ -15,6 +15,9 @@ public static class ServerInstructions
         "Writes need a confirmed document: after the user confirms the reported file, call nwd_switch_target(\"pid:<n>\", verify=true) once. " +
         "TARGET_UNCONFIRMED and PAIRING_REQUIRED mean not sent; DOCUMENT_CHANGED means another file is open now and the command did not start: " +
         "ask the user, then verify again. nwd_open_file moves the confirmation to the file it opens. " +
+        "HOST_BUSY means Navisworks could not start the command (a modal dialog waits for the user, or its UI thread stayed busy): " +
+        "it was not started and will not run later; ask the user to answer the dialog, check nwd_health_check host_busy, then send it again. " +
+        "TIMEOUT means the command started and its outcome is unknown: inspect before retrying a write. " +
         "After Navisworks work that changed a document or found something the user should check, call nwd_report_task_result once " +
         "before your final answer (not for chat-only answers); responses of document writes carry _report until you do. " +
         "In nwd_send_code put values that change from run to run in data and read them as data[\"key\"]; " +

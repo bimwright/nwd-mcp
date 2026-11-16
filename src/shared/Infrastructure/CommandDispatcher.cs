@@ -56,6 +56,8 @@ public sealed class CommandDispatcher
             }
             return result;
         }
+        // The caller's wait ended while the command was running: the transport answers TIMEOUT, outcome unknown (FC-BUSY-04).
+        catch (OperationCanceledException) when (ctx.CancellationToken.IsCancellationRequested) { throw; }
         catch (Exception ex)
         {
             return NwdCommandResult.Fail(env.Id, "API_ERROR", ErrorSanitizer.Sanitize(ex), meta);

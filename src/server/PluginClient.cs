@@ -101,6 +101,11 @@ public sealed class PluginClient
         using var scope = TargetCallContext.Begin(_binding.Generation);
         var (result, call) = await ExchangeAsync("health_check", new JObject(), _config.TimeoutMs, ct);
         if (!result.Ok) throw PluginFailure(result);
+        // FC-BUSY-05: health answered without the UI thread carries no document id; nothing was confirmed.
+        if (result.Data is JObject health && health["host_busy"] is JValue { Type: JTokenType.Boolean } busy && (bool)busy)
+            throw new NwdGatewayException("HOST_BUSY",
+                $"Navisworks is busy ({(string?)health["busy_reason"]}), so the open document could not be read and was not confirmed. " +
+                "Ask the user to finish or close what is open in Navisworks, then call nwd_switch_target(\"pid:<n>\", verify=true) again.");
         if (!SupportsDocumentTarget(call.Descriptor) || string.IsNullOrEmpty(result.Meta?.DocumentId))
             throw PairingRequired(call.Descriptor, "verify");
         var id = result.Meta!.DocumentId!;
