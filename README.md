@@ -222,7 +222,7 @@ The guard is on by default. `--disable-response-guard` (or `BIMWRIGHT_NWD_ENABLE
 
 ## Benchmark
 
-Per-tool duration, result size, estimated tokens and size-policy outcome for all 33 tools on Navisworks Manage 2025: [docs/benchmarks/2026-09-30-navisworks-manage-2025.md](docs/benchmarks/2026-09-30-navisworks-manage-2025.md).
+Per-tool duration, result size, estimated tokens and size-policy outcome for all 35 tools on Navisworks Manage 2025: [docs/benchmarks/2026-11-16-navisworks-manage-2025.md](docs/benchmarks/2026-11-16-navisworks-manage-2025.md).
 
 ---
 
