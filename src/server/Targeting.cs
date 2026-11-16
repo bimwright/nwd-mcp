@@ -83,9 +83,16 @@ internal sealed class TargetSelector
 /// <summary>The resolved instance one wire command is sent to, and the binding generation it belongs to.</summary>
 internal sealed class TargetCall
 {
-    public TargetCall(TargetDescriptor descriptor, long generation) { Descriptor = descriptor; Generation = generation; }
+    public TargetCall(TargetDescriptor descriptor, long generation, bool tentative = false)
+    { Descriptor = descriptor; Generation = generation; Tentative = tentative; }
     public TargetDescriptor Descriptor { get; }
     public long Generation { get; }
+
+    /// <summary>
+    /// First selection not yet committed (state <c>none</c>, BW-TARGET-001 §6.3-6.4): the binding is set only once
+    /// the request bytes are written (<see cref="TargetBinding.Commit"/>). A failed connect keeps state <c>none</c>.
+    /// </summary>
+    public bool Tentative { get; }
 }
 
 /// <summary>
@@ -96,7 +103,8 @@ internal static class TargetCallContext
 {
     internal sealed class State
     {
-        public long PinnedGeneration { get; init; }
+        /// <summary>0 = the call arrived before the first binding; set to the first generation once that binding is made.</summary>
+        public long PinnedGeneration { get; set; }
         public string? FailureCode { get; set; }
         public JObject? Failure { get; set; }
     }
@@ -137,6 +145,8 @@ internal static class TargetCallContext
 internal sealed class TargetBinding
 {
     private const string SwitchTool = "nwd_switch_target";
+    /// <summary>Generation of the first binding of the server session (none → bound).</summary>
+    private const long FirstGeneration = 1;
     private readonly object _gate = new();
     private readonly Func<IReadOnlyList<TargetDescriptor>> _list;
     private readonly Func<int, ProcessProbe> _probe;
@@ -168,7 +178,9 @@ internal sealed class TargetBinding
     {
         lock (_gate)
         {
-            if (pinned is { } pin && pin != 0 && pin != _generation)
+            // BW-TARGET-001 §6.6: a call pinned to an older generation is not sent. A call that arrived before any
+            // binding (pin 0) may use only the first binding; once the binding moves past it, the call is refused too.
+            if (pinned is { } pin && pin != _generation && !(pin == 0 && _generation <= FirstGeneration))
                 throw Refusal("TARGET_CHANGED", "The binding changed while this call was pending (nwd_switch_target or a lost instance); the command was not sent.",
                     Live(), recommended: null);
 
@@ -180,7 +192,8 @@ internal sealed class TargetBinding
                 if (candidates.Count > 1)
                     throw Refusal("AMBIGUOUS_TARGET", $"{candidates.Count} Navisworks instances match selector '{_selector.Text}'. The command was not sent. Call nwd_list_available_targets and pin one with nwd_switch_target(\"pid:<n>\").",
                         candidates);
-                Bind(candidates[0], _selector, confirmed: false);
+                // §6.3-6.4: not bound yet; Commit binds once the request is written, a failed connect keeps none.
+                return new TargetCall(candidates[0], FirstGeneration, tentative: true);
             }
 
             if (_state == "bound")
@@ -208,10 +221,27 @@ internal sealed class TargetBinding
     {
         lock (_gate)
         {
-            if (call.Generation != _generation || _state != "bound")
+            if (call.Tentative ? !StillFirstSelection(call) : call.Generation != _generation || _state != "bound")
                 throw Refusal("TARGET_CHANGED", "The binding changed while this call was connecting; the command was not sent.", Live());
         }
     }
+
+    /// <summary>
+    /// Called once the request bytes are written: a tentative first selection becomes the binding (BW-TARGET-001 §6.4,
+    /// dwg/nwd/ipt: the instance a command reached is the binding, even if its response is lost).
+    /// </summary>
+    public void Commit(TargetCall call)
+    {
+        lock (_gate)
+            if (call.Tentative && _state == "none")
+                Bind(call.Descriptor, _selector, confirmed: false);
+    }
+
+    // A tentative call may still go out while nothing is bound, or when a concurrent first call already bound the
+    // same instance and nothing changed since.
+    private bool StillFirstSelection(TargetCall call)
+        => _state == "none"
+            || (_state == "bound" && _generation == FirstGeneration && SameInstance(_bound!, _observedStart, call.Descriptor));
 
     public JObject Switch(string? raw, bool rebind)
     {

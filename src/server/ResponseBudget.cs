@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -251,9 +252,19 @@ public sealed class ResponseBudget
         catch (Newtonsoft.Json.JsonException) { return null; }
     }
 
+    /// <summary>Spill receipt fields that are always kept: they say where the full result is (Tool-spill).</summary>
+    private static readonly string[] ReceiptFields =
+    {
+        "ok", "output_mode", "path", "format", "byte_count", "record_count", "tool", "automatic", "original_response_byte_count",
+    };
+
+    /// <summary>
+    /// Fits the spill envelope into the budget, shrinking in order: preview and schema, then summary strings, then the
+    /// summary, and last a minimal receipt that still names the file (BW-CK Tool-guard / Tool-spill).
+    /// </summary>
     private void EnsureEnvelopeBudget(JObject envelope)
     {
-        if (Encoding.UTF8.GetByteCount(envelope.ToString(Formatting.None)) <= _limits.BudgetBytes)
+        if (Fits(envelope))
             return;
 
         envelope["preview"] = string.Empty;
@@ -263,5 +274,41 @@ public sealed class ResponseBudget
             ["_truncated"] = "Schema omitted from envelope to preserve the response budget; inspect the local artifact directly."
         };
         envelope["schema_truncated"] = true;
+        if (Fits(envelope))
+            return;
+
+        if (envelope["summary"] is JObject summary)
+        {
+            envelope["summary_truncated"] = true;   // counted in every fit check below
+            for (var max = 512; max >= 16 && !Fits(envelope); max /= 2)
+                TrimStrings(summary, max);
+            if (Fits(envelope))
+                return;
+            envelope.Remove("summary");
+            if (Fits(envelope))
+                return;
+        }
+
+        var receipt = new JObject();
+        foreach (var field in ReceiptFields)
+            if (envelope[field] is { } value)
+                receipt[field] = value;
+        receipt["receipt_only"] = true;
+        receipt["note"] = "The response budget left room only for this receipt. Read the full result from path; do not re-run the command.";
+        envelope.RemoveAll();
+        foreach (var property in receipt.Properties())
+            envelope[property.Name] = property.Value;
+        if (!Fits(envelope))
+            envelope.Remove("note");   // the path is never dropped
+    }
+
+    private bool Fits(JObject envelope)
+        => Encoding.UTF8.GetByteCount(envelope.ToString(Formatting.None)) <= _limits.BudgetBytes;
+
+    private static void TrimStrings(JContainer container, int max)
+    {
+        foreach (var value in container.Descendants().OfType<JValue>().ToList())
+            if (value.Type == JTokenType.String && ((string?)value)?.Length > max)
+                value.Value = ((string)value!).Substring(0, max);
     }
 }

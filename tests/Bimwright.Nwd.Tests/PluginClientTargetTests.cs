@@ -42,6 +42,41 @@ public sealed class PluginClientTargetTests : IDisposable
         _ => null);
 
     [Fact]
+    public async Task FailedFirstConnectKeepsStateNone() // review P2, BW-TARGET-001 §6.3-6.4
+    {
+        var closed = new TcpListener(IPAddress.Loopback, 0);
+        closed.Start();
+        var deadPort = ((IPEndPoint)closed.LocalEndpoint).Port;
+        closed.Stop();                                   // nothing listens on A's port
+        Write(1, 2025, deadPort);
+        var client = Client();
+
+        var ex = await Assert.ThrowsAsync<NwdGatewayException>(() => client.SendAsync("get_document_info", new JObject(), CancellationToken.None));
+        Assert.Equal("TARGET_UNAVAILABLE", ex.Code);
+        Assert.Equal("none", (string?)client.CurrentTargetState()["binding_state"]);
+
+        // A goes away and B appears: B is a first selection, not TARGET_LOST for A.
+        _processes[1] = new ProcessProbe(ProcessState.Gone, null);
+        File.Delete(Path.Combine(_dir, "navis-2025-1.json"));
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        Write(2, 2025, ((IPEndPoint)listener.LocalEndpoint).Port);
+        var server = Task.Run(async () =>
+        {
+            using var peer = await listener.AcceptTcpClientAsync();
+            using var reader = new StreamReader(peer.GetStream(), Encoding.UTF8);
+            var env = JsonConvert.DeserializeObject<NwdCommandEnvelope>((await reader.ReadLineAsync())!)!;
+            var reply = JsonConvert.SerializeObject(NwdCommandResult.Success(env.Id, new JObject(), new NwdResponseMeta()));
+            await peer.GetStream().WriteAsync(Encoding.UTF8.GetBytes(reply + "\n"));
+        });
+        await client.SendAsync("get_document_info", new JObject(), CancellationToken.None);
+        await server;
+        var state = client.CurrentTargetState();
+        Assert.Equal("bound", (string?)state["binding_state"]);
+        Assert.Equal(2, (int?)state["bound_pid"]);
+    }
+
+    [Fact]
     public void ListsAllLiveTargets()
     {
         Write(1, 2025); Write(2, 2026);

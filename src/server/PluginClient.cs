@@ -152,7 +152,8 @@ public sealed class PluginClient
         if (_config.MaxResponseBytes <= 0)
             throw new NwdGatewayException("INVALID_ARGUMENT", "maxResponseBytes must be positive");
         var wait = Math.Max(timeoutMs, _config.TimeoutMs);
-        var call = Track(() => _binding.Capture(TargetCallContext.Value?.PinnedGeneration));
+        var context = TargetCallContext.Value;
+        var call = Track(() => _binding.Capture(context?.PinnedGeneration));
         var target = call.Descriptor;
         var pinned = GateWrite(command, call);
         var env = new NwdCommandEnvelope
@@ -194,6 +195,9 @@ public sealed class PluginClient
         try
         {
             await stream.WriteAsync(requestBytes, requestTimeout.Token);
+            // Written: a first selection becomes the binding, and this tool call stays pinned to it (§6.4, §6.6).
+            _binding.Commit(call);
+            if (context is { PinnedGeneration: 0 }) context.PinnedGeneration = _binding.Generation;
             response = await ReadResponse(stream, _config.MaxResponseBytes, requestTimeout.Token);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }

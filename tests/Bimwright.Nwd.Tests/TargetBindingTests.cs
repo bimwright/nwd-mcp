@@ -39,6 +39,15 @@ public sealed class TargetBindingTests
             pid => "Navisworks " + pid);
     }
 
+    /// <summary>One wire command that reaches the instance: capture, validate, write (commit).</summary>
+    private static TargetCall Send(TargetBinding binding, long? pinned = null)
+    {
+        var call = binding.Capture(pinned);
+        binding.Validate(call);
+        binding.Commit(call);
+        return call;
+    }
+
     private static NwdGatewayException Refused(Action action, string code)
     {
         var ex = Assert.Throws<NwdGatewayException>(action);
@@ -84,7 +93,7 @@ public sealed class TargetBindingTests
     {
         Host(10);
         var binding = Binding();
-        binding.Capture(null);
+        Send(binding);
         Host(11);
         Kill(10);
 
@@ -108,7 +117,7 @@ public sealed class TargetBindingTests
     {
         Host(10);
         var binding = Binding();
-        binding.Capture(null);
+        Send(binding);
         Host(11); Host(12);
         Kill(10);
         Refused(() => binding.Capture(null), "AMBIGUOUS_TARGET");
@@ -119,7 +128,7 @@ public sealed class TargetBindingTests
     {
         Host(10); Host(11);
         var binding = Binding("pid:10");
-        binding.Capture(null);
+        Send(binding);
         Kill(10);
         var ex = Refused(() => binding.Capture(null), "TARGET_LOST");
         Assert.Single((JArray)ex.Target!["candidates"]!);
@@ -130,7 +139,7 @@ public sealed class TargetBindingTests
     {
         Host(10);
         var binding = Binding();
-        binding.Capture(null);
+        Send(binding);
         _processes[10] = new ProcessProbe(ProcessState.Alive, T0.AddHours(5)); // same PID, new process
         _live.Clear();
         Refused(() => binding.Capture(null), "NO_TARGET");
@@ -142,7 +151,7 @@ public sealed class TargetBindingTests
     {
         Host(10);
         var binding = Binding();
-        binding.Capture(null);
+        Send(binding);
         _live.Clear(); // listener stopped, process alive
         Refused(() => binding.Capture(null), "TARGET_UNAVAILABLE");
         Assert.Equal("bound", (string?)binding.Snapshot()["binding_state"]);
@@ -153,7 +162,7 @@ public sealed class TargetBindingTests
     {
         var host = Host(10);
         var binding = Binding();
-        binding.Capture(null);
+        Send(binding);
         host.Port = 4242; host.AuthToken = "fresh";
         var call = binding.Capture(null);
         Assert.Equal(4242, call.Descriptor.Port);
@@ -165,7 +174,7 @@ public sealed class TargetBindingTests
     {
         Host(10, 2025);
         var binding = Binding();
-        binding.Capture(null);
+        Send(binding);
         Host(11, 2026);
         Refused(() => binding.Switch("2026", rebind: false), "TARGET_REBIND_REQUIRED");
         Refused(() => binding.Switch("auto", rebind: false), "AMBIGUOUS_TARGET");
@@ -196,7 +205,7 @@ public sealed class TargetBindingTests
     {
         Host(10);
         var binding = Binding();
-        binding.Capture(null);
+        Send(binding);
         binding.Switch("navis-2025-10", rebind: false);
         Assert.Equal(1, binding.Generation);
         Assert.Equal("explicit", (string?)binding.Snapshot()["binding"]);
@@ -213,7 +222,7 @@ public sealed class TargetBindingTests
     {
         Host(10);
         var binding = Binding();
-        binding.Capture(null);
+        Send(binding);
         Refused(() => binding.Switch(selector, rebind: false), "INVALID_TARGET_SELECTOR");
         Assert.Equal("navis-2025-10", (string?)binding.Snapshot()["bound_target_id"]);
     }
@@ -223,7 +232,7 @@ public sealed class TargetBindingTests
     {
         Host(10);
         var binding = Binding();
-        binding.Capture(null);
+        Send(binding);
         Refused(() => binding.Switch("pid:99", rebind: false), "NO_TARGET");
         Assert.Equal(1, binding.Generation);
     }
@@ -248,7 +257,7 @@ public sealed class TargetBindingTests
     {
         Host(10);
         var binding = Binding();
-        var first = binding.Capture(binding.Generation); // pinned at none (0): may make the first choice
+        var first = Send(binding, binding.Generation); // pinned at none (0): may make the first choice
         Assert.Equal(1, first.Generation);
         Host(11);
         binding.Switch("pid:11", rebind: false);
@@ -256,6 +265,58 @@ public sealed class TargetBindingTests
         Refused(() => binding.Capture(1), "TARGET_CHANGED");
         Refused(() => binding.Validate(first), "TARGET_CHANGED");
         Assert.Equal("navis-2025-11", binding.Capture(2).Descriptor.TargetId);
+    }
+
+    [Fact]
+    public void CallPinnedBeforeAnyBindingIsNotSentAfterTheBindingMoved() // review P1, §6.6
+    {
+        Host(10);
+        var binding = Binding();
+        const long arrivedAtNone = 0;           // e.g. delayed by a SQLite read before its first wire command
+        Send(binding, arrivedAtNone);           // another call makes the first binding: A, generation 1
+        Assert.Equal("navis-2025-10", binding.Capture(arrivedAtNone).Descriptor.TargetId); // still the first binding
+        Host(11);
+        binding.Switch("pid:11", rebind: true); // A -> B, generation 2
+
+        Refused(() => binding.Capture(arrivedAtNone), "TARGET_CHANGED");
+    }
+
+    [Fact]
+    public void FirstSelectionIsNotBoundUntilTheRequestIsWritten() // review P2, §6.3-6.4
+    {
+        Host(10);
+        var binding = Binding();
+        var call = binding.Capture(null);       // connect to A fails after this: nothing written
+        Assert.True(call.Tentative);
+        Assert.Equal("none", (string?)binding.Snapshot()["binding_state"]);
+
+        Kill(10); Host(11);                     // A goes away, B appears
+        var next = Send(binding);
+        Assert.Equal("navis-2025-11", next.Descriptor.TargetId); // first selection, not TARGET_LOST
+        Assert.Equal("bound", (string?)binding.Snapshot()["binding_state"]);
+        Assert.Equal(1, binding.Generation);
+    }
+
+    [Fact]
+    public void ConcurrentFirstCallsToTheSameInstanceBothGoOut()
+    {
+        Host(10);
+        var binding = Binding();
+        var a = binding.Capture(0);
+        var b = binding.Capture(0);
+        binding.Validate(a); binding.Commit(a);
+        binding.Validate(b); binding.Commit(b);  // same instance, nothing changed since the first binding
+        Assert.Equal(1, binding.Generation);
+    }
+
+    [Fact]
+    public void TentativeCallIsRefusedWhenASwitchBoundAnotherInstanceFirst()
+    {
+        Host(10); Host(11, 2026);
+        var binding = Binding("2025");
+        var call = binding.Capture(0);           // tentative: A
+        binding.Switch("pid:11", rebind: false); // the agent pins B before the call is written
+        Refused(() => binding.Validate(call), "TARGET_CHANGED");
     }
 
     [Theory]
