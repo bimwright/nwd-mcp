@@ -58,13 +58,15 @@ Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最�
 
 ## 工具面
 
-默认启动注册全部 toolset，共 **33 个工具**。`--read-only` 为 **23 个**。每个工具都使用 `nwd_*` 前缀。
+默认启动注册全部 toolset，共 **35 个工具**。`--read-only` 为 **25 个**。每个工具都使用 `nwd_*` 前缀。
 
-### 1. 目标/元工具（3 个）
+### 1. 目标/元工具（5 个）
 
 * `nwd_list_available_targets` —— 列出所有已发现的活跃 Navisworks 会话。
 * `nwd_get_current_target` —— 报告 server 当前指向的会话。
 * `nwd_switch_target` —— 将 gateway 指向另一个活跃的会话；`verify=true` 还会为写入确认当前打开的文档。
+* `nwd_report_task_result` —— 完成工作后报告一次（completed、failed 或 cancelled，一行摘要，可选 Markdown `body`）：在 Navisworks 提示窗显示卡片并保存报告。由代理自行申报，并非验证结果。修改文档的写入响应会带有 `_report`，直到你报告为止。
+* `nwd_get_report_history` —— 读取 `%LOCALAPPDATA%\Bimwright\nwd-mcp\reports` 中保存的报告，按时间从新到旧；指定 `report_id` 时返回该报告全文。
 
 ### 2. 文件工具（3 个）
 
@@ -142,7 +144,7 @@ Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最�
 
 - 只注册标注为只读的工具。临时界面工具 `nwd_goto_viewpoint`、`nwd_clear_selection`、`nwd_select_items_by_search` 保留（它们只改变视图或选择，不改变模型）。`nwd_switch_target` 和所有写入工具会被移除；请在启动时用 `--target pid:<n>` 固定目标。
 - 混合工具（例如 `nwd_execute_search_set`）会被修改为强制只读参数边界（`select=false`），并输出一个 `read_only_enforced` 响应标记。
-- 只读工具面恰好为 **23 个工具**。`nwd_list_recent_files` 保留；`nwd_open_file` 和 `nwd_import_model` 会被移除。
+- 只读工具面恰好为 **25 个工具**。`nwd_list_recent_files` 保留；`nwd_open_file` 和 `nwd_import_model` 会被移除。
 
 ### 工具调用记录（Record）
 
@@ -162,6 +164,8 @@ Claude Code 的 auto mode 会用分类器检查每次 MCP 调用。若要让只�
       "mcp__nwd-mcp__nwd_list_recent_files",
       "mcp__nwd-mcp__nwd_list_available_targets",
       "mcp__nwd-mcp__nwd_get_current_target",
+      "mcp__nwd-mcp__nwd_report_task_result",
+      "mcp__nwd-mcp__nwd_get_report_history",
       "mcp__nwd-mcp__nwd_health_check",
       "mcp__nwd-mcp__nwd_get_document_info",
       "mcp__nwd-mcp__nwd_get_model_statistics",

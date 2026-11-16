@@ -76,12 +76,14 @@ Useful flags after wiring: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`.
 
 ## Tool Surface
 
-A default launch registers every toolset: **33 tools**. `--read-only` leaves **23**. Every tool uses the `nwd_*` prefix.
+A default launch registers every toolset: **35 tools**. `--read-only` leaves **25**. Every tool uses the `nwd_*` prefix.
 
-### 1. Target/Meta Tools (3)
+### 1. Target/Meta Tools (5)
 * `nwd_list_available_targets` — List all active discovered Navisworks sessions.
 * `nwd_get_current_target` — Report which session the server is currently pointed at.
 * `nwd_switch_target` — Point the gateway at a different active session; `verify=true` also confirms the open document for writes.
+* `nwd_report_task_result` — Report a finished job once (completed, failed or cancelled, one-line summary, optional Markdown body): a card on the Navisworks toast and a saved report. Agent-reported, not verified. Responses of document writes carry `_report` until you do.
+* `nwd_get_report_history` — Read saved reports from `%LOCALAPPDATA%\Bimwright\nwd-mcp\reports`, newest first, or one in full by `report_id`.
 
 ### 2. File Tools (3)
 * `nwd_list_recent_files` — List recent files for the running Manage year, in File menu order.
@@ -149,7 +151,7 @@ After restarting Navisworks and reconnecting the MCP client, compare `initialize
 Strict read-only mode can be enforced via the `--read-only` flag or the `BIMWRIGHT_NWD_READ_ONLY=1` environment variable.
 - Only tools annotated read-only register. Three transient UI tools stay: `nwd_goto_viewpoint`, `nwd_clear_selection` and `nwd_select_items_by_search` (they change the view or selection, not the model). `nwd_switch_target` and every write are removed; pin the target at startup with `--target pid:<n>`.
 - Mixed tools (e.g. `nwd_execute_search_set`) are modified to force read-only parameter bounds (`select=false`) and output a `read_only_enforced` response marker.
-- The total read-only tool surface is exactly **23 tools**. `nwd_list_recent_files` stays; `nwd_open_file` and `nwd_import_model` do not.
+- The total read-only tool surface is exactly **25 tools**. `nwd_list_recent_files` stays; `nwd_open_file` and `nwd_import_model` do not.
 
 ### Tool-call record
 Call logging is **off by default**. `--enable-call-log` records every MCP tool call, including local tools and failures, in `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwd-mcp-calls.jsonl`; forwarded commands also record native outcomes in `mcp-calls.jsonl` in the same directory. `--disable-call-log` prevents creation or appending of both logs for this gateway. The MCPB `call_log` checkbox defaults to false and passes these same flags.
@@ -176,6 +178,8 @@ Claude Code's auto mode checks each MCP call with a classifier. To skip that che
       "mcp__nwd-mcp__nwd_list_recent_files",
       "mcp__nwd-mcp__nwd_list_available_targets",
       "mcp__nwd-mcp__nwd_get_current_target",
+      "mcp__nwd-mcp__nwd_report_task_result",
+      "mcp__nwd-mcp__nwd_get_report_history",
       "mcp__nwd-mcp__nwd_health_check",
       "mcp__nwd-mcp__nwd_get_document_info",
       "mcp__nwd-mcp__nwd_get_model_statistics",

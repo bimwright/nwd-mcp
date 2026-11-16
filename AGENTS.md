@@ -26,7 +26,7 @@ This file is machine-readable install instructions for AI coding agents. A user 
 2. Close Navisworks before installing or uninstalling. It locks the add-in DLLs.
 3. Do not edit an MCP client config until the user has seen the exact diff. The installer never does this for you.
 4. Do not allow `mcp__nwd-mcp__*`. That wildcard also approves `nwd_send_code` and every write tool.
-5. After wiring, restart the client, then verify `initialize`, `tools/list` and `nwd_health_check` on the same new connection. Do not rely on tool count alone. A default install lists 33 tools; `--read-only` lists 21 and removes `nwd_send_code`.
+5. After wiring, restart the client, then verify `initialize`, `tools/list` and `nwd_health_check` on the same new connection. Do not rely on tool count alone. A default install lists 35 tools; `--read-only` lists 25 and removes `nwd_send_code`.
 
 ## Session startup and version checks
 

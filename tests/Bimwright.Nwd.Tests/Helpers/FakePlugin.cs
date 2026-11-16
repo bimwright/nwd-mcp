@@ -49,6 +49,7 @@ internal sealed class FakePlugin : IDisposable
         {
             DescriptorDirectory = _dir,
             BakeDirectory = Path.Combine(_dir, "baked"),
+            ReportDirectory = Path.Combine(_dir, "reports"),
             ReadOnly = readOnly
         };
         Client = new PluginClient(Config);

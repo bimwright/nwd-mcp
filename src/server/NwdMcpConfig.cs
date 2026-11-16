@@ -38,6 +38,8 @@ public sealed class NwdMcpConfig
         "Bimwright", "nwd-mcp");
     public string DescriptorDirectory { get; set; } = DataDirectory;
     public string BakeDirectory { get; set; } = Path.Combine(DataDirectory, "baked");
+    /// <summary>Saved agent reports (nwd_report_task_result, family contract FC-RPT-04).</summary>
+    public string ReportDirectory { get; set; } = Path.Combine(DataDirectory, "reports");
 
     public static NwdMcpConfig Load(string[] args)
     {

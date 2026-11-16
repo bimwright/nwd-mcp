@@ -70,7 +70,7 @@ public sealed class ToolRecordTests : IDisposable
             await Send(process, new JObject { ["jsonrpc"] = "2.0", ["method"] = "notifications/initialized" });
             await Send(process, new JObject { ["jsonrpc"] = "2.0", ["id"] = 2, ["method"] = "tools/list" });
             var catalog = (JArray)(await Read(process))["result"]!["tools"]!;
-            Assert.Equal(readOnly ? 23 : 33, catalog.Count);
+            Assert.Equal(readOnly ? 25 : 35, catalog.Count);
             Assert.Equal(!readOnly, catalog.Any(t => (string?)t["name"] == "nwd_send_code"));
             var calls = new List<(string Name, JObject Args, bool Failure)>
             {

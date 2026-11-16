@@ -38,6 +38,7 @@ public static partial class NwdCommandRegistry
         Add(new SendCodeHandler());
         Add(new RunBakedToolHandler());
         Add(new ApplyBakeHandler());
+        Add(new ReportTaskResultHandler());
 
         return dict;
     }

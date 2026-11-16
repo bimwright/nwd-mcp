@@ -57,13 +57,14 @@ public sealed class ToolShellTests
         new("nwd_hide_items", "hide_items", p => new VisibilityWriteTools(p.Client).HideItems(new[] { "0:0:6" }, false, Ct), """{"item_ids":["0:0:6"],"hide":false}"""),
         new("nwd_unhide_all", "unhide_all", p => new VisibilityWriteTools(p.Client).UnhideAll(Ct), "{}"),
         // code
-        new("nwd_send_code", "send_code", p => new CodeTools(p.Client).SendCode("Console.WriteLine(1);", Ct), """{"code":"Console.WriteLine(1);"}"""),
+        new("nwd_send_code", "send_code", p => new CodeTools(p.Client).SendCode("Console.WriteLine(1);", ct: Ct), """{"code":"Console.WriteLine(1);"}"""),
     };
 
     /// <summary>Tools answered by the server alone; each has its own fact below.</summary>
     private static readonly string[] LocalTools =
     {
         "nwd_list_available_targets", "nwd_get_current_target", "nwd_switch_target",
+        "nwd_report_task_result", "nwd_get_report_history",   // ReportToolsTests
         "nwd_list_baked_tools", "nwd_list_bake_suggestions", "nwd_create_bake_issue_draft",
         "nwd_run_baked_tool", "nwd_accept_bake_suggestion", "nwd_dismiss_bake_suggestion",
     };

@@ -15,6 +15,10 @@ public static class ServerInstructions
         "Writes need a confirmed document: after the user confirms the reported file, call nwd_switch_target(\"pid:<n>\", verify=true) once. " +
         "TARGET_UNCONFIRMED and PAIRING_REQUIRED mean not sent; DOCUMENT_CHANGED means another file is open now and the command did not start: " +
         "ask the user, then verify again. nwd_open_file moves the confirmation to the file it opens. " +
+        "After Navisworks work that changed a document or found something the user should check, call nwd_report_task_result once " +
+        "before your final answer (not for chat-only answers); responses of document writes carry _report until you do. " +
+        "In nwd_send_code put values that change from run to run in data and read them as data[\"key\"]; " +
+        "result_contract=\"task_v1\" makes the script return McpTaskResult.Pass(value) or McpTaskResult.Fail(code, message). " +
         "At session start, select the intended target then call nwd_health_check(check_updates=true) once to discover newer stable releases " +
         "and report host state, loaded server/plugin versions, build ids and alignment. If network access is unavailable or disallowed, " +
         "use the offline default and keep the update status not_checked/unknown. Later routine probes stay offline. " +

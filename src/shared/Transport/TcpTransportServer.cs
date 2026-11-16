@@ -236,13 +236,13 @@ public sealed class TcpTransportServer : IDisposable
                                     ReadDocument = ReadDocument
                                 };
                                 result = _dispatcher!.Dispatch(context, env);
-                                if (!string.Equals(env.Command, "send_code", StringComparison.Ordinal))
+                                if (!NwdCommandCatalog.RunsOffUiThread(env.Command))
                                     RefreshDocumentInfo();
                             }
 
-                            // send_code compiles here, off the UI thread, and marshals only the
-                            // script run onto it (SendCodeHandler).
-                            if (string.Equals(commandName, "send_code", StringComparison.Ordinal))
+                            // send_code compiles here, off the UI thread, and marshals only the script run
+                            // onto it (SendCodeHandler); report_task_result touches no Navisworks API.
+                            if (NwdCommandCatalog.RunsOffUiThread(commandName))
                                 Dispatch();
                             else
                                 NavisworksUiThreadInvoker.Invoke(Dispatch, requestStop.Token);

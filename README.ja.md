@@ -57,12 +57,14 @@ Navisworks は MCP コマンドごとに 1 枚のアクティビティカード�
 
 ## ツールサーフェス
 
-既定の起動ではすべてのツールセットを登録します。**33 のツール** です。`--read-only` では **23** です。すべてのツールは `nwd_*` プレフィックスを使用します。
+既定の起動ではすべてのツールセットを登録します。**35 のツール** です。`--read-only` では **25** です。すべてのツールは `nwd_*` プレフィックスを使用します。
 
-### 1. ターゲット/メタツール (3)
+### 1. ターゲット/メタツール (5)
 * `nwd_list_available_targets` — 検出されたすべてのアクティブな Navisworks セッションを一覧表示します。
 * `nwd_get_current_target` — サーバーが現在どのセッションを指しているかを報告します。
 * `nwd_switch_target` — ゲートウェイを別のアクティブセッションに向けます。`verify=true` は書き込み用に開いているドキュメントも確認します。
+* `nwd_report_task_result` — 作業の完了時に一度だけ報告します（completed / failed / cancelled、1 行の要約、任意の Markdown `body`）。Navisworks のトーストにカードを表示し、レポートを保存します。エージェントの自己申告であり、検証ではありません。ドキュメントを変更した書き込みの応答には、報告するまで `_report` が付きます。
+* `nwd_get_report_history` — `%LOCALAPPDATA%\Bimwright\nwd-mcp\reports` に保存されたレポートを新しい順に読みます。`report_id` を指定すると 1 件を全文で返します。
 
 ### 2. ファイルツール (3)
 * `nwd_list_recent_files` — 実行中の Manage 年の最近使ったファイルを、ファイルメニューの順で列挙します。
@@ -130,7 +132,7 @@ Navisworks再起動とクライアント再接続後、**同じ接続**の新し
 `--read-only` フラグまたは `BIMWRIGHT_NWD_READ_ONLY=1` 環境変数により、厳格な読み取り専用モードを適用できます。
 - 読み取り専用と宣言されたツールだけが登録されます。一時的な UI ツール `nwd_goto_viewpoint`、`nwd_clear_selection`、`nwd_select_items_by_search` は残ります（モデルではなく表示や選択だけを変えます）。`nwd_switch_target` とすべての書き込みツールは外れます。ターゲットは起動時に `--target pid:<n>` で固定してください。
 - 混合ツール（`nwd_execute_search_set` など）は読み取り専用パラメータ範囲を強制するよう変更され（`select=false`）、`read_only_enforced` 応答マーカーを出力します。
-- 読み取り専用モードのツールサーフェスは正確に **23 ツール** です。`nwd_list_recent_files` は残り、`nwd_open_file` と `nwd_import_model` は外れます。
+- 読み取り専用モードのツールサーフェスは正確に **25 ツール** です。`nwd_list_recent_files` は残り、`nwd_open_file` と `nwd_import_model` は外れます。
 
 ### ツール呼び出しの記録（Record）
 呼び出しログは**既定でオフ**です。`--enable-call-log` はローカルツールと失敗を含む全 MCP 呼び出しを `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwd-mcp-calls.jsonl` に記録します。プラグインへ送るコマンドは同じフォルダーの `mcp-calls.jsonl` にもネイティブ結果を記録します。`--disable-call-log` は、このゲートウェイによる両ログの作成と追記を止めます。MCPB の `call_log` は既定で false で、同じフラグを渡します。
@@ -149,6 +151,8 @@ Claude Code の auto mode は MCP 呼び出しごとに分類器でチェック�
       "mcp__nwd-mcp__nwd_list_recent_files",
       "mcp__nwd-mcp__nwd_list_available_targets",
       "mcp__nwd-mcp__nwd_get_current_target",
+      "mcp__nwd-mcp__nwd_report_task_result",
+      "mcp__nwd-mcp__nwd_get_report_history",
       "mcp__nwd-mcp__nwd_health_check",
       "mcp__nwd-mcp__nwd_get_document_info",
       "mcp__nwd-mcp__nwd_get_model_statistics",

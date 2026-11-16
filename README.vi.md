@@ -57,12 +57,14 @@ Cờ: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`.
 
 ## Danh Sách Công Cụ (Tool Surface)
 
-Một lần chạy mặc định đăng ký đủ mọi nhóm: **33 công cụ**. `--read-only` còn **23**. Mỗi công cụ dùng tiền tố `nwd_*`.
+Một lần chạy mặc định đăng ký đủ mọi nhóm: **35 công cụ**. `--read-only` còn **25**. Mỗi công cụ dùng tiền tố `nwd_*`.
 
-### 1. Công cụ Quản lý / Meta (3)
+### 1. Công cụ Quản lý / Meta (5)
 * `nwd_list_available_targets` — Liệt kê tất cả các phiên chạy Navisworks đang hoạt động.
 * `nwd_get_current_target` — Báo cáo phiên chạy hiện tại mà máy chủ đang kết nối.
 * `nwd_switch_target` — Chuyển đổi cổng điều khiển sang một phiên chạy tích cực khác; `verify=true` còn xác nhận document đang mở cho lệnh ghi.
+* `nwd_report_task_result` — Báo cáo một lần khi xong việc (completed, failed hoặc cancelled, tóm tắt một dòng, `body` Markdown tùy chọn): hiện card trên toast Navisworks và lưu thành file. Do agent tự khai, không phải xác nhận. Kết quả của lệnh ghi đổi document mang `_report` cho tới khi báo cáo.
+* `nwd_get_report_history` — Đọc các báo cáo đã lưu trong `%LOCALAPPDATA%\Bimwright\nwd-mcp\reports`, mới nhất trước, hoặc đọc đầy đủ một báo cáo theo `report_id`.
 
 ### 2. Công cụ tệp (3)
 * `nwd_list_recent_files` — Liệt kê file gần đây của năm Manage đang chạy, theo thứ tự menu File.
@@ -130,7 +132,7 @@ Sau restart Navisworks và reconnect client, đối chiếu `initialize.serverIn
 Có thể kích hoạt chế độ chỉ đọc nghiêm ngặt bằng cờ `--read-only` hoặc biến môi trường `BIMWRIGHT_NWD_READ_ONLY=1`.
 - Chỉ đăng ký các công cụ được đánh dấu chỉ đọc. Ba công cụ giao diện tạm thời vẫn còn: `nwd_goto_viewpoint`, `nwd_clear_selection` và `nwd_select_items_by_search` (chỉ đổi khung nhìn hoặc vùng chọn, không đổi mô hình). `nwd_switch_target` và mọi lệnh ghi bị gỡ; ghim target lúc khởi động bằng `--target pid:<n>`.
 - Các công cụ hỗn hợp (như `nwd_execute_search_set`) sẽ bị ép buộc tham số an toàn (`select=false`) và trả về cờ đánh dấu `read_only_enforced` trong phản hồi.
-- Tổng số lượng công cụ khả dụng ở chế độ chỉ đọc là đúng **23 công cụ**. `nwd_list_recent_files` vẫn còn; `nwd_open_file` và `nwd_import_model` bị gỡ.
+- Tổng số lượng công cụ khả dụng ở chế độ chỉ đọc là đúng **25 công cụ**. `nwd_list_recent_files` vẫn còn; `nwd_open_file` và `nwd_import_model` bị gỡ.
 
 ### Ghi lệnh (Record)
 Call log **tắt mặc định**. `--enable-call-log` ghi mọi lời gọi MCP, kể cả tool cục bộ và lỗi, vào `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwd-mcp-calls.jsonl`; lệnh chuyển tới plugin còn ghi kết quả native vào `mcp-calls.jsonl` cùng thư mục. `--disable-call-log` ngăn tạo hoặc ghi thêm vào cả hai log cho gateway này. Checkbox MCPB `call_log` mặc định false và truyền hai flag đó.
@@ -149,6 +151,8 @@ Auto mode của Claude Code kiểm tra từng lời gọi MCP bằng classifier.
       "mcp__nwd-mcp__nwd_list_recent_files",
       "mcp__nwd-mcp__nwd_list_available_targets",
       "mcp__nwd-mcp__nwd_get_current_target",
+      "mcp__nwd-mcp__nwd_report_task_result",
+      "mcp__nwd-mcp__nwd_get_report_history",
       "mcp__nwd-mcp__nwd_health_check",
       "mcp__nwd-mcp__nwd_get_document_info",
       "mcp__nwd-mcp__nwd_get_model_statistics",

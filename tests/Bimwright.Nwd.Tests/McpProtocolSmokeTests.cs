@@ -37,7 +37,7 @@ public sealed class McpProtocolSmokeTests
         Assert.NotNull(responses[0]["result"]?["capabilities"]?["tools"]);
         Assert.Equal("nwd-mcp", (string?)responses[0]["result"]?["serverInfo"]?["name"]);
         var tools = Assert.IsAssignableFrom<JArray>(responses[1]["result"]?["tools"]);
-        Assert.Equal(33, tools.Count);
+        Assert.Equal(35, tools.Count);
         Assert.Contains(tools, t => (string?)t["name"] == "nwd_list_available_targets");
     }
 
@@ -49,7 +49,7 @@ public sealed class McpProtocolSmokeTests
     {
         var responses = await RunProtocolHandshake(checkHealth: true, readOnly: readOnly, explicitArgument: explicitArgument);
         var tools = (JArray)responses[1]["result"]!["tools"]!;
-        Assert.Equal(readOnly ? 23 : 33, tools.Count);
+        Assert.Equal(readOnly ? 25 : 35, tools.Count);
         var health = Assert.Single(tools, tool => (string?)tool["name"] == "nwd_health_check");
         Assert.Equal("boolean", (string?)health["inputSchema"]?["properties"]?["check_updates"]?["type"]);
         Assert.DoesNotContain("check_updates", health["inputSchema"]?["required"]?.Values<string>() ?? Array.Empty<string>());

@@ -157,7 +157,7 @@ public sealed class PluginClientTargetTests : IDisposable
     public async Task SendCodeWrapperUsesCodeParameterOnWire()
     {
         using var plugin = new Helpers.FakePlugin(); // confirmed document, so the write is sent
-        await new CodeTools(plugin.Client).SendCode("System.Console.WriteLine(1);", CancellationToken.None);
+        await new CodeTools(plugin.Client).SendCode("System.Console.WriteLine(1);", ct: CancellationToken.None);
 
         var received = plugin.Single();
         Assert.Equal("send_code", received.Command);

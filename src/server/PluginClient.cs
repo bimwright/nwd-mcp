@@ -26,6 +26,14 @@ public sealed class PluginClient
     private readonly TargetRegistry _registry;
     private readonly TargetBinding _binding;
     private readonly JObject _gatewayIdentity;
+    // The _report reminder points at nwd_report_task_result, which only the meta toolset registers (rvt parity).
+    private readonly bool _reportsOn;
+
+    /// <summary>Writes since the last agent report and the _report reminder (FC-RPT-05).</summary>
+    internal Reports.ReportTracker Reports { get; } = new();
+
+    /// <summary>Saved agent reports (FC-RPT-04).</summary>
+    internal Reports.ReportStore ReportStore { get; }
 
     public PluginClient(NwdMcpConfig config) : this(config, null, null) { }
 
@@ -38,7 +46,12 @@ public sealed class PluginClient
             throw new ArgumentException("Invalid target selector: " + error);
         _binding = new TargetBinding(selector, _registry.List, probe, windowTitle);
         _gatewayIdentity = RuntimeIdentity.Capture(typeof(PluginClient).Assembly, "gateway");
+        ReportStore = new Reports.ReportStore(config.ReportDirectory);
+        _reportsOn = ToolsetFilter.Resolve(config).Contains("meta");
     }
+
+    /// <summary>The bound target id, or null when nothing is bound. Never selects a target.</summary>
+    internal string? BoundTargetId => (string?)_binding.Snapshot()["bound_target_id"];
 
     internal JObject GatewayIdentity => (JObject)_gatewayIdentity.DeepClone();
 
@@ -68,6 +81,11 @@ public sealed class PluginClient
         if (result.Ok && result.Meta?.RepinDocumentId is { Length: > 0 } repin)
             _binding.PinDocument(call, repin, result.Meta.DocumentTitle);
         if (!result.Ok) throw PluginFailure(result);
+        // FC-RPT-05: a write that changed the document carries _report until the agent reports. A script that
+        // failed (ok:false inside a delivered result) changed nothing the agent will report on.
+        if (_reportsOn && result.Data is JObject data && !(data["ok"] is JValue { Type: JTokenType.Boolean } ok && !(bool)ok)
+            && Reports.Record(command, result.Id.ToString("N"), result.Meta?.DocumentTitle) is { } reminder)
+            data["_report"] = reminder;
         return result.Data ?? JValue.CreateNull();
     }
 

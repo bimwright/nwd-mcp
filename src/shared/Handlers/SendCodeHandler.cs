@@ -1,10 +1,12 @@
 #if NAVIS2022 || NAVIS2023 || NAVIS2024 || NAVIS2025 || NAVIS2026 || NAVIS2027
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using Bimwright.Nwd.Shared.Infrastructure;
 using Bimwright.Nwd.Shared.Plugin;
+using Bimwright.Nwd.Shared.Security;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
@@ -29,6 +31,12 @@ public sealed class SendCodeHandler : INwdCommand
     public class Globals
     {
         public NW.Document doc = null!;
+        /// <summary>
+        /// Caller-supplied <c>data</c> as JSON text. A string, not a JToken: the host may load its own Newtonsoft.Json,
+        /// and a JToken field binds to whichever copy the script resolves (ipt-mcp hit MissingFieldException).
+        /// <see cref="SendCodeTask.DataPrelude"/> parses it with the script's own copy.
+        /// </summary>
+        public string? __data_json;
     }
 
     public NwdCommandResult Execute(NwdCommandContext ctx, JObject p)
@@ -38,31 +46,36 @@ public sealed class SendCodeHandler : INwdCommand
         var code = (string?)p["code"];
         if (string.IsNullOrWhiteSpace(code))
             return NwdCommandResult.Fail(System.Guid.Empty, "INVALID_ARGUMENT", "code parameter is required", meta);
+        if (!SendCodeTask.TryReadContract(p["result_contract"], out var contract, out var contractError))
+            return NwdCommandResult.Fail(System.Guid.Empty, "INVALID_ARGUMENT", contractError!, meta);
+        var dataJson = p["data_json"]?.Type == JTokenType.String ? (string?)p["data_json"] : null;
+        var source = SendCodeTask.BuildSource(code!, dataJson);
 
         ScriptRunner<object> runner;
+        var skipped = Array.Empty<SkippedScriptReference>();
         try
         {
-            var refs = AppDomain.CurrentDomain.GetAssemblies()
+            var loaded = AppDomain.CurrentDomain.GetAssemblies()
                 .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
-                .ToArray();
-            var options = ScriptOptions.Default
-                .WithReferences(refs)
-                .WithImports(
-                    "System",
-                    "System.Collections.Generic",
-                    "System.Linq",
-                    "Autodesk.Navisworks.Api");
+                .Select(a => a.Location)
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+            // rvt-mcp #38: a loaded DLL whose metadata Roslyn cannot read is left out instead of failing every compile with CS0009.
+            var refs = ScriptReferences.FromPaths(loaded, out skipped);
+            var imports = new List<string> { "System", "System.Collections.Generic", "System.Linq", "Autodesk.Navisworks.Api" };
+            if (contract == SendCodeTask.TaskV1) imports.Add(SendCodeTask.ScriptNamespace);
+            var options = ScriptOptions.Default.WithReferences(refs).WithImports(imports);
 
-            var script = CSharpScript.Create<object>(code, options, typeof(Globals));
+            var script = CSharpScript.Create<object>(source, options, typeof(Globals));
             var errors = script.Compile(ctx.CancellationToken).Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
             if (errors.Length > 0)
-                return ScriptResult(meta, false, "", null, "compile error: " + string.Join("\n", errors.Select(d => d.ToString())));
+                return ScriptResult(meta, false, "", null, "compile error: " + string.Join("\n", errors.Select(d => d.ToString())) + SkippedNote(skipped),
+                    contract, completed: false, returned: null, skipped);
             runner = script.CreateDelegate();
         }
         catch (OperationCanceledException) when (ctx.CancellationToken.IsCancellationRequested) { throw; }
         catch (Exception ex)
         {
-            return ScriptResult(meta, false, "", null, Describe(ex));
+            return ScriptResult(meta, false, "", null, Describe(ex) + SkippedNote(skipped), contract, completed: false, returned: null, skipped);
         }
 
         object? value = null;
@@ -94,7 +107,7 @@ public sealed class SendCodeHandler : INwdCommand
             {
                 // Without the UI context an awaited continuation cannot deadlock the UI thread.
                 SynchronizationContext.SetSynchronizationContext(null);
-                value = runner(new Globals { doc = doc }).GetAwaiter().GetResult();
+                value = runner(new Globals { doc = doc, __data_json = dataJson }).GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
@@ -112,11 +125,13 @@ public sealed class SendCodeHandler : INwdCommand
         if (noDocument)
             return NwdCommandResult.Fail(System.Guid.Empty, "NO_DOCUMENT", "no active Navisworks document", meta);
         if (error != null)
-            return ScriptResult(meta, false, captured.ToString(), null, Describe(error));
-        return ScriptResult(meta, true, captured.ToString(), ToToken(value), null);
+            return ScriptResult(meta, false, captured.ToString(), null, Describe(error), contract, completed: false, returned: null, skipped);
+        return ScriptResult(meta, true, captured.ToString(), ToToken(SendCodeTask.ResultValue(contract, value)), null,
+            contract, completed: true, returned: value, skipped);
     }
 
-    private static NwdCommandResult ScriptResult(NwdResponseMeta meta, bool ok, string stdout, JToken? result, string? error)
+    private static NwdCommandResult ScriptResult(NwdResponseMeta meta, bool ok, string stdout, JToken? result, string? error,
+        string contract, bool completed, object? returned, SkippedScriptReference[] skipped)
     {
         var data = new JObject
         {
@@ -125,8 +140,17 @@ public sealed class SendCodeHandler : INwdCommand
             ["stdout"] = stdout,
             ["error"] = error
         };
+        // task_v1: _task{contract, status, error}; a failed or missing McpTaskResult sets ok=false (rvt/ipt parity).
+        SendCodeTask.Apply(data, contract, completed, returned);
+        if (skipped.Length > 0)
+            data["skipped_references"] = new JArray(skipped.Select(s =>
+                new JObject { ["name"] = s.Name, ["reason"] = ErrorSanitizer.Sanitize(s.Reason) }));
         return NwdCommandResult.Success(System.Guid.Empty, data, meta);
     }
+
+    private static string SkippedNote(SkippedScriptReference[] skipped) =>
+        skipped.Length == 0 ? string.Empty
+            : "\nSkipped references (unreadable metadata): " + string.Join(", ", skipped.Select(s => s.Name));
 
     /// <summary>Primitive results come back as JSON values; anything else as its ToString().</summary>
     private static JToken? ToToken(object? value)
