@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## v1.1.0 - 2026-11-16
+
+First release since v1.0.0. It also ships the v1.0.1 changes below, which were never published on their own.
 
 ### Fixed
 - `nwd_send_code` no longer fails every compile with CS0009 when a loaded DLL's metadata cannot be read (rvt-mcp #38): such references are left out and listed in `skipped_references`.
@@ -46,7 +48,7 @@
 - Spill files are kept 36 hours instead of 24, and the 50-file cap is gone: age is the only reason a spill file is deleted, so the file an agent was pointed to is never removed early. With a small budget the spill receipt shrinks (preview, schema, then summary text) but always keeps the file path; before, a receipt over the budget was replaced by a generic success message without the path.
 - The server refuses to start when response limits are below 1024 bytes or out of order (warn ≤ strong ≤ budget ≤ `maxResponseBytes`). A `--max-response-bytes` below the 1 MiB default budget now also needs a matching `--response-budget-bytes`.
 
-## v1.0.1 - 2026-10-02
+## v1.0.1 - 2026-10-02 (not published; shipped in v1.1.0)
 
 ### Added
 - Toast position controls in Status: independent horizontal/vertical alignment for four corners, opt-in title-row dragging, remembered owner-relative DIP offsets and Reset position. Changes apply/save immediately; changing corners clears offsets, disabling drag preserves them. Monitor-work-area clamping, anchored expansion with opposite-side fallback, directional enter/exit and smooth corner changes respect reduced motion. No cross-app collision coordination.
