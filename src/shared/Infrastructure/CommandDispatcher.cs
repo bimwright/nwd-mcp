@@ -26,10 +26,26 @@ public sealed class CommandDispatcher
         if (env.Command == "send_code" && !ctx.EnableSendCode)
             return NwdCommandResult.Fail(env.Id, "SEND_CODE_DISABLED", "send_code is disabled in this Navisworks session. Leave BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE unset, or set it to 1.", meta);
 
+        // Family contract FC-DOC-04 / FC-PAIR-01, on the UI thread right before the handler. Commands dispatched from
+        // the transport thread must not read the document here: send_code checks it where its script runs
+        // (SendCodeHandler), report_task_result is a read. Pairing is checked here for every command.
+        var onHostThread = !NwdCommandCatalog.RunsOffUiThread(env.Command);
+        DocumentStamp? before = onHostThread && ctx.ReadDocument != null ? ctx.ReadDocument() : null;
+        if (before is { } b) { meta.DocumentId = b.Id; meta.DocumentTitle = b.Title; }
+        if (DocumentTargetPolicy.Check(env.Command, cmd.IsReadOnly, ctx.DocumentTarget, before) is { } refused)
+            return NwdCommandResult.Fail(env.Id, refused.Code, refused.Message, meta);
+
         try
         {
             var result = cmd.Execute(ctx, env.Params ?? new JObject());
             Normalize(env, ctx, result, started);
+            if (before is { } prior)
+            {
+                var after = ctx.ReadDocument!();
+                result.Meta.DocumentId = after.Id;
+                result.Meta.DocumentTitle = after.Title;
+                if (result.Ok) result.Meta.RepinDocumentId = DocumentTargetPolicy.Repin(env.Command, ctx.DocumentTarget, prior, after);
+            }
             var serialized = JsonConvert.SerializeObject(result.Data);
             if (!ResponseSizeGuard.Check(serialized, _maxResponseBytes, out var sizeError))
             {
@@ -40,6 +56,8 @@ public sealed class CommandDispatcher
             }
             return result;
         }
+        // The caller's wait ended while the command was running: the transport answers TIMEOUT, outcome unknown (FC-BUSY-04).
+        catch (OperationCanceledException) when (ctx.CancellationToken.IsCancellationRequested) { throw; }
         catch (Exception ex)
         {
             return NwdCommandResult.Fail(env.Id, "API_ERROR", ErrorSanitizer.Sanitize(ex), meta);

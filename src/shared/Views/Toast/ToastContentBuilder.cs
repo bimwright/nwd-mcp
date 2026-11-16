@@ -81,6 +81,9 @@ namespace Bimwright.Nwd.Shared.Views.Toast
                     return BuildDocumentInfo(resultObj);
                 case "send_code":
                     return BuildSendCodeSuccess(resultObj);
+                case "report_task_result":
+                    // Agent-reported outcome (FC-RPT-01): the summary, with the outcome as detail.
+                    return new ToastContent(Truncate(resultObj?.Value<string>("summary") ?? "", 120), resultObj?.Value<string>("outcome"));
                 case "hide_items":
                     var hidden = resultObj?.Value<int?>("hidden_count");
                     if (hidden.HasValue)

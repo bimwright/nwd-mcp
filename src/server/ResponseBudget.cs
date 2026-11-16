@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -13,8 +14,9 @@ namespace Bimwright.Nwd.Server;
 /// <summary>
 /// Server-side response-size policy applied to every tool result as a CallTool filter:
 /// explicit output=file and oversized arbitrary-code output spill to a local file first,
-/// then remaining text is warned (64/256 KiB), rejected past the 1 MiB budget, or — for a
-/// completed mutation — compacted into a truthful summary. rvt-mcp parity.
+/// then remaining text is warned (default 64/256 KiB), rejected past the budget (default 1 MiB),
+/// or — for a completed mutation — compacted into a truthful summary. rvt-mcp parity. With the
+/// guard off there are no warnings and the budget is the transport cap (maxResponseBytes).
 /// </summary>
 public sealed class ResponseBudget
 {
@@ -33,15 +35,18 @@ public sealed class ResponseBudget
 
     private readonly ResponseSpillWriter _writer;
     private readonly IReadOnlyDictionary<string, bool> _toolIsWrite;
+    private readonly ResponseSizePolicy.Limits _limits;
 
-    public ResponseBudget(ResponseSpillWriter writer, IReadOnlyDictionary<string, bool> toolIsWrite)
+    public ResponseBudget(ResponseSpillWriter writer, IReadOnlyDictionary<string, bool> toolIsWrite,
+        ResponseSizePolicy.Limits? limits = null)
     {
         _writer = writer ?? throw new ArgumentNullException(nameof(writer));
         _toolIsWrite = toolIsWrite ?? throw new ArgumentNullException(nameof(toolIsWrite));
+        _limits = limits ?? ResponseSizePolicy.Limits.Default;
     }
 
     /// <summary>Default map: every [McpServerTool] in this assembly, isWrite = ReadOnly != true.</summary>
-    public static ResponseBudget CreateDefault(ResponseSpillWriter? writer = null)
+    public static ResponseBudget CreateDefault(ResponseSpillWriter? writer = null, ResponseSizePolicy.Limits? limits = null)
     {
         var map = new Dictionary<string, bool>(StringComparer.Ordinal);
         foreach (var type in typeof(ResponseBudget).Assembly.GetTypes())
@@ -51,7 +56,7 @@ public sealed class ResponseBudget
             if (attribute?.Name is { } name)
                 map[name] = attribute.ReadOnly != true;
         }
-        return new ResponseBudget(writer ?? new ResponseSpillWriter(), map);
+        return new ResponseBudget(writer ?? new ResponseSpillWriter(), map, limits);
     }
 
     public bool IsWrite(string? toolName)
@@ -90,7 +95,7 @@ public sealed class ResponseBudget
 
         text = ApplySpill(toolName, arguments, text, originalFailure, block);
 
-        var decision = ResponseSizePolicy.Evaluate(toolName, text);
+        var decision = ResponseSizePolicy.Evaluate(toolName, text, _limits);
         if (decision.Reject)
         {
             Console.Error.WriteLine(
@@ -107,7 +112,7 @@ public sealed class ResponseBudget
             {
                 obj["_response_warning"] = decision.AgentWarning;
                 var candidate = obj.ToString(Formatting.None);
-                if (Encoding.UTF8.GetByteCount(candidate) <= ResponseSizePolicy.BudgetBytes)
+                if (Encoding.UTF8.GetByteCount(candidate) <= _limits.BudgetBytes)
                     block.Text = candidate;
             }
         }
@@ -136,7 +141,7 @@ public sealed class ResponseBudget
         {
             format = optIn;
         }
-        else if (IsMutationOutcomeIndeterminate(toolName) && originalBytes > ResponseSizePolicy.BudgetBytes)
+        else if (IsMutationOutcomeIndeterminate(toolName) && originalBytes > _limits.BudgetBytes)
         {
             format = ResponseSpillFormat.Auto;
             automatic = true;
@@ -202,7 +207,7 @@ public sealed class ResponseBudget
         if (IsMutationOutcomeIndeterminate(toolName))
             compacted["mutation_applied"] = JValue.CreateNull();
         var compactText = compacted.ToString(Formatting.None);
-        if (Encoding.UTF8.GetByteCount(compactText) <= ResponseSizePolicy.BudgetBytes)
+        if (Encoding.UTF8.GetByteCount(compactText) <= _limits.BudgetBytes)
             return compactText;
 
         // Defensive fallback: compaction itself must never breach the budget.
@@ -247,9 +252,19 @@ public sealed class ResponseBudget
         catch (Newtonsoft.Json.JsonException) { return null; }
     }
 
-    private static void EnsureEnvelopeBudget(JObject envelope)
+    /// <summary>Spill receipt fields that are always kept: they say where the full result is (Tool-spill).</summary>
+    private static readonly string[] ReceiptFields =
     {
-        if (Encoding.UTF8.GetByteCount(envelope.ToString(Formatting.None)) <= ResponseSizePolicy.BudgetBytes)
+        "ok", "output_mode", "path", "format", "byte_count", "record_count", "tool", "automatic", "original_response_byte_count",
+    };
+
+    /// <summary>
+    /// Fits the spill envelope into the budget, shrinking in order: preview and schema, then summary strings, then the
+    /// summary, and last a minimal receipt that still names the file (BW-CK Tool-guard / Tool-spill).
+    /// </summary>
+    private void EnsureEnvelopeBudget(JObject envelope)
+    {
+        if (Fits(envelope))
             return;
 
         envelope["preview"] = string.Empty;
@@ -259,5 +274,41 @@ public sealed class ResponseBudget
             ["_truncated"] = "Schema omitted from envelope to preserve the response budget; inspect the local artifact directly."
         };
         envelope["schema_truncated"] = true;
+        if (Fits(envelope))
+            return;
+
+        if (envelope["summary"] is JObject summary)
+        {
+            envelope["summary_truncated"] = true;   // counted in every fit check below
+            for (var max = 512; max >= 16 && !Fits(envelope); max /= 2)
+                TrimStrings(summary, max);
+            if (Fits(envelope))
+                return;
+            envelope.Remove("summary");
+            if (Fits(envelope))
+                return;
+        }
+
+        var receipt = new JObject();
+        foreach (var field in ReceiptFields)
+            if (envelope[field] is { } value)
+                receipt[field] = value;
+        receipt["receipt_only"] = true;
+        receipt["note"] = "The response budget left room only for this receipt. Read the full result from path; do not re-run the command.";
+        envelope.RemoveAll();
+        foreach (var property in receipt.Properties())
+            envelope[property.Name] = property.Value;
+        if (!Fits(envelope))
+            envelope.Remove("note");   // the path is never dropped
+    }
+
+    private bool Fits(JObject envelope)
+        => Encoding.UTF8.GetByteCount(envelope.ToString(Formatting.None)) <= _limits.BudgetBytes;
+
+    private static void TrimStrings(JContainer container, int max)
+    {
+        foreach (var value in container.Descendants().OfType<JValue>().ToList())
+            if (value.Type == JTokenType.String && ((string?)value)?.Length > max)
+                value.Value = ((string)value!).Substring(0, max);
     }
 }

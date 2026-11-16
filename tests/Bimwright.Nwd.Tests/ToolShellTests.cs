@@ -57,13 +57,14 @@ public sealed class ToolShellTests
         new("nwd_hide_items", "hide_items", p => new VisibilityWriteTools(p.Client).HideItems(new[] { "0:0:6" }, false, Ct), """{"item_ids":["0:0:6"],"hide":false}"""),
         new("nwd_unhide_all", "unhide_all", p => new VisibilityWriteTools(p.Client).UnhideAll(Ct), "{}"),
         // code
-        new("nwd_send_code", "send_code", p => new CodeTools(p.Client).SendCode("Console.WriteLine(1);", Ct), """{"code":"Console.WriteLine(1);"}"""),
+        new("nwd_send_code", "send_code", p => new CodeTools(p.Client).SendCode("Console.WriteLine(1);", ct: Ct), """{"code":"Console.WriteLine(1);"}"""),
     };
 
     /// <summary>Tools answered by the server alone; each has its own fact below.</summary>
     private static readonly string[] LocalTools =
     {
         "nwd_list_available_targets", "nwd_get_current_target", "nwd_switch_target",
+        "nwd_report_task_result", "nwd_get_report_history",   // ReportToolsTests
         "nwd_list_baked_tools", "nwd_list_bake_suggestions", "nwd_create_bake_issue_draft",
         "nwd_run_baked_tool", "nwd_accept_bake_suggestion", "nwd_dismiss_bake_suggestion",
     };
@@ -151,32 +152,39 @@ public sealed class ToolShellTests
     }
 
     [Fact]
-    public async Task ExecuteSearchSetForcesSelectOffInReadOnlyMode()
+    public async Task ExecuteSearchSetSelectsInReadOnlyModeLikeTheOtherSelectionTools()
     {
         using var plugin = new FakePlugin(readOnly: true);
 
         await new SetsTools(plugin.Client, new ServerState(plugin.Config)).ExecuteSearchSet("Clash/Pipes", true, Ct);
 
         var env = plugin.Single();
-        Assert.False((bool?)env.Params["select"]);
-        Assert.True((bool?)env.Params["read_only_enforced"]);
+        Assert.True((bool?)env.Params["select"]);
+        Assert.Null(env.Params["read_only_enforced"]);   // a plug-in still honours it from an older gateway
     }
 
     [Fact]
-    public void MetaToolsReadTheDescriptorWithoutCallingThePlugin()
+    public async Task MetaToolsReadTheDescriptorWithoutCallingThePlugin()
     {
-        using var plugin = new FakePlugin();
+        using var plugin = new FakePlugin(confirmed: false);
         var meta = new MetaTools(plugin.Client);
 
         var targets = JArray.Parse(meta.ListAvailableTargets());
         var current = JObject.Parse(meta.GetCurrentTarget());
-        var switched = JObject.Parse(meta.SwitchTarget(plugin.TargetId));
-        var unknown = JObject.Parse(meta.SwitchTarget("navis-9999-1"));
+        var switched = JObject.Parse(await meta.SwitchTarget(plugin.TargetId));
+        var unknown = JObject.Parse(await meta.SwitchTarget("navis-9999-1"));
+        var invalid = JObject.Parse(await meta.SwitchTarget("R25"));
+        var after = JObject.Parse(meta.GetCurrentTarget());
 
         Assert.Equal(plugin.TargetId, (string?)Assert.Single(targets)["TargetId"]);
-        Assert.Equal(2025, (int?)current["NavisworksYear"]);
+        Assert.Equal("none", (string?)current["binding_state"]);          // get never selects
+        Assert.Equal(plugin.TargetId, (string?)current["next_target_id"]);
         Assert.True((bool?)switched["ok"]);
         Assert.False((bool?)unknown["ok"]);
+        Assert.Equal("NO_TARGET", (string?)unknown["error"]?["code"]);
+        Assert.Equal("INVALID_TARGET_SELECTOR", (string?)invalid["error"]?["code"]);
+        Assert.Equal(2025, (int?)after["NavisworksYear"]);
+        Assert.Equal(plugin.TargetId, (string?)after["bound_target_id"]);
         Assert.Empty(plugin.Received);
     }
 

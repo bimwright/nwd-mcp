@@ -256,6 +256,106 @@ public sealed class ResponseBudgetTests : IDisposable
         Assert.True(budget.IsWrite("nwd_send_code"));
     }
 
+    private ResponseBudget Budget(ResponseSizePolicy.Limits limits)
+        => new(new ResponseSpillWriter(_dir), IsWrite, limits);
+
+    [Theory] // review P2: the smallest valid budget still returns the path to the spilled result
+    [InlineData(3000, "")]
+    [InlineData(3000, "{\"stdout\":\"%LONG%\",\"note\":\"%LONG%\"}")]
+    public void SmallestBudgetKeepsTheSpillPath(int resultChars, string extra)
+    {
+        var limits = ResponseSizePolicy.Limits.From(new NwdMcpConfig
+        {
+            ResponseWarnBytes = 1024, ResponseStrongWarnBytes = 1024, ResponseBudgetBytes = 1024
+        });
+        var longText = new string('y', resultChars);
+        var data = new JObject { ["ok"] = true, ["result"] = new string('x', resultChars), ["error"] = null };
+        if (extra.Length > 0)
+            foreach (var p in JObject.Parse(extra.Replace("%LONG%", longText)).Properties()) data[p.Name] = p.Value;
+        var result = Result(data.ToString(Newtonsoft.Json.Formatting.None));
+
+        Budget(limits).Apply("nwd_send_code", Args("""{"code":"x"}"""), result);
+
+        var text = Text(result);
+        Assert.True(Encoding.UTF8.GetByteCount(text) <= 1024, text.Length.ToString());
+        var envelope = JObject.Parse(text);
+        Assert.True(envelope.Value<bool>("ok"), text);
+        Assert.True(envelope.Value<string>("tool") == "nwd_send_code", text);
+        var path = envelope.Value<string>("path");
+        Assert.True(File.Exists(path), text);
+        Assert.Contains(new string('x', resultChars), File.ReadAllText(path!));
+    }
+
+    [Fact]
+    public void SummaryIsTrimmedBeforeItIsDropped()
+    {
+        var limits = ResponseSizePolicy.Limits.From(new NwdMcpConfig
+        {
+            ResponseWarnBytes = 1024, ResponseStrongWarnBytes = 1024, ResponseBudgetBytes = 1024
+        });
+        var result = Result(new JObject { ["ok"] = true, ["result"] = new string('x', 3000), ["error"] = null }
+            .ToString(Newtonsoft.Json.Formatting.None));
+
+        Budget(limits).Apply("nwd_send_code", Args("""{"code":"x"}"""), result);
+
+        var envelope = JObject.Parse(Text(result));
+        Assert.True(envelope["summary"]?.Value<bool>("ok"));   // the script's ok scalar stays visible
+        Assert.True(envelope.Value<bool>("summary_truncated"));
+    }
+
+    [Fact]
+    public void CustomBudgetFromConfigRejectsAboveIt()
+    {
+        var limits = ResponseSizePolicy.Limits.From(new NwdMcpConfig
+        {
+            ResponseWarnBytes = 2048, ResponseStrongWarnBytes = 4096, ResponseBudgetBytes = 8192
+        });
+        var result = Result(BigObject(10_000));
+
+        Budget(limits).Apply("nwd_get_model_tree", null, result);
+
+        var parsed = JObject.Parse(Text(result));
+        Assert.Equal("RESPONSE_TOO_LARGE", (string?)parsed["error"]?["code"]);
+        Assert.Contains("8192-byte", (string?)parsed["error"]?["message"]);
+    }
+
+    [Fact]
+    public void CustomWarningThresholdFromConfigWarns()
+    {
+        var limits = ResponseSizePolicy.Limits.From(new NwdMcpConfig
+        {
+            ResponseWarnBytes = 2048, ResponseStrongWarnBytes = 4096, ResponseBudgetBytes = 1024 * 1024
+        });
+        var result = Result(BigObject(5000));
+
+        Budget(limits).Apply("nwd_health_check", null, result);
+
+        Assert.Contains("strong warning", JObject.Parse(Text(result)).Value<string>("_response_warning"));
+    }
+
+    [Fact]
+    public void GuardOffSkipsWarningsAndTheBudgetButKeepsTheTransportCap()
+    {
+        var limits = ResponseSizePolicy.Limits.From(new NwdMcpConfig
+        {
+            EnableResponseGuard = false, MaxResponseBytes = 2 * 1024 * 1024
+        });
+
+        var overDefaultBudget = Result(BigObject(ResponseSizePolicy.BudgetBytes + 10));
+        Budget(limits).Apply("nwd_health_check", null, overDefaultBudget);
+        var passed = JObject.Parse(Text(overDefaultBudget));
+        Assert.True(passed.Value<bool>("ok"));
+        Assert.Null(passed["_response_warning"]);
+
+        var sendCode = Result($$"""{"ok":true,"result":"{{new string('x', ResponseSizePolicy.BudgetBytes + 10)}}","stdout":"","error":null}""");
+        Budget(limits).Apply("nwd_send_code", Args("""{"code":"x"}"""), sendCode);
+        Assert.Null(JObject.Parse(Text(sendCode))["automatic"]); // inline: under the transport cap
+
+        var overCap = Result(BigObject(2 * 1024 * 1024 + 10));
+        Budget(limits).Apply("nwd_health_check", null, overCap);
+        Assert.Equal("RESPONSE_TOO_LARGE", (string?)JObject.Parse(Text(overCap))["error"]?["code"]);
+    }
+
     public void Dispose()
     {
         try

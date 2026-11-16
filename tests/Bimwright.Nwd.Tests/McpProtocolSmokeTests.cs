@@ -1,12 +1,35 @@
 using System.Diagnostics;
+using System.Reflection;
 using Bimwright.Nwd.Server;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ModelContextProtocol.Server;
 
 namespace Bimwright.Nwd.Tests;
 
 public sealed class McpProtocolSmokeTests
 {
+    public static IEnumerable<object[]> ToolsetCases()
+        => Program.ToolsetRegistrations.Select(registration => new object[] { registration.Name, registration.ToolType });
+
+    [Theory]
+    [MemberData(nameof(ToolsetCases))]
+    public async Task EachToolsetRegistersItsDeclaredToolsOverStdio(string toolset, Type toolType)
+    {
+        var responses = await RunProtocolHandshake(toolset: toolset);
+        var expected = toolType.GetMethods()
+            .Select(method => method.GetCustomAttribute<McpServerToolAttribute>()?.Name)
+            .Where(name => name is not null)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+        var actual = ((JArray)responses[1]["result"]!["tools"]!)
+            .Select(tool => (string?)tool["name"])
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+        Assert.NotEmpty(expected);
+        Assert.Equal(expected, actual);
+    }
+
     [Fact]
     public async Task Server_exposes_tools_list_over_stdio()
     {
@@ -14,7 +37,7 @@ public sealed class McpProtocolSmokeTests
         Assert.NotNull(responses[0]["result"]?["capabilities"]?["tools"]);
         Assert.Equal("nwd-mcp", (string?)responses[0]["result"]?["serverInfo"]?["name"]);
         var tools = Assert.IsAssignableFrom<JArray>(responses[1]["result"]?["tools"]);
-        Assert.Equal(33, tools.Count);
+        Assert.Equal(35, tools.Count);
         Assert.Contains(tools, t => (string?)t["name"] == "nwd_list_available_targets");
     }
 
@@ -26,7 +49,7 @@ public sealed class McpProtocolSmokeTests
     {
         var responses = await RunProtocolHandshake(checkHealth: true, readOnly: readOnly, explicitArgument: explicitArgument);
         var tools = (JArray)responses[1]["result"]!["tools"]!;
-        Assert.Equal(readOnly ? 21 : 33, tools.Count);
+        Assert.Equal(readOnly ? 25 : 35, tools.Count);
         var health = Assert.Single(tools, tool => (string?)tool["name"] == "nwd_health_check");
         Assert.Equal("boolean", (string?)health["inputSchema"]?["properties"]?["check_updates"]?["type"]);
         Assert.DoesNotContain("check_updates", health["inputSchema"]?["required"]?.Values<string>() ?? Array.Empty<string>());
@@ -74,7 +97,7 @@ public sealed class McpProtocolSmokeTests
     }
 
     private static async Task<JObject[]> RunProtocolHandshake(bool checkHealth = false,
-        bool readOnly = false, bool explicitArgument = false)
+        bool readOnly = false, bool explicitArgument = false, string toolset = "all")
     {
         var serverAssembly = typeof(Program).Assembly.Location;
         var startInfo = new ProcessStartInfo
@@ -84,7 +107,7 @@ public sealed class McpProtocolSmokeTests
             RedirectStandardError = true, CreateNoWindow = true,
         };
         startInfo.ArgumentList.Add(serverAssembly);
-        foreach (var arg in new[] { "--toolsets", "all", "--enable-send-code", "--read-only", readOnly ? "true" : "false", "--timeout-ms", "1000" })
+        foreach (var arg in new[] { "--toolsets", toolset, "--enable-send-code", "--read-only", readOnly ? "true" : "false", "--timeout-ms", "1000" })
             startInfo.ArgumentList.Add(arg);
         startInfo.Environment.Remove("BIMWRIGHT_NWD_ENABLE_TOOLBAKER");
 

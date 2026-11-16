@@ -32,12 +32,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\shared\Logging\NwdCallLog.cs" LinkBase="Shared\Logging" />
+    <Compile Include="..\shared\Logging\BoundedLogFile.cs" LinkBase="Shared\Logging" />
     <Compile Include="..\shared\Infrastructure\NwdCommandEnvelope.cs" LinkBase="Shared\Infrastructure" />
     <Compile Include="..\shared\Infrastructure\NwdCommandResult.cs" LinkBase="Shared\Infrastructure" />
     <Compile Include="..\shared\Infrastructure\NwdCommandCatalog.cs" LinkBase="Shared\Infrastructure" />
     <Compile Include="..\shared\Infrastructure\ResponseSizeGuard.cs" LinkBase="Shared\Infrastructure" />
     <Compile Include="..\shared\Infrastructure\RuntimeIdentity.cs" LinkBase="Shared\Infrastructure" />
     <Compile Include="..\shared\Infrastructure\TargetDescriptor.cs" LinkBase="Shared\Infrastructure" />
+    <Compile Include="..\shared\Infrastructure\DocumentTarget.cs" LinkBase="Shared\Infrastructure" />
+    <Compile Include="..\shared\Infrastructure\ReportLimits.cs" LinkBase="Shared\Infrastructure" />
     <Compile Include="..\shared\Infrastructure\TargetRegistry.cs" LinkBase="Shared\Infrastructure" />
     <Compile Include="..\shared\Security\SecretMasker.cs" LinkBase="Shared\Security" />
     <Compile Include="..\shared\Security\ErrorSanitizer.cs" LinkBase="Shared\Security" />

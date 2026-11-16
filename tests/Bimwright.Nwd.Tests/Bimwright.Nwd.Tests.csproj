@@ -16,6 +16,8 @@
     <PackageReference Include="xunit" Version="2.6.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.4" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <!-- Same Roslyn as the plug-ins: ScriptReferences (#38) and send_code source/task tests. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.8.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,10 +30,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\src\shared\Transport\TcpTransportServer.cs" Link="Transport\TcpTransportServer.cs" />
+    <Compile Include="..\..\src\shared\Plugin\PluginOptions.cs" Link="Transport\PluginOptions.cs" />
+    <Compile Include="..\..\src\shared\Plugin\TargetDescriptorWriter.cs" Link="Transport\TargetDescriptorWriter.cs" />
     <Compile Include="..\..\src\shared\Plugin\NwdCommandRegistry.Names.cs" />
     <Compile Include="..\..\src\shared\Infrastructure\INwdCommand.cs" />
     <Compile Include="..\..\src\shared\Infrastructure\CommandDispatcher.cs" />
+    <Compile Include="..\..\src\shared\Handlers\ScriptReferences.cs" Link="Handlers\ScriptReferences.cs" />
+    <Compile Include="..\..\src\shared\Handlers\SendCodeTask.cs" Link="Handlers\SendCodeTask.cs" />
+    <Compile Include="..\..\src\shared\Handlers\ScriptResultToken.cs" Link="Handlers\ScriptResultToken.cs" />
+    <Compile Include="..\..\src\shared\Scripting\McpTaskResult.cs" Link="Scripting\McpTaskResult.cs" />
     <Compile Include="..\..\src\shared\Infrastructure\NwdCommandContext.cs" />
+    <Compile Include="..\..\src\shared\Infrastructure\HostBusyPolicy.cs" Link="Infrastructure\HostBusyPolicy.cs" />
+    <Compile Include="..\..\src\shared\Infrastructure\StartGate.cs" Link="Infrastructure\StartGate.cs" />
+    <Compile Include="..\..\src\shared\Infrastructure\RuntimeIdentity.cs" Link="Infrastructure\RuntimeIdentity.cs" />
+    <Compile Include="..\..\src\shared\Plugin\ModalDialogProbe.cs" Link="Plugin\ModalDialogProbe.cs" />
     <Compile Include="..\..\src\shared\Config\PluginSettings.cs" Link="PluginSettings.cs" />
     <Compile Include="..\..\src\shared\Config\ToastPositionOptions.cs" Link="ToastPositionOptions.cs" />
     <Compile Include="..\..\src\shared\Views\Toast\ToastPlacement.cs" Link="ToastPlacement.cs" />
@@ -45,7 +58,6 @@
     <Compile Include="..\..\src\shared\Views\Toast\ToastCommands.cs" Link="ToastCommands.cs" />
     <Compile Include="..\..\src\shared\Views\Toast\ToastContentBuilder.cs" Link="ToastContentBuilder.cs" />
     <Compile Include="..\..\src\shared\Views\Toast\ToolNameFormatter.cs" Link="ToolNameFormatter.cs" />
-    <Compile Include="..\..\src\shared\Logging\NwdCallLog.cs" Link="NwdCallLog.cs" />
     <Compile Include="..\..\src\shared\Files\LocalModelFile.cs" Link="LocalModelFile.cs" />
     <Compile Include="..\..\src\shared\Files\NavisworksRecentFiles.cs" Link="NavisworksRecentFiles.cs" />
   </ItemGroup>

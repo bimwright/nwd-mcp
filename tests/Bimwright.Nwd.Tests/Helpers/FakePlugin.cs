@@ -22,13 +22,17 @@ internal sealed class FakePlugin : IDisposable
     public ConcurrentQueue<NwdCommandEnvelope> Received { get; } = new();
 
     public Func<NwdCommandEnvelope, NwdCommandResult> Reply { get; set; }
-        = env => NwdCommandResult.Success(env.Id, new JObject { ["echo"] = env.Command }, new NwdResponseMeta());
+        = env => NwdCommandResult.Success(env.Id, new JObject { ["echo"] = env.Command }, new NwdResponseMeta { DocumentId = DocumentId, DocumentTitle = "fake.nwd" });
+
+    public const string DocumentId = "doc-1";
 
     public NwdMcpConfig Config { get; }
     public PluginClient Client { get; }
     public string TargetId { get; }
 
-    public FakePlugin(bool readOnly = false)
+    /// <param name="documentTarget">Advertise document_target_v1 like a current plug-in.</param>
+    /// <param name="confirmed">Confirm the document (nwd_switch_target verify=true) so writes are sent; the health check it sends is not kept in <see cref="Received"/>.</param>
+    public FakePlugin(bool readOnly = false, bool documentTarget = true, bool confirmed = true)
     {
         Directory.CreateDirectory(_dir);
         _listener.Start();
@@ -38,17 +42,25 @@ internal sealed class FakePlugin : IDisposable
         File.WriteAllText(Path.Combine(_dir, TargetId + ".json"), $$"""
         { "target_id": "{{TargetId}}", "navisworks_year": 2025, "process_id": {{pid}},
           "host_product": "Manage", "port": {{port}}, "auth_token": "token",
-          "document_title": "fake.nwd",
+          "document_title": "fake.nwd", "capabilities": {{(documentTarget ? "[\"document_target_v1\"]" : "[]")}},
           "last_heartbeat_utc": "{{DateTimeOffset.UtcNow.UtcDateTime:O}}" }
         """);
         Config = new NwdMcpConfig
         {
             DescriptorDirectory = _dir,
             BakeDirectory = Path.Combine(_dir, "baked"),
+            ReportDirectory = Path.Combine(_dir, "reports"),
             ReadOnly = readOnly
         };
         Client = new PluginClient(Config);
         _ = Task.Run(AcceptLoop);
+        if (documentTarget && confirmed)
+        {
+            Client.SwitchTarget("pid:" + pid);
+            // Off the xUnit sync context: blocking on it from a constructor can starve its threads.
+            Task.Run(() => Client.ConfirmDocumentAsync(CancellationToken.None)).GetAwaiter().GetResult();
+            Received.Clear();
+        }
     }
 
     public NwdCommandEnvelope Single()

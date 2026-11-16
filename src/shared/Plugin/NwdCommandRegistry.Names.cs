@@ -31,6 +31,7 @@ public static partial class NwdCommandRegistry
         "unhide_all",
         "send_code",
         "run_baked_tool",
-        "apply_bake"
+        "apply_bake",
+        "report_task_result"
     };
 }

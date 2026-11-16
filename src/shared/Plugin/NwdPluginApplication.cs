@@ -17,6 +17,7 @@ public sealed class NwdPluginApplication : NWP.EventWatcherPlugin
 
     public override void OnLoaded()
     {
+        if (_server != null) return;
         PluginAssemblyResolver.Register();
         NavisworksUiThreadInvoker.Capture();
         // Manage-only product: ApplicationPlugins RuntimeRequirements already
@@ -44,12 +45,21 @@ public sealed class NwdPluginApplication : NWP.EventWatcherPlugin
         var descriptorDir = Path.Combine(appData, "Bimwright", "nwd-mcp");
 
         var options = new PluginOptions(year, enableSendCode, 0);
-        _server = new TcpTransportServer(options, descriptorDir);
+        var server = new TcpTransportServer(options, descriptorDir) { ReadDocument = NavisworksDocumentIdentity.Read };
         NwdCallLog.SetEnabled(PluginSettings.LoadRecordCalls());
-        NwdActivityToast.Attach(_server, year);
-
-        var handlers = NwdCommandRegistry.Build(options);
-        _server.Start(handlers);
+        NwdCallLog.Maintain();
+        try
+        {
+            NwdActivityToast.Attach(server, year);
+            server.Start(NwdCommandRegistry.Build(options));
+            _server = server;
+        }
+        catch
+        {
+            server.Dispose();
+            NwdActivityToast.Stop();
+            throw;
+        }
 
         if (!_idleHooked)
         {
@@ -57,6 +67,7 @@ public sealed class NwdPluginApplication : NWP.EventWatcherPlugin
             NW.Application.GuiCreated += OnGuiCreated;
             _idleHooked = true;
         }
+        NavisworksDocumentIdentity.Attach();
     }
 
     public override void OnUnloading()
@@ -67,6 +78,7 @@ public sealed class NwdPluginApplication : NWP.EventWatcherPlugin
             NW.Application.GuiCreated -= OnGuiCreated;
             _idleHooked = false;
         }
+        NavisworksDocumentIdentity.Detach();
         NwdActivityToast.Stop();
         _server?.Dispose();
         _server = null;
@@ -95,13 +107,23 @@ public sealed class NwdPluginApplication : NWP.EventWatcherPlugin
     private static void OnIdleToast(object sender, EventArgs e)
     {
         NavisworksUiThreadInvoker.Capture();
+        CaptureMainWindow();
         _server?.RefreshDocumentInfo();
         NwdActivityToast.OnIdle();
+    }
+
+    /// <summary>The main frame HWND for the modal-dialog probe (FC-BUSY-01). UI thread only.</summary>
+    private static void CaptureMainWindow()
+    {
+        if (ModalDialogProbe.MainWindow != IntPtr.Zero) return;
+        try { ModalDialogProbe.MainWindow = NW.Application.Gui?.MainWindow?.Handle ?? IntPtr.Zero; }
+        catch { /* advisory */ }
     }
 
     private static void OnGuiCreated(object sender, EventArgs e)
     {
         NavisworksUiThreadInvoker.Capture();
+        CaptureMainWindow();
         NwdActivityToast.OnIdle();
     }
 }

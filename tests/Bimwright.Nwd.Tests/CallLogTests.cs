@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Bimwright.Nwd.Tests;
 
+[Collection("Call log")]
 public sealed class NwdCallLogTests : IDisposable
 {
     private readonly string _dir;
@@ -43,6 +44,19 @@ public sealed class NwdCallLogTests : IDisposable
         Assert.DoesNotContain(script, text);
         Assert.Equal(script.Length, send["params"]!["code_length"]!.Value<int>());
         Assert.Equal(Sha256(script), send["params"]!["code_sha256"]!.Value<string>());
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(null, true)]
+    [InlineData(null, false)]
+    public void Request_override_wins_without_changing_host_toggle(bool? requestEnabled, bool hostEnabled)
+    {
+        NwdCallLog.SetEnabled(hostEnabled);
+        NwdCallLog.Record("get_document_info", "{}", true, 1, null, "{}", requestEnabled);
+        Assert.Equal(requestEnabled ?? hostEnabled, File.Exists(Path.Combine(_dir, NwdCallLog.FileName)));
+        Assert.Equal(hostEnabled, NwdCallLog.Enabled);
     }
 
     public void Dispose()

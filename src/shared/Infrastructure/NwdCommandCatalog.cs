@@ -35,7 +35,14 @@ public static class NwdCommandCatalog
         new NwdCommandInfo("send_code", false),
         new NwdCommandInfo("run_baked_tool", false),
         new NwdCommandInfo("apply_bake", false),
+        new NwdCommandInfo("report_task_result", true),
     };
+
+    // Commands the plug-in runs on the transport thread: send_code compiles there (its script still runs on the UI
+    // thread), and report_task_result touches no Navisworks API, so a report arrives while Navisworks is busy.
+    private static readonly HashSet<string> OffUiThread = new(StringComparer.Ordinal) { "send_code", "report_task_result" };
+
+    public static bool RunsOffUiThread(string command) => OffUiThread.Contains(command);
 
     public static bool TryGet(string name, out NwdCommandInfo info)
     {

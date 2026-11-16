@@ -116,5 +116,9 @@ $manifest | ConvertTo-Json -Depth 20 | Set-Content (Join-Path $stageRoot 'manife
 $setupZip = Join-Path $OutputDir ("NwdMcp.Setup-{0}-win-x64.zip" -f $displayVersion)
 if (Test-Path $setupZip) { Remove-Item $setupZip -Force }
 Compress-Archive -Path (Join-Path $stageRoot '*') -DestinationPath $setupZip -Force
+# Release checksum sidecar, same "<hash>  <file name>" format as rvt-mcp (attach both to the GitHub Release).
+$setupHash = Get-Sha256Lower $setupZip
+Set-Content -LiteralPath "$setupZip.sha256" -Value ("{0}  {1}" -f $setupHash, (Split-Path -Leaf $setupZip)) -Encoding ascii -NoNewline
 Write-Host "Output : $setupZip"
+Write-Host ("SHA-256: {0}  ({1})" -f $setupHash, (Split-Path -Leaf "$setupZip.sha256"))
 Write-Host "Years  : $($packedYears -join ', ')"

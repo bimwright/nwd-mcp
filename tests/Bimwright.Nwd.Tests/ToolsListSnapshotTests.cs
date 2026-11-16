@@ -11,16 +11,22 @@ namespace Bimwright.Nwd.Tests;
 
 public sealed class ToolsListSnapshotTests
 {
+    [Fact]
+    public void RegistrationTableCoversKnownToolsetsWithoutDuplicateNamesOrTypes()
+    {
+        var registrations = Program.ToolsetRegistrations;
+        Assert.Equal(
+            ToolsetFilter.KnownToolsets.OrderBy(x => x, StringComparer.Ordinal),
+            registrations.Select(x => x.Name).OrderBy(x => x, StringComparer.Ordinal));
+        Assert.Equal(registrations.Length, registrations.Select(x => x.Name).Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        Assert.Equal(registrations.Length, registrations.Select(x => x.ToolType).Distinct().Count());
+    }
+
     private static string[] ToolNamesFor(NwdMcpConfig config)
     {
-        var names = new List<string>();
-        foreach (var type in Program.ResolveToolTypesForRegistration(config))
-            foreach (var m in type.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance))
-            {
-                var attr = m.GetCustomAttribute<McpServerToolAttribute>();
-                if (attr?.Name is { } n) names.Add(n);
-            }
-        return names.OrderBy(x => x, StringComparer.Ordinal).ToArray();
+        return Program.ResolveToolMethodsForRegistration(config)
+            .Select(m => m.GetCustomAttribute<McpServerToolAttribute>()!.Name!)
+            .OrderBy(x => x, StringComparer.Ordinal).ToArray();
     }
 
     private static string[] Golden(string file)
@@ -38,12 +44,12 @@ public sealed class ToolsListSnapshotTests
 
     [Fact] public void Counts()
     {
-        Assert.Equal(33, ToolNamesFor(new NwdMcpConfig { Toolsets = new() { "all" }, EnableSendCode = true }).Length);
-        Assert.Equal(33, ToolNamesFor(new NwdMcpConfig()).Length);
+        Assert.Equal(35, ToolNamesFor(new NwdMcpConfig { Toolsets = new() { "all" }, EnableSendCode = true }).Length);
+        Assert.Equal(35, ToolNamesFor(new NwdMcpConfig()).Length);
         Assert.Equal(
             ToolNamesFor(new NwdMcpConfig { Toolsets = new() { "all" } }),
             ToolNamesFor(new NwdMcpConfig()));
-        Assert.Equal(32, ToolNamesFor(new NwdMcpConfig { EnableSendCode = false }).Length);
-        Assert.Equal(21, ToolNamesFor(new NwdMcpConfig { Toolsets = new() { "all" }, ReadOnly = true, EnableSendCode = true }).Length);
+        Assert.Equal(34, ToolNamesFor(new NwdMcpConfig { EnableSendCode = false }).Length);
+        Assert.Equal(25, ToolNamesFor(new NwdMcpConfig { Toolsets = new() { "all" }, ReadOnly = true, EnableSendCode = true }).Length);
     }
 }

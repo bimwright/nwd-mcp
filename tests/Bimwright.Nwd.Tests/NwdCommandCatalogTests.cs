@@ -12,7 +12,7 @@ public sealed class NwdCommandCatalogTests
         "get_current_selection","clear_selection","select_items_by_search",
         "list_sets","get_selection_set_items","execute_search_set",
         "list_viewpoints","get_current_viewpoint","goto_viewpoint","save_viewpoint",
-        "hide_items","unhide_all","send_code","run_baked_tool","apply_bake"
+        "hide_items","unhide_all","send_code","run_baked_tool","apply_bake","report_task_result"
     };
 
     [Fact]

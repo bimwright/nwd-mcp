@@ -28,13 +28,9 @@ public sealed class SetsTools
     public Task<string> GetSelectionSetItems(string setId, CancellationToken ct)
         => Call("get_selection_set_items", new JObject { ["set_id"] = setId }, ct);
 
-    [McpServerTool(Name = "nwd_execute_search_set", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false), Description("Run a saved search set; optionally select the matches (forced off in read-only mode).")]
+    [McpServerTool(Name = "nwd_execute_search_set", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false), Description("Run a saved search set and return the matching item ids; select=true also selects them. Selecting changes only the transient selection, not the model, so it also works in read-only mode, like nwd_select_items_by_search.")]
     public Task<string> ExecuteSearchSet(string setId, bool select = false, CancellationToken ct = default)
-    {
-        var p = new JObject { ["set_id"] = setId, ["select"] = _state.ReadOnly ? false : select };
-        if (_state.ReadOnly) p["read_only_enforced"] = true;
-        return Call("execute_search_set", p, ct);
-    }
+        => Call("execute_search_set", new JObject { ["set_id"] = setId, ["select"] = select }, ct);
 
     private async Task<string> Call(string command, JObject p, CancellationToken ct)
     {
