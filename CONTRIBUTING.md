@@ -68,7 +68,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the conceptual model. Quick reference
 ## Commit + PR
 
 - One logical change per commit. Commit messages start with a short scope prefix (e.g. `handlers:`, `transport:`, `ci:`).
-- Open a PR against `main`. CI must be green.
+- Open a PR against `master`. CI must be green.
 - Include a short "Tested with" line: which Navisworks Manage year(s) you smoke-tested.
 
 ## Code of Conduct
