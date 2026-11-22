@@ -10,6 +10,10 @@ Version numbers now follow the shared release number of the four bimwright gatew
 - **Pause for today**: a button at the foot of the expanded card and a switch in Status hide every card, errors included, in every Navisworks on this computer until local midnight. On the card it turns into **Resume**, so a mis-click is undone at once. **Toasts** on the ribbon and turning toasts on end the pause. The choice is saved as the local date in `toastSnoozedDate`; while paused, `nwd_report_task_result` returns `toast_shown: false`.
 - `BIMWRIGHT_KEEP_ALL_LOGS=1` (also `true`, `yes`, `on`) keeps every call log and saved report, for development machines. Set it for the gateway and for Navisworks: call logs still rotate to new timestamped archives, but nothing is pruned by age, by the 100 MiB group budget or by the 500-report cap. It does not turn recording on or change what is recorded. Spill files, ToolBaker data and target descriptors keep their own cleanup. The gateway writes one line to stderr at startup when it is on. Unset, user machines keep the current limits.
 
+### Fixed
+- `install.ps1` no longer fails when an MCP client still runs the installed `nwd-mcp.exe`. The new server is moved into `server\current` as before; the previous copy is kept whole in `server\current.backup-<id>` while its exe is in use, reported as `In use  : <path> - restart MCP clients; removed at next install`, and the script exits 0. Before, it exited 1 after the swap and deleted the other files (such as `e_sqlite3.dll`) from under the running server. Each install removes earlier `current.backup-*` folders that are no longer in use. A failed swap now restores the previous server under PowerShell 7 too, where a locked file could leave `current` half-moved.
+- `uninstall.ps1 -WhatIf` previewed nothing and really uninstalled: it removed the add-in bundle, `server\` and `spill\`. `-WhatIf` and `-Confirm` now reach `install.ps1 -Uninstall`, and a failed uninstall exits non-zero.
+
 ## v1.1.0 - 2026-11-16
 
 First release since v1.0.0. It also ships the v1.0.1 changes below, which were never published on their own.
