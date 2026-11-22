@@ -54,8 +54,8 @@ public sealed class NwdCallLogTests : IDisposable
         const string secret = "QWxhZGRpbjpvcGVuIHNlc2FtZQQWxhZGRpbjpvcGVu";
         var paramsJson = new JObject { ["code"] = "x", ["data_json"] = data }.ToString(Newtonsoft.Json.Formatting.None);
         NwdCallLog.Record("send_code", paramsJson, false, 5,
-            @"runtime error: InvalidOperationException: C:\Users\someone\Documents\model.nwd is locked; Bearer " + secret,
-            new JObject { ["ok"] = false, ["result"] = @"D:\Projects\Synthetic\out.csv", ["token"] = secret }.ToString(Newtonsoft.Json.Formatting.None));
+            @"runtime error: InvalidOperationException: ""C:\Users\someone\Documents\model.nwd"" is locked; Bearer " + secret,
+            new JObject { ["ok"] = false, ["result"] = @"D:\Projects\Synthetic\out.csv", ["share"] = @"\\fileserver\BIM Projects\Tower A\model.nwd", ["token"] = secret }.ToString(Newtonsoft.Json.Formatting.None));
         NwdCallLog.SetEnabled(false);
 
         var entry = JObject.Parse(Assert.Single(File.ReadAllLines(Path.Combine(_dir, NwdCallLog.FileName))));
@@ -71,6 +71,8 @@ public sealed class NwdCallLogTests : IDisposable
         Assert.Contains("InvalidOperationException", entry.Value<string>("error"));
         Assert.Contains("is locked", entry.Value<string>("error"));
         Assert.Contains("<path>", entry.Value<string>("result"));
+        Assert.DoesNotContain("fileserver", text);
+        Assert.DoesNotContain("Tower A", text);
     }
 
     [Theory]

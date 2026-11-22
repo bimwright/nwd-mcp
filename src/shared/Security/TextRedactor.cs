@@ -10,8 +10,15 @@ namespace Bimwright.Nwd.Shared.Security;
 /// </summary>
 public static class TextRedactor
 {
-    // A drive path, plain or JSON-escaped, up to a quote, space or separator.
-    private static readonly Regex WindowsPath = new(@"[A-Za-z]:(?:\\{1,2}[^\\\s""',;<>|]+)+", RegexOptions.Compiled);
+    // rvt-mcp's path patterns, in its order: JSON-escaped UNC and drive paths first, then plain ones. Segments may
+    // contain spaces, so a path is replaced whole (an unquoted path also takes the text after it on that line).
+    private static readonly Regex[] PathPatterns =
+    {
+        new(@"(?i)\\\\\\\\[^\\/:*?""<>|\r\n]+(?:\\\\[^\\/:*?""<>|\r\n]+)+", RegexOptions.Compiled),
+        new(@"(?i)\b[A-Z]:(?:\\\\[^\\/:*?""<>|\r\n]+)+", RegexOptions.Compiled),
+        new(@"(?i)\\\\[^\\/:*?""<>|\r\n]+(?:\\[^\\/:*?""<>|\r\n]+)+", RegexOptions.Compiled),
+        new(@"(?i)\b[A-Z]:\\(?:[^\\/:*?""<>|\r\n]+\\)*[^\\/:*?""<>|\r\n]+", RegexOptions.Compiled),
+    };
 
     private static readonly Regex[] SecretPatterns =
     {
@@ -23,7 +30,8 @@ public static class TextRedactor
     public static string? Redact(string? text)
     {
         if (text == null) return null;
-        var redacted = WindowsPath.Replace(text, "<path>");
+        var redacted = text;
+        foreach (var pattern in PathPatterns) redacted = pattern.Replace(redacted, "<path>");
         foreach (var pattern in SecretPatterns) redacted = pattern.Replace(redacted, "***");
         return redacted;
     }

@@ -50,6 +50,19 @@ public sealed class SendCodeErrorsTests
     }
 
     [Fact]
+    public void Unc_paths_and_paths_with_spaces_are_replaced_whole()
+    {
+        var text = SendCodeErrors.Runtime(new IOException(
+            @"Cannot read ""\\fileserver\BIM Projects\Tower A\model.nwd"" or ""C:\Users\some one\My Models\a.nwd"" now"));
+
+        Assert.DoesNotContain("fileserver", text);
+        Assert.DoesNotContain("Tower A", text);
+        Assert.DoesNotContain("some one", text);
+        Assert.DoesNotContain("My Models", text);
+        Assert.Equal(@"runtime error: IOException: Cannot read ""<path>"" or ""<path>"" now", text);
+    }
+
+    [Fact]
     public void Runtime_keeps_an_aggregate_with_several_causes_as_is()
     {
         var several = new AggregateException(new Exception("a"), new Exception("b"));
