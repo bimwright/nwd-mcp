@@ -53,7 +53,7 @@ Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最�
 
 ## 安装
 
-从 [GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest) 下载 `NwdMcp.Setup-*-win-x64.zip`。v1.0.0 含 Manage **2025** 插件。解压后运行 `install.ps1`，MCP 指向已安装的 `nwd-mcp.exe`。NuGet 包 `Bimwright.Nwd.Server` 只包含 server：不含 Navisworks 插件。请从安装 ZIP 安装；仅在已从 ZIP 安装好插件、且想把 server 用作全局 .NET 工具（命令 `bimwright-nwd`）时才使用 `dotnet tool install -g Bimwright.Nwd.Server`。
+从 [GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest) 下载 `NwdMcp.Setup-*-win-x64.zip`。ZIP 含 Navisworks Manage **2022–2027** 插件。目前只有 2025 实际运行过；其他年份已针对各自的 Autodesk API 通过构建验证，但尚未在 Navisworks 中测试。解压后运行 `install.ps1`，MCP 指向已安装的 `nwd-mcp.exe`。NuGet 包 `Bimwright.Nwd.Server` 只包含 server：不含 Navisworks 插件。请从安装 ZIP 安装；仅在已从 ZIP 安装好插件、且想把 server 用作全局 .NET 工具（命令 `bimwright-nwd`）时才使用 `dotnet tool install -g Bimwright.Nwd.Server`。
 
 常用开关：`--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`。
 

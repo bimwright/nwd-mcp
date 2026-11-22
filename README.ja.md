@@ -52,7 +52,7 @@ Navisworks は MCP コマンドごとに 1 枚のアクティビティカード�
 
 ## インストール
 
-[GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest) から `NwdMcp.Setup-*-win-x64.zip` を入手。v1.0.0 は Manage **2025** プラグイン入り。展開して `install.ps1`。MCP はインストール済み `nwd-mcp.exe` を指定。NuGet パッケージ `Bimwright.Nwd.Server` はサーバー専用で、Navisworks プラグインは含みません。セットアップ ZIP からインストールしてください。ZIP ですでにプラグインを導入済みで、サーバーをグローバル .NET ツール（コマンド `bimwright-nwd`）として使いたい場合のみ `dotnet tool install -g Bimwright.Nwd.Server` を使います。
+[GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest) から `NwdMcp.Setup-*-win-x64.zip` を入手。ZIP には Navisworks Manage **2022–2027** のプラグインが入っています。実機で動作確認したのは 2025 のみで、他の年は各年の Autodesk API に対するビルドで検証済みですが、Navisworks 上ではまだテストしていません。展開して `install.ps1`。MCP はインストール済み `nwd-mcp.exe` を指定。NuGet パッケージ `Bimwright.Nwd.Server` はサーバー専用で、Navisworks プラグインは含みません。セットアップ ZIP からインストールしてください。ZIP ですでにプラグインを導入済みで、サーバーをグローバル .NET ツール（コマンド `bimwright-nwd`）として使いたい場合のみ `dotnet tool install -g Bimwright.Nwd.Server` を使います。
 
 よく使うフラグ: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`。
 

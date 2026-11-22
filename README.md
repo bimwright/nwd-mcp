@@ -54,7 +54,7 @@ The card title names the Navisworks year and the agent of the latest call (for e
 
 ## Install
 
-Download the client setup ZIP from [GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest). It includes a self-contained MCP server and the Navisworks Manage plugin years compiled for that release (see `manifest.json`). The v1.0.0 ZIP ships **2025** only. Other years: build from source against that year’s Manage SDK.
+Download the client setup ZIP from [GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest). It includes a self-contained MCP server and the Navisworks Manage plugin years compiled for that release (see `manifest.json`). The ZIP ships plug-ins for Navisworks Manage **2022–2027**. Only 2025 has been run live; the other years are build-verified against their Autodesk API but not yet tested in Navisworks.
 
 ```powershell
 $tag = (Invoke-RestMethod https://api.github.com/repos/bimwright/nwd-mcp/releases/latest).tag_name
