@@ -11,7 +11,11 @@ public sealed class BoundedCallLogTests : IDisposable
 {
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "nwd-bounded-" + Guid.NewGuid().ToString("N"));
     private string Active => Path.Combine(_dir, NwdCallLog.FileName);
-    public BoundedCallLogTests() => Directory.CreateDirectory(_dir);
+    public BoundedCallLogTests()
+    {
+        Directory.CreateDirectory(_dir);
+        LogRetentionPolicy.Override = false; // These tests check pruning; never depend on BIMWRIGHT_KEEP_ALL_LOGS.
+    }
 
     [Fact]
     public void Rotation_keeps_complete_records_in_unique_bounded_archives()
@@ -132,6 +136,7 @@ public sealed class BoundedCallLogTests : IDisposable
         start.Environment["LOCALAPPDATA"] = _dir;
         foreach (var key in start.Environment.Keys.Where(k => k.StartsWith("BIMWRIGHT_NWD_", StringComparison.Ordinal)).ToArray())
             start.Environment.Remove(key);
+        start.Environment.Remove(LogRetentionPolicy.EnvironmentVariable);
         using var process = Process.Start(start)!;
         var stderr = process.StandardError.ReadToEndAsync();
         var stdout = process.StandardOutput.ReadToEndAsync();
@@ -151,6 +156,7 @@ public sealed class BoundedCallLogTests : IDisposable
     {
         NwdCallLog.DirectoryOverride = null;
         NwdCallLog.SetEnabled(false);
+        LogRetentionPolicy.Override = null;
         Directory.Delete(_dir, true);
     }
 }

@@ -5,6 +5,9 @@ using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 
 var config = NwdMcpConfig.Load(args);
+// stdout is the MCP transport; diagnostics go to stderr.
+if (Bimwright.Nwd.Shared.Logging.LogRetentionPolicy.KeepAll)
+    System.Console.Error.WriteLine(Bimwright.Nwd.Shared.Logging.LogRetentionPolicy.StartupNotice);
 Bimwright.Nwd.Shared.Logging.NwdCallLog.Maintain();
 
 var builder = Host.CreateApplicationBuilder(args);
