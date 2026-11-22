@@ -38,6 +38,7 @@
     <Compile Include="..\..\src\shared\Infrastructure\CommandDispatcher.cs" />
     <Compile Include="..\..\src\shared\Handlers\ScriptReferences.cs" Link="Handlers\ScriptReferences.cs" />
     <Compile Include="..\..\src\shared\Handlers\SendCodeTask.cs" Link="Handlers\SendCodeTask.cs" />
+    <Compile Include="..\..\src\shared\Handlers\SendCodeErrors.cs" Link="Handlers\SendCodeErrors.cs" />
     <Compile Include="..\..\src\shared\Handlers\ScriptResultToken.cs" Link="Handlers\ScriptResultToken.cs" />
     <Compile Include="..\..\src\shared\Scripting\McpTaskResult.cs" Link="Scripting\McpTaskResult.cs" />
     <Compile Include="..\..\src\shared\Infrastructure\NwdCommandContext.cs" />

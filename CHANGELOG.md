@@ -13,6 +13,10 @@ Version numbers now follow the shared release number of the four bimwright gatew
 ### Fixed
 - `install.ps1` no longer fails when an MCP client still runs the installed `nwd-mcp.exe`. The new server is moved into `server\current` as before; the previous copy is kept whole in `server\current.backup-<id>` while its exe is in use, reported as `In use  : <path> - restart MCP clients; removed at next install`, and the script exits 0. Before, it exited 1 after the swap and deleted the other files (such as `e_sqlite3.dll`) from under the running server. Each install removes earlier `current.backup-*` folders that are no longer in use. A failed swap now restores the previous server under PowerShell 7 too, where a locked file could leave `current` half-moved.
 - `uninstall.ps1 -WhatIf` previewed nothing and really uninstalled: it removed the add-in bundle, `server\` and `spill\`. `-WhatIf` and `-Confirm` now reach `install.ps1 -Uninstall`, and a failed uninstall exits non-zero.
+- `nwd_send_code` errors now match rvt-mcp: a compile error lists the first 20 diagnostics and a runtime error gives the cause's type and message (behind aggregate, invocation and type-initializer wrappers), both with Windows paths and secrets masked. Before, a runtime error returned the full exception text with its stack trace, and compile errors were neither capped nor masked.
+- Call logs (`nwd-mcp-calls.jsonl` and `mcp-calls.jsonl`) mask secrets and Windows paths in `error` and `result`, and keep `nwd_send_code` `data` only as its byte count and SHA-256, as rvt-mcp does. Before, results, errors and script data were stored as returned.
+- An auto-spilled `nwd_send_code` result reports `mutation_applied: null` (rvt-mcp parity): the script may or may not have changed the model.
+- The `nwd_send_code` description lists the default imports, shows how to batch edits with `doc.BeginTransaction(...)` and `Commit()`, says that Navisworks cannot roll a transaction back, and says how errors come back.
 
 ## v1.1.0 - 2026-11-16
 

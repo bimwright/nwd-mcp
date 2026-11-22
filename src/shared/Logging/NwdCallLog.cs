@@ -66,9 +66,9 @@ public static class NwdCallLog
                 ["tool"] = command,
                 ["ok"] = ok,
                 ["duration_ms"] = durationMs,
-                ["error"] = Truncate(error, MaxErrorLength),
+                ["error"] = Truncate(Redact(error), MaxErrorLength),
                 ["params"] = SafeParams(command, paramsJson),
-                ["result"] = Truncate(resultJson, MaxResultLength)
+                ["result"] = Truncate(Redact(resultJson), MaxResultLength)
             };
             var dir = DirectoryPath;
             var path = Path.Combine(dir, fileName);
@@ -100,6 +100,17 @@ public static class NwdCallLog
                 obj["code_length"] = code.Length;
                 obj["code_sha256"] = Sha256Hex(code);
             }
+            // rvt-mcp parity: script data is kept as its size and hash, never its values.
+            foreach (var key in new[] { "data", "data_json" })
+            {
+                var data = obj[key];
+                if (data == null) continue;
+                obj.Remove(key);
+                if (data.Type == JTokenType.Null) continue;
+                var dataText = data.Type == JTokenType.String ? data.Value<string>()! : data.ToString(Formatting.None);
+                obj[key + "_bytes"] = Encoding.UTF8.GetByteCount(dataText);
+                obj[key + "_sha256"] = Sha256Hex(dataText);
+            }
         }
 
         var text = obj.ToString(Formatting.None);
@@ -107,6 +118,9 @@ public static class NwdCallLog
             return obj;
         return TextToken(Truncate(text, MaxParamsLength));
     }
+
+    /// <summary>rvt-mcp parity: errors and results are logged with secrets masked and Windows paths replaced by &lt;path&gt;.</summary>
+    internal static string? Redact(string? text) => Bimwright.Nwd.Shared.Security.TextRedactor.Redact(text);
 
     private static JToken TextToken(string? value)
     {

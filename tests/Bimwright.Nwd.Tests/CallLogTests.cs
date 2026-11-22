@@ -46,6 +46,35 @@ public sealed class NwdCallLogTests : IDisposable
         Assert.Equal(Sha256(script), send["params"]!["code_sha256"]!.Value<string>());
     }
 
+    [Fact]
+    public void Send_code_data_is_logged_as_size_and_hash_and_errors_and_results_are_masked()
+    {
+        NwdCallLog.SetEnabled(true);
+        const string data = "{\"client\":\"Synthetic Co\",\"ids\":[1,2]}";
+        const string secret = "QWxhZGRpbjpvcGVuIHNlc2FtZQQWxhZGRpbjpvcGVu";
+        var paramsJson = new JObject { ["code"] = "x", ["data_json"] = data }.ToString(Newtonsoft.Json.Formatting.None);
+        NwdCallLog.Record("send_code", paramsJson, false, 5,
+            @"runtime error: InvalidOperationException: ""C:\Users\someone\Documents\model.nwd"" is locked; Bearer " + secret,
+            new JObject { ["ok"] = false, ["result"] = @"D:\Projects\Synthetic\out.csv", ["share"] = @"\\fileserver\BIM Projects\Tower A\model.nwd", ["token"] = secret }.ToString(Newtonsoft.Json.Formatting.None));
+        NwdCallLog.SetEnabled(false);
+
+        var entry = JObject.Parse(Assert.Single(File.ReadAllLines(Path.Combine(_dir, NwdCallLog.FileName))));
+        var text = entry.ToString();
+        Assert.DoesNotContain("Synthetic Co", text);
+        Assert.Null(entry["params"]!["data_json"]);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(data), entry["params"]!["data_json_bytes"]!.Value<int>());
+        Assert.Equal(Sha256(data), entry["params"]!["data_json_sha256"]!.Value<string>());
+        Assert.DoesNotContain("someone", text);
+        Assert.DoesNotContain(@"Projects\\Synthetic", text);
+        Assert.DoesNotContain(secret, text);
+        Assert.Contains("<path>", entry.Value<string>("error"));
+        Assert.Contains("InvalidOperationException", entry.Value<string>("error"));
+        Assert.Contains("is locked", entry.Value<string>("error"));
+        Assert.Contains("<path>", entry.Value<string>("result"));
+        Assert.DoesNotContain("fileserver", text);
+        Assert.DoesNotContain("Tower A", text);
+    }
+
     [Theory]
     [InlineData(false, true)]
     [InlineData(true, false)]
