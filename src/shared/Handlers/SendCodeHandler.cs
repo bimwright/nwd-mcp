@@ -23,8 +23,6 @@ namespace Bimwright.Nwd.Shared.Handlers;
 /// </summary>
 public sealed class SendCodeHandler : INwdCommand
 {
-    private const int MaxErrorLength = 4000;
-
     public string Name => "send_code";
     public bool IsReadOnly => false;
 
@@ -68,14 +66,14 @@ public sealed class SendCodeHandler : INwdCommand
             var script = CSharpScript.Create<object>(source, options, typeof(Globals));
             var errors = script.Compile(ctx.CancellationToken).Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
             if (errors.Length > 0)
-                return ScriptResult(meta, false, "", null, "compile error: " + string.Join("\n", errors.Select(d => d.ToString())) + SkippedNote(skipped),
+                return ScriptResult(meta, false, "", null, SendCodeErrors.Compile(errors.Select(d => d.ToString()).ToArray()) + SkippedNote(skipped),
                     contract, completed: false, returned: null, skipped);
             runner = script.CreateDelegate();
         }
         catch (OperationCanceledException) when (ctx.CancellationToken.IsCancellationRequested) { throw; }
         catch (Exception ex)
         {
-            return ScriptResult(meta, false, "", null, Describe(ex) + SkippedNote(skipped), contract, completed: false, returned: null, skipped);
+            return ScriptResult(meta, false, "", null, SendCodeErrors.Runtime(ex) + SkippedNote(skipped), contract, completed: false, returned: null, skipped);
         }
 
         object? value = null;
@@ -136,7 +134,7 @@ public sealed class SendCodeHandler : INwdCommand
         if (noDocument)
             return NwdCommandResult.Fail(System.Guid.Empty, "NO_DOCUMENT", "no active Navisworks document", meta);
         if (error != null)
-            return ScriptResult(meta, false, captured.ToString(), null, Describe(error), contract, completed: false, returned: null, skipped);
+            return ScriptResult(meta, false, captured.ToString(), null, SendCodeErrors.Runtime(error), contract, completed: false, returned: null, skipped);
         // Objects come back as JSON (ipt-mcp parity); a Navisworks API object fails the call with a DTO hint.
         var result = ScriptResultToken.ToResultToken(SendCodeTask.ResultValue(contract, value), out var resultError);
         return ScriptResult(meta, resultError == null, captured.ToString(), result, resultError,
@@ -164,14 +162,5 @@ public sealed class SendCodeHandler : INwdCommand
     private static string SkippedNote(SkippedScriptReference[] skipped) =>
         skipped.Length == 0 ? string.Empty
             : "\nSkipped references (unreadable metadata): " + string.Join(", ", skipped.Select(s => s.Name));
-
-    /// <summary>Full chain, so a load or type-initializer failure shows its real cause.</summary>
-    private static string Describe(Exception ex)
-    {
-        if (ex is AggregateException agg && agg.InnerExceptions.Count == 1)
-            ex = agg.InnerException!;
-        var text = ex.ToString();
-        return text.Length <= MaxErrorLength ? text : text.Substring(0, MaxErrorLength) + "…";
-    }
 }
 #endif

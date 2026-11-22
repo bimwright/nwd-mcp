@@ -40,7 +40,7 @@ Security updates are provided for the latest minor release series only.
 ### Dynamic code paths (`nwd_send_code`, ToolBaker)
 - `nwd_send_code` is on by default. Turn it off with `--disable-send-code` or `BIMWRIGHT_NWD_ENABLE_SEND_CODE=0` on the server, and `BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0` in the Navisworks process. Either side off blocks execution. `--read-only` also removes the tool.
 - Use `--read-only`, `--disable-send-code`, or `--disable-toolbaker` when a host profile should not expose dynamic-code execution.
-- Tool-call recording is off by default. Turning **Record** on writes `mcp-calls.jsonl` under `%LOCALAPPDATA%\Bimwright\nwd-mcp`. `send_code` source is replaced with its length and SHA-256.
+- Tool-call recording is off by default. Turning **Record** on writes `mcp-calls.jsonl` under `%LOCALAPPDATA%\Bimwright\nwd-mcp`. `send_code` source is replaced with its length and SHA-256, and its `data` with its byte count and SHA-256. Errors and results are recorded with secrets masked and Windows paths replaced by `<path>`.
 - ToolBaker bakes require user approval per tool + operate under the host Navisworks process trust boundary.
 
 ## Reporting a vulnerability

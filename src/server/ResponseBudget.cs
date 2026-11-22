@@ -165,6 +165,8 @@ public sealed class ResponseBudget
             }
             if (IsMutationOutcomeIndeterminate(toolName))
             {
+                // rvt-mcp parity: a script may or may not have changed the model, so say so instead of omitting it.
+                envelope["mutation_applied"] = JValue.CreateNull();
                 // Keep the script's ok/error scalars visible alongside the artifact path.
                 envelope["summary"] = MutationResponseCompactor.Compact(data, originalBytes)["summary"];
             }
@@ -256,6 +258,7 @@ public sealed class ResponseBudget
     private static readonly string[] ReceiptFields =
     {
         "ok", "output_mode", "path", "format", "byte_count", "record_count", "tool", "automatic", "original_response_byte_count",
+        "mutation_applied",
     };
 
     /// <summary>

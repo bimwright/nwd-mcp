@@ -118,6 +118,21 @@ public sealed class ResponseBudgetTests : IDisposable
     }
 
     [Fact]
+    public void SendCodeAutoSpillReportsMutationAppliedAsUnknownLikeRvt()
+    {
+        var data = $$"""{"ok":true,"result":"{{new string('x', ResponseSizePolicy.BudgetBytes + 10)}}","stdout":"","error":null}""";
+        var result = Result(data);
+
+        Budget().Apply("nwd_send_code", Args("""{"code":"x"}"""), result);
+
+        var envelope = JObject.Parse(Text(result));
+        Assert.True(envelope.ContainsKey("mutation_applied"));
+        Assert.Equal(JTokenType.Null, envelope["mutation_applied"]!.Type);
+        Assert.NotNull(envelope["schema"]);
+        Assert.Contains("do not re-run", envelope.Value<string>("note"));
+    }
+
+    [Fact]
     public void SendCodeSmallResultIsUnchanged()
     {
         var result = Result("""{"ok":true,"result":1,"stdout":"","error":null}""");
