@@ -119,27 +119,8 @@ public static class NwdCallLog
         return TextToken(Truncate(text, MaxParamsLength));
     }
 
-    // A drive path, plain or JSON-escaped, up to a quote, space or separator.
-    private static readonly System.Text.RegularExpressions.Regex WindowsPath =
-        new(@"[A-Za-z]:(?:\\{1,2}[^\\\s""',;<>|]+)+", System.Text.RegularExpressions.RegexOptions.Compiled);
-
-    // rvt-mcp's SecretMasker patterns, plus token and secret fields. Targeted on purpose: a blanket long-word mask
-    // would also hide exception names such as InvalidOperationException, which the log must keep.
-    private static readonly System.Text.RegularExpressions.Regex[] SecretPatterns =
-    {
-        new(@"sk-[A-Za-z0-9_\-]{10,}", System.Text.RegularExpressions.RegexOptions.Compiled),
-        new(@"(?i)bearer\s+[A-Za-z0-9_\-\.=+/]+", System.Text.RegularExpressions.RegexOptions.Compiled),
-        new(@"(?i)""(authorization|api[_\-]?key|password|auth[_\-]?token|token|secret)""\s*:\s*""[^""]+""", System.Text.RegularExpressions.RegexOptions.Compiled),
-    };
-
     /// <summary>rvt-mcp parity: errors and results are logged with secrets masked and Windows paths replaced by &lt;path&gt;.</summary>
-    internal static string? Redact(string? text)
-    {
-        if (text == null) return null;
-        var redacted = WindowsPath.Replace(text, "<path>");
-        foreach (var pattern in SecretPatterns) redacted = pattern.Replace(redacted, "***");
-        return redacted;
-    }
+    internal static string? Redact(string? text) => Bimwright.Nwd.Shared.Security.TextRedactor.Redact(text);
 
     private static JToken TextToken(string? value)
     {

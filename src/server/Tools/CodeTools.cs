@@ -23,7 +23,7 @@ public sealed class CodeTools
     [McpServerTool(Name = "nwd_send_code"), Description(
         "Run a C# script inside Navisworks on its UI thread. doc is the active Document; the value of the last expression comes back as result and Console output as stdout. " +
         "Imported: System, System.Collections.Generic, System.Linq, Autodesk.Navisworks.Api (and Bimwright.Nwd.Scripting with task_v1). " +
-        "Group edits as one undo step with using (var t = doc.BeginTransaction(\"name\")) { ...; t.Commit(); }; Navisworks cannot roll a transaction back, so edits made before an exception stay. " +
+        "Batch edits in using (var t = doc.BeginTransaction(\"name\")) { ...; t.Commit(); }: Navisworks requires Commit after the edits and cannot roll a transaction back, so edits made before an exception stay. " +
         "A compile or runtime error returns ok=false with the first 20 diagnostics, or the cause's type and message, masked and without a stack trace. Return warnings and skipped items in the result. " +
         "Put values that change from run to run (names, ids, lists, numbers) in data, not in the code: the script reads them as data[\"key\"] (Newtonsoft JToken). " +
         "result_contract=\"task_v1\" (default \"legacy\"): the script must return McpTaskResult.Pass(value) or McpTaskResult.Fail(code, message, details?) (imported automatically); " +

@@ -37,6 +37,19 @@ public sealed class SendCodeErrorsTests
     }
 
     [Fact]
+    public void Long_identifiers_stay_readable_while_secrets_are_masked()
+    {
+        const string name = "selectedModelItemCollectionForClashReview";
+        var compile = SendCodeErrors.Compile(new[] { $"(3,5): error CS0103: The name '{name}' does not exist in the current context" });
+        var runtime = SendCodeErrors.Runtime(new KeyNotFoundException($"{name} not found; Bearer abcdefghijklmnopqrstuvwxyz0123456789"));
+
+        Assert.Contains(name, compile);
+        Assert.Contains(name, runtime);
+        Assert.StartsWith("runtime error: KeyNotFoundException:", runtime);
+        Assert.DoesNotContain("abcdefghijklmnopqrstuvwxyz0123456789", runtime);
+    }
+
+    [Fact]
     public void Runtime_keeps_an_aggregate_with_several_causes_as_is()
     {
         var several = new AggregateException(new Exception("a"), new Exception("b"));

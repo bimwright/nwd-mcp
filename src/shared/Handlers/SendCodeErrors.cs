@@ -8,7 +8,7 @@ namespace Bimwright.Nwd.Shared.Handlers;
 
 /// <summary>
 /// send_code error text, rvt-mcp parity: compile errors list the first diagnostics, runtime errors give the cause's
-/// type and message, never a stack trace. Every line goes through <see cref="ErrorSanitizer"/> (paths, secrets).
+/// type and message, never a stack trace. Every line goes through <see cref="TextRedactor"/> (paths, secrets).
 /// Host-free, so it is unit tested without Navisworks.
 /// </summary>
 public static class SendCodeErrors
@@ -19,7 +19,7 @@ public static class SendCodeErrors
     /// <summary><c>compile error:</c> and one masked line per diagnostic, at most <see cref="MaxDiagnostics"/>.</summary>
     public static string Compile(IReadOnlyCollection<string> diagnostics)
     {
-        var shown = diagnostics.Take(MaxDiagnostics).Select(ErrorSanitizer.Sanitize).ToList();
+        var shown = diagnostics.Take(MaxDiagnostics).Select(OneLine).ToList();
         if (diagnostics.Count > MaxDiagnostics) shown.Add($"… {diagnostics.Count - MaxDiagnostics} more");
         return Cap("compile error:\n" + string.Join("\n", shown));
     }
@@ -28,7 +28,7 @@ public static class SendCodeErrors
     public static string Runtime(Exception error)
     {
         var cause = Cause(error);
-        return Cap("runtime error: " + cause.GetType().Name + ": " + ErrorSanitizer.Sanitize(cause));
+        return Cap("runtime error: " + cause.GetType().Name + ": " + OneLine(cause.Message ?? cause.GetType().Name));
     }
 
     internal static Exception Cause(Exception error)
@@ -40,6 +40,8 @@ public static class SendCodeErrors
             else return error;
         }
     }
+
+    private static string OneLine(string text) => TextRedactor.Redact(text.Replace("\r", " ").Replace("\n", " ").Trim())!;
 
     private static string Cap(string text) => text.Length <= MaxLength ? text : text.Substring(0, MaxLength) + "…";
 }

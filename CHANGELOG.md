@@ -16,7 +16,7 @@ Version numbers now follow the shared release number of the four bimwright gatew
 - `nwd_send_code` errors now match rvt-mcp: a compile error lists the first 20 diagnostics and a runtime error gives the cause's type and message (behind aggregate, invocation and type-initializer wrappers), both with Windows paths and secrets masked. Before, a runtime error returned the full exception text with its stack trace, and compile errors were neither capped nor masked.
 - Call logs (`nwd-mcp-calls.jsonl` and `mcp-calls.jsonl`) mask secrets and Windows paths in `error` and `result`, and keep `nwd_send_code` `data` only as its byte count and SHA-256, as rvt-mcp does. Before, results, errors and script data were stored as returned.
 - An auto-spilled `nwd_send_code` result reports `mutation_applied: null` (rvt-mcp parity): the script may or may not have changed the model.
-- The `nwd_send_code` description lists the default imports, shows how to group edits as one undo step with `doc.BeginTransaction(...)` and `Commit()`, says that Navisworks cannot roll a transaction back, and says how errors come back.
+- The `nwd_send_code` description lists the default imports, shows how to batch edits with `doc.BeginTransaction(...)` and `Commit()`, says that Navisworks cannot roll a transaction back, and says how errors come back.
 
 ## v1.1.0 - 2026-11-16
 
