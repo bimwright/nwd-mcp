@@ -12,6 +12,7 @@ Version numbers now follow the shared release number of the four bimwright gatew
 
 ### Fixed
 - `install.ps1` no longer fails when an MCP client still runs the installed `nwd-mcp.exe`. The new server is moved into `server\current` as before; the previous copy is kept whole in `server\current.backup-<id>` while its exe is in use, reported as `In use  : <path> - restart MCP clients; removed at next install`, and the script exits 0. Before, it exited 1 after the swap and deleted the other files (such as `e_sqlite3.dll`) from under the running server. Each install removes earlier `current.backup-*` folders that are no longer in use. A failed swap now restores the previous server under PowerShell 7 too, where a locked file could leave `current` half-moved.
+- `uninstall.ps1 -WhatIf` previewed nothing and really uninstalled: it removed the add-in bundle, `server\` and `spill\`. `-WhatIf` and `-Confirm` now reach `install.ps1 -Uninstall`, and a failed uninstall exits non-zero.
 
 ## v1.1.0 - 2026-11-16
 

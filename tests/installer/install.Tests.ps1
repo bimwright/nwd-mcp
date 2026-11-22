@@ -215,6 +215,24 @@ try {
         foreach ($f in $userData) { Set-Content (Join-Path $dataRoot $f) 'data' }
     }
 
+    Test 'uninstall.ps1 -WhatIf changes nothing' {
+        New-InstalledWithData
+        $run = Invoke-Setup (Join-Path $v1 'uninstall.ps1') @('-WhatIf')
+        Assert-Ok $run 'uninstall -WhatIf'
+        Assert (Test-Path -LiteralPath "$bundleDir\PackageContents.xml") 'Bundle removed under -WhatIf'
+        Assert (Test-Path -LiteralPath "$currentDir\nwd-mcp.exe") 'Server removed under -WhatIf'
+        Assert (Test-Path -LiteralPath "$dataRoot\spill\x.json") 'Spill removed under -WhatIf'
+    }
+
+    Test 'uninstall.ps1 -Confirm asks before removing (non-interactive: refused, nothing removed)' {
+        New-InstalledWithData
+        $run = Invoke-Setup (Join-Path $v1 'uninstall.ps1') @('-Confirm')
+        Assert ($run.ExitCode -ne 0) 'uninstall -Confirm did not ask'
+        Assert (Test-Path -LiteralPath "$bundleDir\PackageContents.xml") 'Bundle removed without confirmation'
+        Assert (Test-Path -LiteralPath "$currentDir\nwd-mcp.exe") 'Server removed without confirmation'
+        Assert (Test-Path -LiteralPath "$dataRoot\spill\x.json") 'Spill removed without confirmation'
+    }
+
     Test 'uninstall.ps1 removes bundle, server and spill and keeps user data' {
         New-InstalledWithData
         $run = Invoke-Setup (Join-Path $v1 'uninstall.ps1')
