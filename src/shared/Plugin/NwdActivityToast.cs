@@ -23,6 +23,18 @@ internal static class NwdActivityToast
     private static IntPtr _owner;
 
     public static bool Enabled => _enabled;
+
+    /// <summary>"Pause for today" is active in every Navisworks on this computer.</summary>
+    public static bool Paused => ToastSnooze.IsActive();
+
+    /// <summary>Status window switch. Returns whether the choice was saved.</summary>
+    public static bool SetPaused(bool paused)
+    {
+        var notifier = _notifier;
+        if (notifier != null)
+            return paused ? notifier.PauseForToday() : notifier.ResumeFromPause();
+        return paused ? ToastSnooze.PauseForToday() : ToastSnooze.Resume();
+    }
     public static void ShowHistoryWindow() => _notifier?.ShowHistory();
 
     public static bool ShowBranding => _notifier?.ShowBranding ?? PluginSettings.LoadShowBranding();
@@ -65,6 +77,7 @@ internal static class NwdActivityToast
         {
         }
         server.CommandCompleted = OnCommandCompleted;
+        server.ClientNameSeen = name => _notifier?.SetAgent(name);
         TryAttachOwner();
     }
 
@@ -88,7 +101,10 @@ internal static class NwdActivityToast
     public static void Stop()
     {
         if (_server != null)
+        {
             _server.CommandCompleted = null;
+            _server.ClientNameSeen = null;
+        }
         try { _status?.Close(); } catch { }
         _status = null;
         if (_notifier != null) _notifier.PositionSaved -= ReportPositionSaved;
@@ -99,12 +115,21 @@ internal static class NwdActivityToast
 
     public static void ToggleEnabled()
     {
+        // While paused, the Toasts button ends the pause instead of turning toasts off.
+        if (_enabled && Paused)
+        {
+            SetPaused(false);
+            return;
+        }
         ApplyEnabled(!_enabled);
     }
 
     public static void ApplyEnabled(bool enabled)
     {
         var persisted = PluginSettings.SaveEnableToast(enabled);
+        // Turning toasts on means showing them now, so an active pause ends too.
+        if (enabled && !ToastSnooze.ResumeIfPaused())
+            persisted = false;
         _enabled = enabled;
         _notifier?.OnToastEnabledChanged(enabled, persisted);
     }

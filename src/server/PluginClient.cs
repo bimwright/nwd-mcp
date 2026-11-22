@@ -22,6 +22,12 @@ public sealed class NwdGatewayException : Exception
 
 public sealed class PluginClient
 {
+    /// <summary>
+    /// clientInfo.name of the MCP client behind this gateway, refreshed by the call filter on every tool call and
+    /// sent as <c>client_name</c> with each command. One gateway process serves one client, so a static is enough.
+    /// </summary>
+    internal static volatile string? ClientName;
+
     private readonly NwdMcpConfig _config;
     private readonly TargetRegistry _registry;
     private readonly TargetBinding _binding;
@@ -179,6 +185,7 @@ public sealed class PluginClient
         var call = Track(() => _binding.Capture(context?.PinnedGeneration));
         var target = call.Descriptor;
         var pinned = GateWrite(command, call);
+        var clientName = ClientName;
         var env = new NwdCommandEnvelope
         {
             Id = Guid.NewGuid(),
@@ -187,7 +194,8 @@ public sealed class PluginClient
             TimeoutMs = wait,
             AuthToken = target.AuthToken,
             RecordCalls = _config.EnableCallLog,
-            DocumentTarget = new DocumentTargetEnvelope { ExpectedDocumentId = pinned?.Id }
+            DocumentTarget = new DocumentTargetEnvelope { ExpectedDocumentId = pinned?.Id },
+            ClientName = string.IsNullOrWhiteSpace(clientName) ? null : clientName
         };
         var serialized = JsonConvert.SerializeObject(env);
         var requestBytes = Encoding.UTF8.GetBytes(serialized + "\n");

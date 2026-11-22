@@ -23,6 +23,9 @@ namespace Bimwright.Nwd.Shared.Views.Toast
         public event Action<bool> PositionSaved;
         public ToastPositionOptions PositionOptions => _positionOptions;
         private volatile string _instanceIdentity;
+        private volatile string _agentName;
+        private volatile Func<bool> _isPaused;
+        private volatile Func<bool, bool> _setPaused;
         private Func<bool> _frameUsable = () => true;
         private Application _toastApplication;
 
@@ -82,6 +85,31 @@ namespace Bimwright.Nwd.Shared.Views.Toast
         public void SetInstanceIdentity(string identity)
         {
             _instanceIdentity = string.IsNullOrWhiteSpace(identity) ? null : identity;
+        }
+
+        /// <summary>
+        /// Agent of the latest MCP call ("Claude"), or null when the gateway did not name one. The open card's title
+        /// follows it on the next render.
+        /// </summary>
+        public void SetAgentName(string agent)
+        {
+            _agentName = string.IsNullOrWhiteSpace(agent) ? null : agent;
+        }
+
+        /// <summary>"nwd-mcp 2025 · Claude"; null leaves the card's own product-name fallback.</summary>
+        private string IdentityTitle()
+        {
+            var identity = _instanceIdentity;
+            var agent = _agentName;
+            if (agent == null) return identity;
+            return (identity ?? BrandAssets.ProductName) + " \u00B7 " + agent;
+        }
+
+        /// <summary>The expanded card's Pause / Resume. Without handlers the card has no pause button.</summary>
+        public void SetPauseHandlers(Func<bool> isPaused, Func<bool, bool> setPaused)
+        {
+            _isPaused = isPaused;
+            _setPaused = setPaused;
         }
 
         public void SetFrameUsableProvider(Func<bool> provider)
@@ -291,10 +319,12 @@ namespace Bimwright.Nwd.Shared.Views.Toast
                 Aggregator,
                 () => _frameUsable(),
                 showBranding: () => _showBranding,
-                instanceIdentity: () => _instanceIdentity,
+                instanceIdentity: IdentityTitle,
                 onClick: _ => ShowHistory(),
                 positionOptions: () => _positionOptions,
-                positionChanged: SaveDraggedPosition);
+                positionChanged: SaveDraggedPosition,
+                isPaused: () => _isPaused?.Invoke() ?? false,
+                setPaused: paused => _setPaused?.Invoke(paused) ?? false);
         }
 
         private void PostToManager(Action<McpToastManager> action)

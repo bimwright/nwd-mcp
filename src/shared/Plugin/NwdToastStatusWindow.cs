@@ -2,15 +2,19 @@ using System.Windows;
 using System.Windows.Controls;
 using Bimwright.Nwd.Shared.Config;
 using Bimwright.Nwd.Shared.Localization;
+using Bimwright.Nwd.Shared.Views.Toast;
 
 namespace Bimwright.Nwd.Shared.Plugin;
 
 /// <summary>
-/// Status/preferences window. Toast, branding and position apply immediately. Idle needs Apply.
+/// Status/preferences window. Toast, pause, branding and position apply immediately. Idle needs Apply.
 /// </summary>
 internal sealed class NwdToastStatusWindow : Window
 {
     private readonly CheckBox _toastEnabled;
+    private readonly CheckBox _paused;
+    private readonly TextBlock _pausedError;
+    private readonly System.Action _pauseChangedHandler;
     private readonly CheckBox _showBranding;
     private readonly CheckBox _recordCalls;
     private readonly ComboBox _idle;
@@ -38,6 +42,10 @@ internal sealed class NwdToastStatusWindow : Window
 
         _savedIdle = PluginSettings.LoadToastIdleSeconds();
         _toastEnabled = new CheckBox { Content = L.T("settings.toast.enabled"), Margin = new Thickness(0, 0, 0, 4) };
+        _paused = new CheckBox { Content = L.T("settings.toast.snooze"), Margin = new Thickness(0, 8, 0, 4) };
+        _pausedError = Help(L.T("toast.status.saveFailed"));
+        _pausedError.Foreground = System.Windows.Media.Brushes.Firebrick;
+        _pausedError.Visibility = Visibility.Collapsed;
         _showBranding = new CheckBox { Content = L.T("settings.toast.brand"), Margin = new Thickness(0, 8, 0, 4) };
         _recordCalls = new CheckBox { Content = L.T("settings.record"), Margin = new Thickness(0, 8, 0, 4) };
         _idle = new ComboBox { Margin = new Thickness(0, 4, 0, 8), IsEditable = false };
@@ -81,6 +89,9 @@ internal sealed class NwdToastStatusWindow : Window
         history.Click += (_, _) => NwdActivityToast.ShowHistoryWindow();
         root.Children.Add(history);
         root.Children.Add(Help(L.T("settings.toast.enabled.help")));
+        root.Children.Add(_paused);
+        root.Children.Add(Help(L.T("settings.toast.snooze.help")));
+        root.Children.Add(_pausedError);
         root.Children.Add(_showBranding);
         root.Children.Add(Help(L.T("settings.toast.brand.help")));
         root.Children.Add(_recordCalls);
@@ -111,11 +122,24 @@ internal sealed class NwdToastStatusWindow : Window
         _showBranding.IsChecked = NwdActivityToast.ShowBranding;
         _recordCalls.IsChecked = NwdActivityToast.RecordCalls;
         SyncBrandEnabled();
+        SyncPaused();
         SyncPosition(true);
         _ready = true;
 
         _toastEnabled.Checked += (_, _) => OnToastToggled();
         _toastEnabled.Unchecked += (_, _) => OnToastToggled();
+        _paused.Checked += (_, _) => OnPauseToggled();
+        _paused.Unchecked += (_, _) => OnPauseToggled();
+        // A pause from the card (or Resume) in this Navisworks updates the switch while the window is open.
+        _pauseChangedHandler = () =>
+        {
+            if (Dispatcher.HasShutdownStarted)
+                return;
+            if (Dispatcher.CheckAccess()) SyncPaused();
+            else Dispatcher.BeginInvoke(new System.Action(SyncPaused));
+        };
+        ToastSnooze.Changed += _pauseChangedHandler;
+        Closed += (_, _) => ToastSnooze.Changed -= _pauseChangedHandler;
         _showBranding.Checked += (_, _) => OnBrandToggled();
         _showBranding.Unchecked += (_, _) => OnBrandToggled();
         _recordCalls.Checked += (_, _) => OnRecordToggled();
@@ -187,6 +211,34 @@ internal sealed class NwdToastStatusWindow : Window
             return;
         NwdActivityToast.ApplyEnabled(_toastEnabled.IsChecked == true);
         SyncBrandEnabled();
+        SyncPaused();
+    }
+
+    private void OnPauseToggled()
+    {
+        if (!_ready)
+            return;
+        var saved = NwdActivityToast.SetPaused(_paused.IsChecked == true);
+        _pausedError.Visibility = saved ? Visibility.Collapsed : Visibility.Visible;
+        SyncPaused();
+    }
+
+    /// <summary>Pause for today follows the saved state and is available only while toasts are on.</summary>
+    internal void SyncPaused()
+    {
+        var ready = _ready;
+        _ready = false;
+        try
+        {
+            var paused = NwdActivityToast.Paused;
+            if (_paused.IsChecked != paused)
+                _paused.IsChecked = paused;
+            _paused.IsEnabled = _toastEnabled.IsChecked == true;
+        }
+        finally
+        {
+            _ready = ready;
+        }
     }
 
     private void OnBrandToggled()

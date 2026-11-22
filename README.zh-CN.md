@@ -32,6 +32,8 @@
 
 Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最新结果之后停留 20 秒（可选 10、20、30 或 60）。悬停暂停；离开后重新计满该间隔。有意悬停会平滑展开当前卡片的紧凑三行结果视口，每项均有独立边框（工具、结果、成功／失败，以及本地完成时间，采用24小时制 `HH:mm:ss`）。保留该卡片内的所有结果，旧调用在上、新调用在下；初始显示最新三次调用，通过与RVT一致的细滚动条向上滚动可查看更早的调用。移开后平滑收起。新结果会立即追加：位于底部时自动跟随最新调用，向上阅读旧调用时保持滚动位置；回到底部后恢复自动跟随。关闭 branding 也能使用，并遵循减少动态效果设置。有长度上限的摘要仅保留在内存中，关闭或重置卡片时丢弃，不会开启 Record，也不保存原始请求、结果 JSON 或脚本源代码。BIMwright 字标默认关闭，需打开 Show branding 才会出现。`nwd_health_check` 不会进入卡片。**Bimwright** 功能区有 **Toasts**、**Toast Brand**、**Record** 和 **Status**。**Record** 为旧网关提供主机默认设置；当前网关使用下文介绍的服务器调用日志设置。`send_code` 只保存长度和 SHA-256，不保存脚本。设置写在 `%LOCALAPPDATA%\Bimwright\nwd-mcp\nwdmcp.config.json`。`BIMWRIGHT_NWD_ENABLE_TOAST` 和 `BIMWRIGHT_NWD_RECORD_CALLS` 在下次启动时覆盖对应开关。
 
+卡片标题显示 Navisworks 年份和最近一次调用的代理名称（例如 `nwd-mcp 2025 · Claude`）；无论是否开启品牌标识，指向卡片时都会渐显 Navisworks 进程 ID（`· PID 12345`）。旧版网关不发送代理名称，此时标题不显示名称。展开卡片底部或 **Status** 中的 **Pause for today** 会让本机所有 Navisworks 的全部卡片（包括错误）静默到本地午夜。在卡片上该按钮会变为 **Resume**，误点可立即撤销；功能区的 **Toasts** 或重新开启提示也会结束暂停。暂停以本地日期保存在 `toastSnoozedDate` 中，暂停期间 `nwd_report_task_result` 返回 `toast_shown: false`。请同时更新网关和插件。
+
 **Status → 提示位置：**分别选择左／右与上／下（默认左上）。立即应用并保存；更改角落会清除拖动偏移。启用 **Allow dragging the toast** 后可拖动标题行，普通单击仍关闭卡片。关闭拖动会返回所选角落但保留位置，再次启用可恢复。**Reset position** 删除偏移。位置以相对 Navisworks 窗口的 DIP 保存，并限制在所在显示器的工作区内。底部锚定向上展开；空间不足时使用相反方向。动画遵循 Windows 设置。保存失败在 Status 内提示，新设置仍在当前会话生效。工具／结果的工具提示包含已脱敏的结果、状态、完成时间及可用的执行时长。暂不协调不同应用之间的提示重叠。
 
 ---

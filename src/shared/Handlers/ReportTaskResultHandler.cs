@@ -28,8 +28,9 @@ public sealed class ReportTaskResultHandler : INwdCommand
         {
             ["task_id"] = taskId, ["outcome"] = outcome, ["summary"] = summary,
             ["agent_reported"] = true,
-            // The card is queued when the toast is on; with the toast off the report is only saved and listed in History.
-            ["toast_shown"] = NwdActivityToast.Enabled,
+            // The card is queued when the toast is on and not paused for today; otherwise the report is only saved and
+            // listed in History.
+            ["toast_shown"] = NwdActivityToast.Enabled && !NwdActivityToast.Paused,
         }, meta);
     }
 }

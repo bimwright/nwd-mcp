@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- The toast title names the agent of the latest call from its MCP client name: `nwd-mcp 2025 · Claude` (Claude, Codex, Cline, Cursor, Windsurf, Antigravity, Gemini, Copilot, VS Code; any other client shows its own name, cleaned and capped at 20 characters). The gateway sends the name with every command as `client_name`; it is display text only. Update the gateway and plug-in together; an older gateway leaves the name out.
+- The Navisworks process ID (`· PID 12345`) is laid out in the title and fades in when you point at the card, with or without branding.
+- **Pause for today**: a button at the foot of the expanded card and a switch in Status hide every card, errors included, in every Navisworks on this computer until local midnight. On the card it turns into **Resume**, so a mis-click is undone at once. **Toasts** on the ribbon and turning toasts on end the pause. The choice is saved as the local date in `toastSnoozedDate`; while paused, `nwd_report_task_result` returns `toast_shown: false`.
+
 ## v1.1.0 - 2026-11-16
 
 First release since v1.0.0. It also ships the v1.0.1 changes below, which were never published on their own.

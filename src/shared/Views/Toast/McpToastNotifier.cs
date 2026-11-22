@@ -21,8 +21,45 @@ namespace Bimwright.Nwd.Shared.Views.Toast
         {
             _host = host ?? throw new ArgumentNullException(nameof(host));
             _activity = host.Aggregator;
-            _isEnabled = isEnabled ?? throw new ArgumentNullException(nameof(isEnabled));
+            if (isEnabled == null) throw new ArgumentNullException(nameof(isEnabled));
+            // "Pause for today" silences every card, errors included, until local midnight (FC-TST-04).
+            _isEnabled = () => isEnabled() && !ToastSnooze.IsActive();
             _host.SetFrameUsableProvider(IsOwnerFrameUsable);
+            _host.SetPauseHandlers(ToastSnooze.IsActive, SetPausedFromCard);
+        }
+
+        /// <summary>
+        /// Agent of the MCP call about to run, from the gateway's clientInfo.name ("claude-code" -> "Claude").
+        /// A gateway that sends no name clears it, so the title never shows a stale agent (FC-TST-03).
+        /// </summary>
+        public void SetAgent(string clientName) => _host.SetAgentName(AgentDisplayName.For(clientName));
+
+        /// <summary>Status window "Pause for today": saved for every Navisworks on this computer; the open card closes now.</summary>
+        public bool PauseForToday()
+        {
+            var saved = ToastSnooze.PauseForToday();
+            if (_activity.Reset())
+                _host.Post(manager => manager.Render());
+            return saved;
+        }
+
+        /// <summary>Ends a pause early (Status window, or the Toasts button while paused) and confirms it on a card.</summary>
+        public bool ResumeFromPause()
+        {
+            var saved = ToastSnooze.Resume();
+            OnToastEnabledChanged(true, saved);
+            return saved;
+        }
+
+        /// <summary>
+        /// The expanded card's Pause / Resume: saved for every Navisworks on this computer. The open card stays, so a
+        /// mis-click can be undone with Resume; while paused, new results do not reach it. Returns the resulting state.
+        /// </summary>
+        private bool SetPausedFromCard(bool paused)
+        {
+            // A failed save leaves the state unchanged, so the button keeps its label.
+            if (paused) ToastSnooze.PauseForToday(); else ToastSnooze.Resume();
+            return ToastSnooze.IsActive();
         }
 
         public void SetOwnerHandle(IntPtr hwnd)

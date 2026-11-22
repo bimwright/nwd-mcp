@@ -32,6 +32,8 @@ namespace Bimwright.Nwd.Shared.Views.Toast
         private readonly Action<ToastPositionOptions> _positionChanged;
         private readonly Func<Tuple<ToastBounds, ToastBounds>> _geometry;
         private readonly Func<Point> _cursorPosition;
+        private readonly Func<bool> _isPaused;
+        private readonly Func<bool, bool> _setPaused;
         private double _compactHeight;
         private bool _growUp;
 
@@ -59,7 +61,9 @@ namespace Bimwright.Nwd.Shared.Views.Toast
             Func<ToastPositionOptions> positionOptions = null,
             Action<ToastPositionOptions> positionChanged = null,
             Func<Tuple<ToastBounds, ToastBounds>> geometry = null,
-            Func<Point> cursorPosition = null)
+            Func<Point> cursorPosition = null,
+            Func<bool> isPaused = null,
+            Func<bool, bool> setPaused = null)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             _aggregator = aggregator ?? throw new ArgumentNullException(nameof(aggregator));
@@ -72,6 +76,8 @@ namespace Bimwright.Nwd.Shared.Views.Toast
             _positionChanged = positionChanged;
             _geometry = geometry;
             _cursorPosition = cursorPosition;
+            _isPaused = isPaused;
+            _setPaused = setPaused;
 
             _timer = new DispatcherTimer(DispatcherPriority.Background, _dispatcher)
             {
@@ -196,6 +202,8 @@ namespace Bimwright.Nwd.Shared.Views.Toast
                 // Updating an existing card must not replay its enter/brand animation or
                 // alter its measured height.
                 _window.Update(card);
+                // The latest call may come from another agent.
+                _window.SetIdentityTitle(_instanceIdentity());
                 EnsureTimer();
                 return;
             }
@@ -242,7 +250,9 @@ namespace Bimwright.Nwd.Shared.Views.Toast
                 OnPointerLeft,
                 motionEnabled: _motionEnabled,
                 cursorPosition: _cursorPosition,
-                instanceIdentity: _instanceIdentity());
+                instanceIdentity: _instanceIdentity(),
+                isPaused: _isPaused,
+                setPaused: _setPaused);
 
             _window = window;
             window.SetShowBranding(_showBranding());

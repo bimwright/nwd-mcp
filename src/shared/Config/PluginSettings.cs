@@ -139,6 +139,34 @@ public static class PluginSettings
         });
     }
 
+    /// <summary>The "Pause for today" date ("yyyy-MM-dd"), read from disk on every call so a pause set in another
+    /// Navisworks applies here too. Null when missing or not a string.</summary>
+    public static string? LoadToastSnoozedDate()
+    {
+        try
+        {
+            var path = FilePath;
+            if (!File.Exists(path))
+                return null;
+            var value = JObject.Parse(File.ReadAllText(path))["toastSnoozedDate"];
+            return value?.Type == JTokenType.String ? (string?)value : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Saves the pause date, or removes the key when <paramref name="date"/> is null.</summary>
+    public static bool SaveToastSnoozedDate(string? date)
+    {
+        return TryUpdate(root =>
+        {
+            if (date == null) root.Remove("toastSnoozedDate");
+            else root["toastSnoozedDate"] = date;
+        });
+    }
+
     private static readonly object WriteGate = new object();
 
     private static bool TryUpdate(Action<JObject> mutate)
