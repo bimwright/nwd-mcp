@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## v2.5.1 - Unreleased
+
+Version numbers now follow the shared release number of the four bimwright gateways (rvt-mcp, dwg-mcp, nwd-mcp, ipt-mcp). The jump from v1.1.0 to v2.5.1 does not mark breaking changes; the entries below list what changed since v1.1.0.
 
 ### Added
 - The toast title names the agent of the latest call from its MCP client name: `nwd-mcp 2025 · Claude` (Claude, Codex, Cline, Cursor, Windsurf, Antigravity, Gemini, Copilot, VS Code; any other client shows its own name, cleaned and capped at 20 characters). The gateway sends the name with every command as `client_name`; it is display text only. Update the gateway and plug-in together; an older gateway leaves the name out.

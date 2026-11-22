@@ -3,7 +3,7 @@
   "name": "io.github.bimwright/nwd-mcp",
   "title": "Bimwright NWD",
   "description": "MCP gateway for Autodesk Navisworks Manage 2022-2027.",
-  "version": "1.1.0",
+  "version": "2.5.1",
   "repository": {
     "url": "https://github.com/bimwright/nwd-mcp",
     "source": "github"
@@ -14,7 +14,7 @@
     {
       "registryType": "nuget",
       "identifier": "Bimwright.Nwd.Server",
-      "version": "1.1.0",
+      "version": "2.5.1",
       "transport": {
         "type": "stdio"
       }
