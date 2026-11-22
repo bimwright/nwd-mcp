@@ -42,3 +42,26 @@ jobs:
           $leaked = Get-ChildItem "src/plugin-navis${{ matrix.year }}/bin/Release/net48" -File |
             Where-Object { $_.Name -match '^(Autodesk\.Navisworks\.|AdWindows\.|navisworks\.)' }
           if ($leaked) { $leaked.Name; throw "Autodesk binaries reached the plug-in output." }
+
+  installer:
+    # install.ps1 / uninstall.ps1 in disposable APPDATA/LOCALAPPDATA folders,
+    # under Windows PowerShell 5.1 and PowerShell 7.
+    name: installer-${{ matrix.shell }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [ powershell, pwsh ]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test isolated install, upgrade and uninstall
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path artifacts -Force | Out-Null
+          & ${{ matrix.shell }} -NoProfile -ExecutionPolicy Bypass -File ./tests/installer/install.Tests.ps1 -ResultPath artifacts/installer-${{ matrix.shell }}.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: installer-${{ matrix.shell }}
+          path: artifacts/installer-*.json
