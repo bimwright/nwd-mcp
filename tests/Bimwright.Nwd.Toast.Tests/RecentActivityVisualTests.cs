@@ -22,6 +22,88 @@ internal static class RecentActivityVisualTests
         CheckCompactBorderedCards();
         CheckAllCallsScrollingAndVirtualization();
         CheckScrollbarMotionAndReducedMotion();
+        CheckAgentTitlePidAndPause();
+    }
+
+    /// <summary>
+    /// FC-TST-02, FC-TST-03, FC-TST-04: title "nwd-mcp 2025 \u00B7 Claude \u00B7 PID n": the agent follows the latest
+    /// call, the PID is laid out but transparent until a deliberate hover (also with branding off), and the expanded
+    /// card's pause button pauses in place without opening History.
+    /// </summary>
+    private static void CheckAgentTitlePidAndPause()
+    {
+        var cursor = new Point(10, 10);
+        var clicks = 0; var pauses = 0; var paused = false;
+        var window = new McpToastWindow(Snapshot(), null, null, _ => clicks++, null, null,
+            () => cursor, () => true, "nwd-mcp 2025 \u00B7 Claude", () => paused, value => { pauses++; paused = value; return paused; });
+        try
+        {
+            window.SetShowBranding(false);
+            window.CapturePointerBaseline();
+            window.SetPosition(50, 50); window.Show(); window.PlayEnterAnimation();
+            Pump(350);
+            var title = Field<TextBlock>(window, "_titleText");
+            var pid = Field<SolidColorBrush>(window, "_pidBrush");
+            var expected = Program.ExpectedTitle("nwd-mcp 2025 \u00B7 Claude");
+            if (Program.PlainText(title) != expected || pid.Opacity != 0 || (string)title.ToolTip != expected)
+                throw new Exception("The title must name the instance and agent, with the PID laid out but hidden: " + Program.PlainText(title));
+            var compactWidth = title.ActualWidth;
+
+            Raise(window, Mouse.MouseEnterEvent); // stationary pointer under a new card
+            Pump(250);
+            if (pid.Opacity != 0)
+                throw new Exception("A stationary pointer revealed the PID.");
+            cursor = new Point(24, 10); Raise(window, Mouse.MouseEnterEvent);
+            var fade = Sample(() => pid.Opacity, () => pid.Opacity == 1 && !pid.HasAnimatedProperties);
+            AssertGradual(fade, 0, 1, "PID reveal");
+            window.UpdateLayout();
+            if (Math.Abs(title.ActualWidth - compactWidth) > .1)
+                throw new Exception("Revealing the PID moved the title.");
+
+            var row = Field<Border>(window, "_detailsRow");
+            Sample(() => row.Height, () => row.Height > 0 && !row.HasAnimatedProperties);
+            var pause = Field<Border>(window, "_snoozeButton");
+            window.UpdateLayout();
+            var panel = Field<ToastActivityPanel>(window, "_detailsPanel");
+            if (pause.Visibility != Visibility.Visible || pause.ActualHeight <= 0
+                || row.Height < panel.ActualHeight + pause.ActualHeight)
+                throw new Exception("The expanded card must show the whole pause row below the recent results.");
+            var click = new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left)
+                { RoutedEvent = UIElement.MouseLeftButtonUpEvent };
+            pause.RaiseEvent(click);
+            var label = Field<System.Windows.Documents.Run>(window, "_pauseText");
+            if (!click.Handled || pauses != 1 || !paused || clicks != 0)
+                throw new Exception("The pause button must pause once and must not open History.");
+            if (!label.Text.Contains("Resume") || row.Visibility != Visibility.Visible || !window.IsVisible)
+                throw new Exception("After pausing, the card must stay open and offer Resume: " + label.Text);
+            var undo = new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left)
+                { RoutedEvent = UIElement.MouseLeftButtonUpEvent };
+            pause.RaiseEvent(undo);
+            if (!undo.Handled || pauses != 2 || paused || !label.Text.Contains("Pause for today") || clicks != 0)
+                throw new Exception("Resume must undo the pause in place: " + label.Text);
+
+            window.SetIdentityTitle("nwd-mcp 2025 \u00B7 Codex");
+            if (Program.PlainText(title) != Program.ExpectedTitle("nwd-mcp 2025 \u00B7 Codex"))
+                throw new Exception("An update from another agent must rename the title.");
+            window.SetIdentityTitle(null);
+            if (Program.PlainText(title) != Program.ExpectedTitle("nwd-mcp"))
+                throw new Exception("No identity must fall back to the product name.");
+
+            cursor = new Point(90, 90); Raise(window, Mouse.MouseLeaveEvent);
+            Sample(() => pid.Opacity, () => pid.Opacity == 0 && !pid.HasAnimatedProperties);
+        }
+        finally { window.CloseImmediate(); }
+        if (window.HasAnimatedProperties || Field<SolidColorBrush>(window, "_pidBrush").HasAnimatedProperties)
+            throw new Exception("Close retained PID animation clocks.");
+
+        var plain = new McpToastWindow(Snapshot(), null, null, null, null, null, () => new Point(10, 10), () => true);
+        try
+        {
+            if (Field<Border>(plain, "_snoozeButton").Visibility != Visibility.Collapsed)
+                throw new Exception("A card without a pause handler must not show the pause button.");
+        }
+        finally { plain.CloseImmediate(); }
+        Console.WriteLine("PASS: agent in the title, PID fades in on deliberate hover without moving the title, expanded pause button");
     }
 
     private static ActivitySnapshot Snapshot(string newest = "Hide Items") => new ActivitySnapshot(

@@ -79,6 +79,12 @@ public sealed class TcpTransportServer : IDisposable
     /// <summary>Command name, response JSON, success, error message. Skips health_check.</summary>
     public Action<string, string, bool, string?>? CommandCompleted { get; set; }
 
+    /// <summary>
+    /// The gateway's client_name for each authorized command, health checks included, so the toast title always names
+    /// the latest agent (null from older gateways).
+    /// </summary>
+    public Action<string?>? ClientNameSeen { get; set; }
+
     public void Start(IReadOnlyDictionary<string, INwdCommand> handlers)
     {
         lock (_lifecycle)
@@ -208,6 +214,7 @@ public sealed class TcpTransportServer : IDisposable
                             // A second before the gateway gives up, so the gateway reads this plug-in's own answer
                             // (HOST_BUSY at the start deadline, or TIMEOUT for a started command).
                             requestStop.CancelAfter(Math.Max(1000, env.TimeoutMs - 1000));
+                            try { ClientNameSeen?.Invoke(env.ClientName); } catch { }
                             commandName = env.Command;
                             timeoutMs = env.TimeoutMs;
                             recordCalls = env.RecordCalls;

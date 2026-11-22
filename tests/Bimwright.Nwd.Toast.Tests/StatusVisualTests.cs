@@ -6,6 +6,8 @@ using System.Windows;
 using System.Windows.Controls;
 using Bimwright.Nwd.Shared.Config;
 using Bimwright.Nwd.Shared.Plugin;
+using Bimwright.Nwd.Shared.Views.Toast;
+using Newtonsoft.Json.Linq;
 
 internal static class StatusVisualTests
 {
@@ -59,6 +61,62 @@ internal static class StatusVisualTests
         Console.WriteLine("PASS: Settings shows failed idle save, preserves active duration and retries successfully");
     }
 
+    // FC-TST-04
+    internal static void RunPause()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "nwd-toast-snooze-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var previousPath = PluginSettings.FilePathOverride;
+        NwdToastStatusWindow window = null;
+        try
+        {
+            var path = Path.Combine(directory, "settings.json");
+            PluginSettings.FilePathOverride = path;
+            File.WriteAllText(path, "{\"unrelated\":true}");
+            NwdActivityToast.ToastEnabled = true;
+            window = new NwdToastStatusWindow();
+            var enabled = Field<CheckBox>(window, "_toastEnabled");
+            var paused = Field<CheckBox>(window, "_paused");
+            if (!paused.IsEnabled || paused.IsChecked == true || ToastSnooze.IsActive())
+                throw new Exception("Pause for today must start enabled and unchecked.");
+
+            paused.IsChecked = true;
+            var saved = JObject.Parse(File.ReadAllText(path));
+            if (!ToastSnooze.IsActive() || string.IsNullOrWhiteSpace(saved.Value<string>("toastSnoozedDate"))
+                || !saved.Value<bool>("unrelated"))
+                throw new Exception("Pause for today must save at once and keep the other preferences.");
+
+            paused.IsChecked = false;
+            if (ToastSnooze.IsActive() || JObject.Parse(File.ReadAllText(path))["toastSnoozedDate"] != null)
+                throw new Exception("Unchecking Pause for today must remove toastSnoozedDate at once.");
+
+            if (!ToastSnooze.PauseForToday())
+                throw new Exception("A pause from the card could not be saved.");
+            if (paused.IsChecked != true)
+                throw new Exception("An open Status window must follow a pause made on the card.");
+
+            enabled.IsChecked = false;
+            if (paused.IsEnabled)
+                throw new Exception("Turning toasts off must disable Pause for today.");
+            enabled.IsChecked = true;
+            if (!paused.IsEnabled || paused.IsChecked == true || ToastSnooze.IsActive())
+                throw new Exception("Turning toasts back on must end the pause and re-enable the switch.");
+
+            File.WriteAllText(path, "{ invalid JSON");
+            paused.IsChecked = true;
+            var error = Field<TextBlock>(window, "_pausedError");
+            if (error.Visibility != Visibility.Visible || paused.IsChecked == true || File.ReadAllText(path) != "{ invalid JSON")
+                throw new Exception("A failed save must show the error, keep the switch off and leave the file alone.");
+        }
+        finally
+        {
+            window?.Close();
+            PluginSettings.FilePathOverride = previousPath;
+            Directory.Delete(directory, true);
+        }
+        Console.WriteLine("PASS: Status Pause for today saves at once, follows the card and ends when toasts turn on");
+    }
+
     private static T Field<T>(object target, string name) =>
         (T)target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic).GetValue(target);
 }
@@ -70,12 +128,19 @@ namespace Bimwright.Nwd.Shared.Plugin
     internal static class NwdActivityToast
     {
         internal static int IdleSeconds = 20;
-        internal static bool Enabled => true;
+        internal static bool ToastEnabled = true;
+        internal static bool Enabled => ToastEnabled;
+        internal static bool Paused => ToastSnooze.IsActive();
+        internal static bool SetPaused(bool paused) => paused ? ToastSnooze.PauseForToday() : ToastSnooze.Resume();
         internal static bool ShowBranding => false;
         internal static bool RecordCalls => false;
         internal static ToastPositionOptions PositionOptions => new ToastPositionOptions();
         internal static bool ApplyPosition(ToastPositionOptions options) => true;
-        internal static void ApplyEnabled(bool value) { }
+        internal static void ApplyEnabled(bool value)
+        {
+            ToastEnabled = value;
+            if (value) ToastSnooze.ResumeIfPaused();
+        }
         internal static void ApplyBranding(bool value) { }
         internal static void ApplyRecord(bool value) { }
         internal static void ShowHistoryWindow() { }

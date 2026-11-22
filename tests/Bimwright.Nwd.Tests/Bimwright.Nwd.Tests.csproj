@@ -48,6 +48,8 @@
     <Compile Include="..\..\src\shared\Config\PluginSettings.cs" Link="PluginSettings.cs" />
     <Compile Include="..\..\src\shared\Config\ToastPositionOptions.cs" Link="ToastPositionOptions.cs" />
     <Compile Include="..\..\src\shared\Views\Toast\ToastPlacement.cs" Link="ToastPlacement.cs" />
+    <Compile Include="..\..\src\shared\Views\Toast\AgentDisplayName.cs" Link="AgentDisplayName.cs" />
+    <Compile Include="..\..\src\shared\Views\Toast\ToastSnooze.cs" Link="ToastSnooze.cs" />
     <Compile Include="..\..\src\shared\Localization\L.cs" Link="L.cs" />
     <Compile Include="..\..\src\shared\Security\PathAllowlist.cs" Link="PathAllowlist.cs" />
     <Compile Include="..\..\src\shared\Views\Toast\ActivityAggregator.cs" Link="ActivityAggregator.cs" />

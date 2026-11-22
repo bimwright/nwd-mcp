@@ -15,6 +15,12 @@ public static class L
     {
         ["settings.toast.idle.saveFailed"] = "Toast duration could not be saved. The previous duration is still active. Try Apply again.",
         ["toast.connected.title"] = "Agent connected",
+        ["settings.toast.snooze"] = "Pause for today",
+        ["settings.toast.snooze.help"] = "Hides activity notifications in every Navisworks on this computer until midnight. Turn off to show them again now.",
+        ["toast.snooze.today"] = "Pause for today",
+        ["toast.snooze.today.help"] = "Hide activity notifications in every Navisworks until midnight. Turn them back on in Status or with the Toasts button.",
+        ["toast.snooze.resume"] = "Resume",
+        ["toast.snooze.resume.help"] = "Notifications are paused in every Navisworks until midnight. Click to show them again now.",
         ["toast.connected.summary"] = "nwd-mcp is ready",
         ["toast.failed.default"] = "Tool call failed",
         ["toast.capture.saved"] = "Saved {fileName}",

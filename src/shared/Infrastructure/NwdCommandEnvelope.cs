@@ -17,4 +17,6 @@ public sealed class NwdCommandEnvelope
     [JsonProperty("record_calls", NullValueHandling = NullValueHandling.Ignore)] public bool? RecordCalls { get; set; }
     /// <summary>Present from gateways that confirm documents; the plug-in refuses writes without it (PAIRING_REQUIRED).</summary>
     [JsonProperty("document_target", NullValueHandling = NullValueHandling.Ignore)] public DocumentTargetEnvelope? DocumentTarget { get; set; }
+    /// <summary>The MCP client's clientInfo.name; older gateways omit it and the toast then shows no agent.</summary>
+    [JsonProperty("client_name", NullValueHandling = NullValueHandling.Ignore)] public string? ClientName { get; set; }
 }
