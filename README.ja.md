@@ -142,6 +142,8 @@ Navisworks再起動とクライアント再接続後、**同じ接続**の新し
 
 優先順位は CLI → `BIMWRIGHT_NWD_ENABLE_CALL_LOG` → サーバー JSON の `enableCallLog` → false です。対応するプラグインはリクエストごとの値を優先し、リボン/Status の **Record**、保存された `recordCalls`、`BIMWRIGHT_NWD_RECORD_CALLS` や他のゲートウェイの設定を変更しません。値を送らない旧ゲートウェイはホスト設定を使います。旧プラグインはこの値を認識しないため、対応するビルドを使ってください。`send_code` のパラメーターにはソースの代わりに `code_length` と `code_sha256` を保存します。
 
+`BIMWRIGHT_KEEP_ALL_LOGS=1`（`true`、`yes`、`on` も可）はすべての記録を残します。開発用マシン向けです。ゲートウェイと Navisworks の両方に設定してください。呼び出しログは引き続き新しいタイムスタンプ付きアーカイブへローテーションしますが、30 日の経過、グループごとの 100 MiB の上限、保存済みレポート 500 件の上限によって削除されることはなく、ディスク使用量に上限はありません。記録を有効にしたり、記録内容を変えたりはしません。Spill ファイル、ToolBaker のデータ、ターゲット記述子はこれまでどおり整理されます。有効な場合、ゲートウェイは起動時に stderr に 1 行を書き込みます。
+
 ### 権限と auto mode
 `nwd_send_code` を除くすべてのツールが MCP アノテーション（`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`）を宣言しています。任意の更新確認でGitHubに接続する `nwd_health_check` 以外はopen-worldがfalseです。healthは読み取り専用で非破壊的です。Claude Desktop はこれを使い、読み取りツールは一度許可すれば済み、破壊的なツール（`nwd_open_file`, `nwd_hide_items`, `nwd_unhide_all`, `nwd_run_baked_tool`, `nwd_dismiss_bake_suggestion`）は毎回確認します。
 

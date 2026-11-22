@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace Bimwright.Nwd.Shared.Logging;
 
-/// <summary>Only the two generated call-log groups may be rotated or pruned.</summary>
+/// <summary>Only the two generated call-log groups may be rotated or pruned. <see cref="LogRetentionPolicy.KeepAll"/> skips pruning.</summary>
 public static class BoundedLogFile
 {
     public const long FileBytes = 5L * 1024 * 1024;
@@ -55,7 +55,7 @@ public static class BoundedLogFile
             if (File.Exists(path) && (new FileInfo(path).Length + bytes.LongLength > fileBytes
                 || File.GetLastWriteTimeUtc(path) < utcNow.AddDays(-RetentionDays)))
                 Rotate(path, utcNow);
-            Prune(directory, group, path, groupBytes - bytes.LongLength, utcNow);
+            if (!LogRetentionPolicy.KeepAll) Prune(directory, group, path, groupBytes - bytes.LongLength, utcNow);
             using (var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read))
                 stream.Write(bytes, 0, bytes.Length);
             return true;
@@ -75,7 +75,7 @@ public static class BoundedLogFile
                 if (File.Exists(path) && (new FileInfo(path).Length > FileBytes
                     || File.GetLastWriteTimeUtc(path) < now.AddDays(-RetentionDays)))
                     Rotate(path, now);
-                Prune(directory, Group(path), path, GroupBytes, now);
+                if (!LogRetentionPolicy.KeepAll) Prune(directory, Group(path), path, GroupBytes, now);
                 return true;
             }, 250);
         }

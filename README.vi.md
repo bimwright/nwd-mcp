@@ -142,6 +142,8 @@ Call log **tắt mặc định**. `--enable-call-log` ghi mọi lời gọi MCP,
 
 Thứ tự ưu tiên: CLI → `BIMWRIGHT_NWD_ENABLE_CALL_LOG` → JSON server `enableCallLog` → false. Mỗi request mang lựa chọn này tới plugin cùng bản, thắng nút **Record** trên ribbon/Status, `recordCalls` đã lưu và `BIMWRIGHT_NWD_RECORD_CALLS`, không đổi setting hay gateway khác. Công tắc host vẫn là mặc định cho gateway cũ không gửi lựa chọn; plugin cũ không hiểu override nên cần dùng bộ build tương ứng. Tham số `send_code` chỉ lưu `code_length` và `code_sha256` thay thân script.
 
+`BIMWRIGHT_KEEP_ALL_LOGS=1` (hoặc `true`, `yes`, `on`) giữ lại mọi thứ, dành cho máy phát triển. Đặt biến này cho cả gateway và Navisworks. Call log vẫn xoay vòng sang file lưu trữ mới có dấu thời gian, nhưng không file nào bị xóa vì quá 30 ngày, vượt ngân sách 100 MiB của nhóm hay vượt giới hạn 500 báo cáo đã lưu, nên dung lượng đĩa không bị giới hạn. Biến này không bật ghi lệnh và không đổi nội dung được ghi. File spill, dữ liệu ToolBaker và descriptor của target vẫn dọn dẹp như cũ. Khi biến bật, gateway ghi một dòng ra stderr lúc khởi động.
+
 ### Quyền (permissions) & auto mode
 Mọi tool trừ `nwd_send_code` đều khai báo annotation MCP (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`). Open-world là false trừ `nwd_health_check` vì tùy chọn kiểm tra cập nhật truy cập GitHub; health vẫn read-only, không destructive. Claude Desktop dựa vào đó: tool đọc chỉ cần cho phép một lần, còn tool destructive (`nwd_open_file`, `nwd_hide_items`, `nwd_unhide_all`, `nwd_run_baked_tool`, `nwd_dismiss_bake_suggestion`) luôn hỏi.
 

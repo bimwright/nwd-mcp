@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Bimwright.Nwd.Shared.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -12,7 +13,8 @@ namespace Bimwright.Nwd.Server.Reports;
 /// <summary>
 /// Saved agent reports (family contract FC-RPT-04; rvt-mcp ReportStore parity): one JSON file per report in
 /// <c>%LOCALAPPDATA%\Bimwright\nwd-mcp\reports\</c>, named <c>yyyyMMddTHHmmssfffZ-&lt;id&gt;.json</c> so names sort by time.
-/// Resending a task_id from this gateway process replaces its report. The newest <see cref="Keep"/> files are kept.
+/// Resending a task_id from this gateway process replaces its report. The newest <see cref="Keep"/> files are kept,
+/// or every file when <see cref="LogRetentionPolicy.KeepAll"/> is on.
 /// </summary>
 internal sealed class ReportStore
 {
@@ -69,7 +71,7 @@ internal sealed class ReportStore
             {
                 if (File.Exists(temp)) File.Delete(temp);
             }
-            if (!replaced) Prune();
+            if (!replaced && !LogRetentionPolicy.KeepAll) Prune();
             return (saved.Id, replaced, saved.Path);
         }
     }

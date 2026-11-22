@@ -155,6 +155,8 @@ Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最�
 
 优先顺序为 CLI → `BIMWRIGHT_NWD_ENABLE_CALL_LOG` → 服务器 JSON 的 `enableCallLog` → false。匹配版本的插件按每个请求的选择覆盖功能区/Status 的 **Record**、已保存的 `recordCalls` 和 `BIMWRIGHT_NWD_RECORD_CALLS`，不会修改这些设置或其他网关。旧网关未传递选择时仍使用主机开关；旧插件不识别此覆盖，因此应使用匹配的构建。`send_code` 参数只保存 `code_length` 和 `code_sha256`，不保存脚本正文。
 
+`BIMWRIGHT_KEEP_ALL_LOGS=1`（也可为 `true`、`yes`、`on`）保留全部记录，适用于开发机器。需同时为网关和 Navisworks 设置。调用日志仍会轮转到带时间戳的新归档文件，但不会因超过 30 天、超出每组 100 MiB 预算或超过 500 份已保存报告的上限而删除任何文件，因此磁盘占用不受限制。它不会开启记录，也不会改变记录的内容。Spill 文件、ToolBaker 数据和目标描述符仍按原有方式清理。开启时，网关在启动时向 stderr 写入一行提示。
+
 ### 权限与 auto mode
 除 `nwd_send_code` 外，每个工具都声明了 MCP 注解（`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`）。除可选更新检查会访问GitHub的 `nwd_health_check` 外，open-world均为false；health仍为只读、非破坏性工具。Claude Desktop 据此处理：只读工具允许一次即可，破坏性工具（`nwd_open_file`, `nwd_hide_items`, `nwd_unhide_all`, `nwd_run_baked_tool`, `nwd_dismiss_bake_suggestion`）每次都会询问。
 
