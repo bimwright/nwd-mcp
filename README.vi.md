@@ -52,7 +52,7 @@ Tiêu đề thẻ ghi năm Navisworks và agent của lệnh gần nhất (ví d
 
 ## Cài đặt
 
-Tải [GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest) (`NwdMcp.Setup-*-win-x64.zip`). v1.0.0 gồm plugin Manage **2025**. `install.ps1` trong ZIP; trỏ MCP vào `nwd-mcp.exe` đã cài. Gói NuGet `Bimwright.Nwd.Server` chỉ chứa máy chủ: không có plug-in Navisworks. Cài từ ZIP cài đặt; chỉ dùng `dotnet tool install -g Bimwright.Nwd.Server` khi plug-in đã được cài từ ZIP và bạn muốn máy chủ dưới dạng .NET tool toàn cục (lệnh `bimwright-nwd`).
+Tải [GitHub Releases](https://github.com/bimwright/nwd-mcp/releases/latest) (`NwdMcp.Setup-*-win-x64.zip`). ZIP gồm plug-in cho Navisworks Manage **2022–2027**. Mới chỉ năm 2025 được chạy thực tế; các năm còn lại đã build kiểm chứng với API Autodesk của năm đó nhưng chưa được thử trong Navisworks. `install.ps1` trong ZIP; trỏ MCP vào `nwd-mcp.exe` đã cài. Gói NuGet `Bimwright.Nwd.Server` chỉ chứa máy chủ: không có plug-in Navisworks. Cài từ ZIP cài đặt; chỉ dùng `dotnet tool install -g Bimwright.Nwd.Server` khi plug-in đã được cài từ ZIP và bạn muốn máy chủ dưới dạng .NET tool toàn cục (lệnh `bimwright-nwd`).
 
 Cờ: `--read-only` / `BIMWRIGHT_NWD_READ_ONLY=1`.
 
