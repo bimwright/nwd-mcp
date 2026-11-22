@@ -32,7 +32,7 @@ public sealed class KeepAllLogsTests : IDisposable
         => Assert.Equal(expected, LogRetentionPolicy.IsOn(raw));
 
     [Fact]
-    public void Override_wins_over_the_environment_in_both_directions()
+    public void Override_pins_keep_all_on_and_off()
     {
         LogRetentionPolicy.Override = true;
         Assert.True(LogRetentionPolicy.KeepAll);
