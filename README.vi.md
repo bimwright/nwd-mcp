@@ -10,7 +10,7 @@
   <a href="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
   <a href="#tính-năng--kiến-trúc"><img src="https://img.shields.io/badge/Navisworks-2022--2027-2D9B9B" alt="Navisworks 2022-2027" /></a>
-  <a href="#danh-sách-công-cụ-tool-surface"><img src="https://img.shields.io/badge/MCP-33%20tools-6C47FF" alt="MCP tools" /></a>
+  <a href="#danh-sách-công-cụ-tool-surface"><img src="https://img.shields.io/badge/MCP-35%20tools-6C47FF" alt="MCP tools" /></a>
 </p>
 
 <p align="center">
@@ -42,7 +42,7 @@ Tiêu đề thẻ ghi năm Navisworks và agent của lệnh gần nhất (ví d
 | Thành phần | Trạng thái |
 |---|---|
 | Máy chủ MCP gateway (.NET 8) | ✅ Biên dịch sạch cảnh báo (Debug + Release) |
-| Unit tests (155 xUnit) | ✅ Tất cả đều qua |
+| Unit tests (615 xUnit) | ✅ Tất cả đều qua |
 | Các triển khai plug-in handler | ✅ Đã xác minh trên một phiên Navisworks Manage thực tế |
 | Các dự án plug-in (net48) | ✅ Biên dịch thành công theo Navisworks Manage SDK |
 
