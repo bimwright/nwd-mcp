@@ -10,7 +10,7 @@
   <a href="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
   <a href="#機能とアーキテクチャ"><img src="https://img.shields.io/badge/Navisworks-2022--2027-2D9B9B" alt="Navisworks 2022-2027" /></a>
-  <a href="#ツールサーフェス"><img src="https://img.shields.io/badge/MCP-33%20tools-6C47FF" alt="MCP tools" /></a>
+  <a href="#ツールサーフェス"><img src="https://img.shields.io/badge/MCP-35%20tools-6C47FF" alt="MCP tools" /></a>
 </p>
 
 <p align="center">
@@ -42,7 +42,7 @@ Navisworks は MCP コマンドごとに 1 枚のアクティビティカード�
 | コンポーネント | ステータス |
 |---|---|
 | MCP ゲートウェイサーバー (.NET 8) | ✅ 警告なしでビルド成功 (Debug + Release) |
-| 単体テスト (155 xUnit) | ✅ 全テスト合格 |
+| 単体テスト (615 xUnit) | ✅ 全テスト合格 |
 | プラグインハンドラ実装 | ✅ 実稼働 Navisworks Manage セッションで検証済み |
 | プラグインプロジェクト (net48) | ✅ Navisworks Manage SDK に対してコンパイル成功 |
 

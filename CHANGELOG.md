@@ -1,6 +1,6 @@
 # Changelog
 
-## v2.5.1 - Unreleased
+## v2.5.1 - 2026-11-23
 
 Version numbers now follow the shared release number of the four bimwright gateways (rvt-mcp, dwg-mcp, nwd-mcp, ipt-mcp). The jump from v1.1.0 to v2.5.1 does not mark breaking changes; the entries below list what changed since v1.1.0.
 

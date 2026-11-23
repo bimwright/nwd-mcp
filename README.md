@@ -10,7 +10,7 @@
   <a href="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
   <a href="#capabilities--architecture"><img src="https://img.shields.io/badge/Navisworks-2022--2027-2D9B9B" alt="Navisworks 2022-2027" /></a>
-  <a href="#tool-surface"><img src="https://img.shields.io/badge/MCP-33%20tools-6C47FF" alt="MCP tools" /></a>
+  <a href="#tool-surface"><img src="https://img.shields.io/badge/MCP-35%20tools-6C47FF" alt="MCP tools" /></a>
 </p>
 
 <p align="center">
@@ -42,7 +42,7 @@ The card title names the Navisworks year and the agent of the latest call (for e
 | Component | Status |
 |---|---|
 | MCP gateway server (.NET 8) | ✅ Builds warning-clean (Debug + Release) |
-| Unit tests (155 xUnit) | ✅ All passing |
+| Unit tests (615 xUnit) | ✅ All passing |
 | Plug-in handler implementations | ✅ Verified against a live Navisworks Manage session |
 | Plug-in projects (net48) | ✅ Compile against the Navisworks Manage SDK |
 

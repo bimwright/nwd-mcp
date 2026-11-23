@@ -10,7 +10,7 @@
   <a href="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml"><img src="https://github.com/bimwright/nwd-mcp/actions/workflows/build.yml/badge.svg" alt="build" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="license" /></a>
   <a href="#能力--架构"><img src="https://img.shields.io/badge/Navisworks-2022--2027-2D9B9B" alt="Navisworks 2022-2027" /></a>
-  <a href="#工具面"><img src="https://img.shields.io/badge/MCP-33%20tools-6C47FF" alt="MCP tools" /></a>
+  <a href="#工具面"><img src="https://img.shields.io/badge/MCP-35%20tools-6C47FF" alt="MCP tools" /></a>
 </p>
 
 <p align="center">
@@ -43,7 +43,7 @@ Navisworks 为 MCP 命令显示一张活动卡片。提示默认开启，在最�
 | 组件 | 状态 |
 |---|---|
 | MCP gateway server（.NET 8） | ✅ 编译无警告（Debug + Release） |
-| 单元测试（155 个 xUnit） | ✅ 全部通过 |
+| 单元测试（615 个 xUnit） | ✅ 全部通过 |
 | Plug-in handler 实现 | ✅ 已在真实 Navisworks Manage 会话中验证 |
 | Plug-in 项目（net48） | ✅ 可针对 Navisworks Manage SDK 编译 |
 
