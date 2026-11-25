@@ -1,6 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using Bimwright.Nwd.Server;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace Bimwright.Nwd.Tests;
@@ -9,6 +15,10 @@ public sealed class ServerInstructionsTests
 {
     private const int MaxInstructionBytes = 2048;
     private const int MaxToolDescriptionChars = 4096;
+    private const int MaxParameterDescriptionBytes = 2048;
+
+    private static readonly NwdMcpConfig FullConfig = new() { Toolsets = new() { "all" }, EnableSendCode = true };
+    private static readonly IReadOnlyList<Tool> AllTools = ToolAnnotationTests.ToolsFor(FullConfig);
 
     // INSTR-MAX-2KB: the server sets the same instructions for every startup flag combination,
     // so checking the configured value covers them all; the MCP smoke test also checks the wire value.
@@ -23,7 +33,7 @@ public sealed class ServerInstructionsTests
         Assert.True(bytes <= MaxInstructionBytes, $"instructions are {bytes} UTF-8 bytes, cap {MaxInstructionBytes}");
     }
 
-    // INSTR-ORDER: product keywords, then target -> health -> report, then the tool index, then Safety & permissions last.
+    // INSTR-ORDER (FC-SRV-06, BW-PERM-001 R-C): product keywords, target -> health -> report, tool index, Safety & permissions last.
     [Fact]
     public void InstructionsKeepKeywordsTargetHealthReportToolIndexSafetyOrder()
     {
@@ -54,6 +64,15 @@ public sealed class ServerInstructionsTests
     [InlineData("TARGET_INTERRUPTED")]
     [InlineData("TIMEOUT")]
     [InlineData("verify=true")]
+    [InlineData("AMBIGUOUS_TARGET")]
+    [InlineData("NO_TARGET")]
+    [InlineData("PAIRING_REQUIRED")]
+    [InlineData("DOCUMENT_CHANGED")]
+    [InlineData("display units")]
+    [InlineData("64 KiB")]
+    [InlineData("1 MiB")]
+    [InlineData("--read-only")]
+    [InlineData("--target pid:<n>")]
     [InlineData("nwd_send_code is ON by default")]
     [InlineData("--disable-send-code")]
     [InlineData("BIMWRIGHT_NWD_ENABLE_SEND_CODE=0")]
@@ -65,13 +84,39 @@ public sealed class ServerInstructionsTests
     [Fact]
     public void EveryToolDescriptionFitsIn4096Chars()
     {
-        var tools = ToolAnnotationTests.ToolsFor(new NwdMcpConfig { Toolsets = new() { "all" }, EnableSendCode = true });
-        Assert.NotEmpty(tools);
-        foreach (var tool in tools)
+        Assert.Equal(35, AllTools.Count);
+        foreach (var tool in AllTools)
         {
-            var length = tool.Description?.Length ?? 0;
-            Assert.True(length <= MaxToolDescriptionChars, $"{tool.Name} description is {length} chars");
+            Assert.False(string.IsNullOrWhiteSpace(tool.Description), $"{tool.Name} has an empty description");
+            var desc = tool.Description!;
+            Assert.True(desc.Length <= MaxToolDescriptionChars, $"{tool.Name} description is {desc.Length} chars");
+            var bytes = Encoding.UTF8.GetByteCount(desc);
+            Assert.True(bytes <= MaxToolDescriptionChars, $"{tool.Name} description is {bytes} UTF-8 bytes");
         }
+    }
+
+    [Fact]
+    public void EveryToolParameterDescriptionFitsIn2048Utf8Bytes()
+    {
+        foreach (var method in Program.ResolveToolMethodsForRegistration(FullConfig))
+        {
+            var toolName = method.GetCustomAttribute<McpServerToolAttribute>()!.Name;
+            foreach (var param in method.GetParameters())
+            {
+                var desc = param.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "";
+                var bytes = Encoding.UTF8.GetByteCount(desc);
+                Assert.True(bytes <= MaxParameterDescriptionBytes,
+                    $"{toolName}.{param.Name} description is {bytes} UTF-8 bytes, cap {MaxParameterDescriptionBytes}");
+            }
+        }
+    }
+
+    [Fact]
+    public void EveryToolNameInInstructionsIsARealTool()
+    {
+        var names = AllTools.Select(t => t.Name).ToHashSet(StringComparer.Ordinal);
+        foreach (Match m in Regex.Matches(ServerInstructions.Text, @"nwd_[a-z0-9_]+[a-z0-9]"))
+            Assert.Contains(m.Value, names);
     }
 
     // INSTR-MOVE-TO-TOOL: per-tool detail lives in the tool's description.
@@ -80,9 +125,11 @@ public sealed class ServerInstructionsTests
     [InlineData("nwd_health_check", "host_busy")]
     [InlineData("nwd_switch_target", "error.target.candidates")]
     [InlineData("nwd_switch_target", "TARGET_REBIND_REQUIRED")]
+    [InlineData("nwd_switch_target", "version mismatch")]
     [InlineData("nwd_send_code", "result_contract=\"task_v1\"")]
     [InlineData("nwd_send_code", "data[\"key\"]")]
     [InlineData("nwd_open_file", "moves to the opened file")]
+    [InlineData("nwd_import_model", "write confirmation moves")]
     [InlineData("nwd_get_model_tree", "output=file")]
     [InlineData("nwd_batch_get_properties", "output=file")]
     [InlineData("nwd_find_items_by_name", "output=file")]
@@ -90,9 +137,20 @@ public sealed class ServerInstructionsTests
     [InlineData("nwd_send_code", "auto-spills")]
     public void ToolDescriptionCarriesMovedDetail(string toolName, string detail)
     {
-        var tools = ToolAnnotationTests.ToolsFor(new NwdMcpConfig { Toolsets = new() { "all" }, EnableSendCode = true });
-        var tool = Assert.Single(tools, t => t.Name == toolName);
+        var tool = Assert.Single(AllTools, t => t.Name == toolName);
         Assert.Contains(detail, tool.Description);
         Assert.DoesNotContain(detail, ServerInstructions.Text);
+    }
+
+    [Theory]
+    [InlineData("nwd_get_model_tree")]
+    [InlineData("nwd_batch_get_properties")]
+    [InlineData("nwd_find_items_by_name")]
+    [InlineData("nwd_run_baked_tool")]
+    public void SpillToolDescriptionsMatchDefault36HourRetention(string toolName)
+    {
+        var tool = Assert.Single(AllTools, t => t.Name == toolName);
+        Assert.Contains("kept 36 h", tool.Description);
+        Assert.DoesNotContain("kept 24 h", tool.Description);
     }
 }

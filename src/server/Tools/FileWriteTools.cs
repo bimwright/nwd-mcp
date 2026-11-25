@@ -14,11 +14,11 @@ public sealed class FileWriteTools
     private readonly PluginClient _client;
     public FileWriteTools(PluginClient client) => _client = client;
 
-    [McpServerTool(Name = "nwd_open_file", ReadOnly = false, Destructive = true, Idempotent = false, OpenWorld = false), Description("Open a file in the active Navisworks session, replacing the current document. With discard_changes true, the current file's unsaved changes are lost and cannot be undone; without it, the call refuses while there are unsaved changes. The write confirmation (nwd_switch_target verify=true) moves to the opened file. Waits up to 5 minutes.")]
+    [McpServerTool(Name = "nwd_open_file", ReadOnly = false, Destructive = true, Idempotent = false, OpenWorld = false), Description("Open a file in the active Navisworks session, replacing the current document. With discard_changes true, the current file's unsaved changes are lost and cannot be undone; without it, the call refuses while there are unsaved changes. If the confirmed file was still open when the call started, the write confirmation (nwd_switch_target verify=true) moves to the opened file. Waits up to 5 minutes.")]
     public Task<string> OpenFile(string path, bool discardChanges = false, CancellationToken ct = default)
         => Call("open_file", new JObject { ["path"] = path, ["discard_changes"] = discardChanges }, ct);
 
-    [McpServerTool(Name = "nwd_import_model", ReadOnly = false, Destructive = false, Idempotent = false, OpenWorld = false), Description("Bring a model into the open Navisworks document. mode append (default) adds it as its own model. mode merge combines it into the document. Waits up to 5 minutes.")]
+    [McpServerTool(Name = "nwd_import_model", ReadOnly = false, Destructive = false, Idempotent = false, OpenWorld = false), Description("Bring a model into the open Navisworks document. mode append (default) adds it as its own model. mode merge combines it into the document. If the confirmed file was still open when the call started, write confirmation moves to the updated document. Waits up to 5 minutes.")]
     public Task<string> ImportModel(string path, string mode = "append", CancellationToken ct = default)
         => Call("import_model", new JObject { ["path"] = path, ["mode"] = mode }, ct);
 

@@ -75,19 +75,26 @@ public sealed class ToolAnnotationTests
     }
 
     [Fact]
-    public void ReadOnlySurfaceIsReadOnlyApartFromTargetSwitch()
+    public void ReadOnlySurfaceContainsOnlyReadOnlyTools()
     {
         var tools = ToolsFor(new NwdMcpConfig { Toolsets = new() { "all" }, ReadOnly = true, EnableSendCode = true });
-        foreach (var tool in tools.Where(t => t.Name != "nwd_switch_target"))
+        Assert.DoesNotContain(tools, t => t.Name == "nwd_switch_target");
+        foreach (var tool in tools)
             Assert.True(tool.Annotations!.ReadOnlyHint, $"{tool.Name} is exposed under --read-only");
     }
 
+    // FC-SRV-06, BW-PERM-001 R-C: Safety & permissions block is present at the end with all required rules.
     [Fact]
     public void InstructionsEndWithSafetyBlock()
     {
+        Assert.StartsWith("Safety & permissions:", ServerInstructions.SafetyAndPermissions);
         Assert.EndsWith(ServerInstructions.SafetyAndPermissions, ServerInstructions.Text);
-        Assert.Contains("Safety & permissions", ServerInstructions.SafetyAndPermissions);
-        Assert.Contains("nwd_send_code", ServerInstructions.SafetyAndPermissions);
+        foreach (var rule in new[]
+                 {
+                     "prefer read tools", "not create in this session", "confirmation",
+                     "baked tool", "nwd_send_code", "report the denial", "project folder", "full paths"
+                 })
+            Assert.Contains(rule, ServerInstructions.SafetyAndPermissions);
     }
 
     [Theory]

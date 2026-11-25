@@ -8,16 +8,15 @@ public static class ServerInstructions
     public const string Text =
         "nwd-mcp - MCP gateway for Autodesk Navisworks Manage 2022-2027 (.nwd/.nwf/.nwc): model tree, properties, " +
         "search, sets, selection, viewpoints, visibility. Tools are nwd_*; lengths are in the model's display units. " +
-        "Start: the binding never moves on its own. If several may be open or several agents run, " +
+        "Start: binding never moves on its own. With several instances or agents, " +
         "pin nwd_switch_target(\"pid:<n>\") from nwd_list_available_targets, then call nwd_health_check(check_updates=true) once " +
-        "and report it. Writes need a confirmed document: after the user confirms the file, call nwd_switch_target(\"pid:<n>\", verify=true). " +
-        "AMBIGUOUS_TARGET, NO_TARGET, PAIRING_REQUIRED, DOCUMENT_CHANGED and TARGET_* except TARGET_INTERRUPTED mean not sent " +
-        "(see nwd_switch_target). HOST_BUSY means not started and will not run later (dialog open or UI busy): ask the user, then resend. " +
+        "and report it. Writes need a confirmed doc: confirm the file with user, then nwd_switch_target(\"pid:<n>\", verify=true). " +
+        "AMBIGUOUS_TARGET, NO_TARGET, PAIRING_REQUIRED, DOCUMENT_CHANGED and TARGET_* except TARGET_INTERRUPTED: not sent/started " +
+        "(see nwd_switch_target). HOST_BUSY: not started, will not run later (dialog/UI busy); ask user, check nwd_health_check, then resend. " +
         "TIMEOUT and TARGET_INTERRUPTED mean outcome unknown: inspect the document before retrying a write. " +
-        "After work that changed a document or found issues, call nwd_report_task_result once before your final answer " +
-        "(not for chat-only answers). " +
+        "After work that changed a document or found issues, call nwd_report_task_result once before your final answer (not chat-only). " +
         "Tools: targets/health, files, query, selection, sets, viewpoints, visibility, send_code, baked tools, reports. " +
-        "Default: every toolset; --read-only keeps read tools. " +
+        "Default: all toolsets; --read-only keeps read tools (no switch_target: use --target pid:<n>). " +
         "Results over 64 KiB carry _response_warning (budget 1 MiB); tools with an output parameter can spill to a file. " +
         "nwd_send_code is ON by default; off: server --disable-send-code or BIMWRIGHT_NWD_ENABLE_SEND_CODE=0, or " +
         "BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0 in Navisworks; --read-only removes it. " +
