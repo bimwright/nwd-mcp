@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- An MCP client that runs the gateway inside a Windows AppContainer sandbox (for example Codex Desktop, rvt-mcp#71) no longer gets a silent empty target list or `NO_TARGET`. When the gateway's process token is an AppContainer, or LocalApplicationData resolves under `\Packages\<package>\AC`, and no live Navisworks is found, calls that needed a target return `CLIENT_SANDBOXED` (command not sent), `nwd_list_available_targets` returns `{ "targets": [], "sandbox": {...}, "note": "..." }`, and `nwd_health_check` adds a `sandbox` object (`detected`, `kind`, `evidence`, `data_dir`). The message explains that the sandbox protects the computer, that a person must choose to let this one server run outside it (a per-server exception first), and that agents must not try to bypass it. Outside a sandbox nothing changes; when targets are found inside one, only health's `sandbox` object is added (family contract FC-TGT-07).
+
 ## v2.5.1 - 2026-11-23
 
 Version numbers now follow the shared release number of the four bimwright gateways (rvt-mcp, dwg-mcp, nwd-mcp, ipt-mcp). The jump from v1.1.0 to v2.5.1 does not mark breaking changes; the entries below list what changed since v1.1.0.

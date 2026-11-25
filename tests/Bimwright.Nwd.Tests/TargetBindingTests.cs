@@ -319,6 +319,34 @@ public sealed class TargetBindingTests
         Refused(() => binding.Validate(call), "TARGET_CHANGED");
     }
 
+    private TargetBinding SandboxedBinding(string? selector = null)
+    {
+        Assert.True(TargetSelector.TryParse(selector, out var parsed, out _));
+        return new TargetBinding(parsed, () => _live.ToList(),
+            pid => _processes.TryGetValue(pid, out var p) ? p : new ProcessProbe(ProcessState.Gone, null),
+            pid => "Navisworks " + pid,
+            () => new JObject { ["detected"] = true, ["kind"] = "appcontainer" });
+    }
+
+    [Fact]
+    public void FC_TGT_07_SandboxedLostBindingWithNoLiveInstanceIsClientSandboxed()
+    {
+        Host(10);
+        var binding = SandboxedBinding();
+        Send(binding);
+        Kill(10);
+        var ex = Refused(() => binding.Capture(null), "CLIENT_SANDBOXED");
+        Assert.Equal(ClientSandbox.Message, ex.Message);
+        Assert.Equal("appcontainer", (string?)ex.Target!["sandbox"]?["kind"]);
+    }
+
+    [Fact]
+    public void FC_TGT_07_SandboxedButOtherInstancesLiveKeepsNoTarget()
+    {
+        Host(10, year: 2025);
+        Refused(() => SandboxedBinding("2027").Capture(null), "NO_TARGET");
+    }
+
     [Theory]
     [InlineData(null, "auto")]
     [InlineData(" AUTO ", "auto")]

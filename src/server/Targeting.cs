@@ -151,6 +151,8 @@ internal sealed class TargetBinding
     private readonly Func<IReadOnlyList<TargetDescriptor>> _list;
     private readonly Func<int, ProcessProbe> _probe;
     private readonly Func<int, string?> _windowTitle;
+    // FC-TGT-07: the sandbox object when the gateway runs in a client AppContainer, else null.
+    private readonly Func<JObject?> _sandbox;
     private TargetSelector _selector;
     private string _state = "none";
     private long _generation;
@@ -163,12 +165,13 @@ internal sealed class TargetBinding
     private string? _documentTitle;
 
     public TargetBinding(TargetSelector startup, Func<IReadOnlyList<TargetDescriptor>> list,
-        Func<int, ProcessProbe>? probe = null, Func<int, string?>? windowTitle = null)
+        Func<int, ProcessProbe>? probe = null, Func<int, string?>? windowTitle = null, Func<JObject?>? sandbox = null)
     {
         _selector = startup;
         _list = list;
         _probe = probe ?? ProcessProbe.Read;
         _windowTitle = windowTitle ?? ReadWindowTitle;
+        _sandbox = sandbox ?? (() => null);
     }
 
     public long Generation { get { lock (_gate) return _generation; } }
@@ -186,9 +189,10 @@ internal sealed class TargetBinding
 
             if (_state == "none")
             {
-                var candidates = Live().Where(_selector.Matches).ToList();
+                var live = Live();
+                var candidates = live.Where(_selector.Matches).ToList();
                 if (candidates.Count == 0)
-                    throw Refusal("NO_TARGET", NoTargetMessage(), Live());
+                    throw NoTarget(NoTargetMessage(), live, recommended: "nwd_list_available_targets");
                 if (candidates.Count > 1)
                     throw Refusal("AMBIGUOUS_TARGET", $"{candidates.Count} Navisworks instances match selector '{_selector.Text}'. The command was not sent. Call nwd_list_available_targets and pin one with nwd_switch_target(\"pid:<n>\").",
                         candidates);
@@ -252,7 +256,7 @@ internal sealed class TargetBinding
             var live = Live();
             var matches = live.Where(selector.Matches).ToList();
             if (matches.Count == 0)
-                throw Refusal("NO_TARGET", $"No live Navisworks Manage instance matches '{selector.Text}'. The binding was not changed.", live,
+                throw NoTarget($"No live Navisworks Manage instance matches '{selector.Text}'. The binding was not changed.", live,
                     recommended: "nwd_list_available_targets");
             if (matches.Count > 1)
                 throw Refusal("AMBIGUOUS_TARGET", $"{matches.Count} instances match '{selector.Text}'. Pin one explicitly with pid:<n> or id:<target_id>. The binding was not changed.", matches,
@@ -408,13 +412,28 @@ internal sealed class TargetBinding
                 live, recommended: live.Count > 0 ? SwitchTool : "nwd_list_available_targets");
         var matches = live.Where(_selector.Matches).ToList();
         if (matches.Count == 0)
-            return Refusal("NO_TARGET", $"The bound Navisworks ({Identity(bound)}) has exited and no live instance matches '{_selector.Text}'. The command was not sent.", live,
+            return NoTarget($"The bound Navisworks ({Identity(bound)}) has exited and no live instance matches '{_selector.Text}'. The command was not sent.", live,
                 recommended: "nwd_list_available_targets");
         if (matches.Count == 1)
             return Refusal("TARGET_CHANGED", $"The bound Navisworks ({Identity(bound)}) has exited. One other instance matches: {Identity(matches[0])}. It was NOT selected and the command was not sent. Check that model, call {SwitchTool}(\"pid:{matches[0].ProcessIdNormalized}\") to confirm it, then call again if still intended.",
                 matches, recommended: SwitchTool, current: matches[0]);
         return Refusal("AMBIGUOUS_TARGET", $"The bound Navisworks ({Identity(bound)}) has exited and {matches.Count} instances match '{_selector.Text}'. None was selected and the command was not sent. Pin one with {SwitchTool}(\"pid:<n>\").",
             matches, recommended: SwitchTool);
+    }
+
+    /// <summary>
+    /// NO_TARGET, or CLIENT_SANDBOXED (FC-TGT-07) when discovery found no live instance at all and the gateway runs
+    /// in a client AppContainer, where it can neither read descriptors nor reach Navisworks.
+    /// </summary>
+    private NwdGatewayException NoTarget(string message, IReadOnlyList<TargetDescriptor> live, string? recommended)
+    {
+        if (live.Count == 0 && _sandbox() is { } sandbox)
+        {
+            var ex = Refusal(ClientSandbox.Code, ClientSandbox.Message, live, recommended: null);
+            ex.Target!["sandbox"] = sandbox;
+            return ex;
+        }
+        return Refusal("NO_TARGET", message, live, recommended);
     }
 
     private NwdGatewayException Refusal(string code, string message, IEnumerable<TargetDescriptor> candidates,
