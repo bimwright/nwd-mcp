@@ -50,7 +50,8 @@ public sealed class PluginClient
         _registry = new TargetRegistry(config.DescriptorDirectory, probe);
         if (!TargetSelector.TryParse(config.TargetId, out var selector, out var error))
             throw new ArgumentException("Invalid target selector: " + error);
-        _binding = new TargetBinding(selector, _registry.List, probe, windowTitle);
+        _binding = new TargetBinding(selector, _registry.List, probe, windowTitle,
+            SandboxJson);
         _gatewayIdentity = RuntimeIdentity.Capture(typeof(PluginClient).Assembly, "gateway");
         ReportStore = new Reports.ReportStore(config.ReportDirectory);
         _reportsOn = ToolsetFilter.Resolve(config).Contains("meta");
@@ -60,6 +61,15 @@ public sealed class PluginClient
     internal string? BoundTargetId => (string?)_binding.Snapshot()["bound_target_id"];
 
     internal JObject GatewayIdentity => (JObject)_gatewayIdentity.DeepClone();
+
+    /// <summary>Test seam for FC-TGT-07: TokenIsAppContainer of this process (null = unknown). Defaults to the cached token probe.</summary>
+    internal Func<bool?> AppContainerProbe { get; set; } = ClientSandbox.ProcessTokenIsAppContainer;
+
+    /// <summary>FC-TGT-07: whether this gateway runs inside a client AppContainer.</summary>
+    internal ClientSandboxResult Sandbox() => ClientSandbox.Detect(AppContainerProbe(), _config.DescriptorDirectory);
+
+    /// <summary>The <c>sandbox</c> object when detected, else null.</summary>
+    internal JObject? SandboxJson() => Sandbox() is { Detected: true } s ? s.ToJson(_config.DescriptorDirectory) : null;
 
     /// <summary>Current binding generation; the call filter pins it when a tool call arrives.</summary>
     internal long Generation => _binding.Generation;

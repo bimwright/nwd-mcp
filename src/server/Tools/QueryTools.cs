@@ -89,6 +89,8 @@ public sealed class QueryTools
             ? await _updates.CheckAsync(gateway, plugin, ct)
             : ReleaseUpdateCheck.NotChecked(gateway, plugin);
         data["update_guidance"] = HealthRuntimeInfo.UpdateGuidance((JObject)data["update"]!);
+        // FC-TGT-07: reported only when detected, so a normal health response is unchanged.
+        if (_client.SandboxJson() is { } sandbox) data["sandbox"] = sandbox;
         return JsonConvert.SerializeObject(data, Formatting.None);
     }
 

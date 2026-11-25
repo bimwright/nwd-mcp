@@ -20,7 +20,13 @@ public sealed class MetaTools
     [McpServerTool(Name = "nwd_list_available_targets", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false),
      Description("List live Navisworks Manage instances: target_id, host_year, pid, process_start_utc, window_title, document title, and is_current for the bound one. Use pid and window_title to tell instances of the same year apart. Never selects or changes the target.")]
     public string ListAvailableTargets()
-        => _client.ListTargetRows().ToString(Formatting.None);
+    {
+        var rows = _client.ListTargetRows();
+        // FC-TGT-07: an empty list inside a client AppContainer says why instead of looking like "Navisworks is closed".
+        if (rows.Count == 0 && _client.SandboxJson() is { } sandbox)
+            return new JObject { ["targets"] = rows, ["sandbox"] = sandbox, ["note"] = ClientSandbox.Message }.ToString(Formatting.None);
+        return rows.ToString(Formatting.None);
+    }
 
     [McpServerTool(Name = "nwd_get_current_target", ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false),
      Description("Show the gateway's target binding: binding (none/implicit/explicit), binding_state (none/bound/lost), bound_target_id, bound_pid, window_title, next_target_id, confirmation_required, and document_confirmed / confirmed_document_title for writes. Never selects or changes the target; binding_state none means the next Navisworks command makes the first selection.")]
