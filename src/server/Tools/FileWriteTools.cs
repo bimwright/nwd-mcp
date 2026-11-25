@@ -14,7 +14,7 @@ public sealed class FileWriteTools
     private readonly PluginClient _client;
     public FileWriteTools(PluginClient client) => _client = client;
 
-    [McpServerTool(Name = "nwd_open_file", ReadOnly = false, Destructive = true, Idempotent = false, OpenWorld = false), Description("Open a file in the active Navisworks session, replacing the current document. With discard_changes true, the current file's unsaved changes are lost and cannot be undone; without it, the call refuses while there are unsaved changes. Waits up to 5 minutes.")]
+    [McpServerTool(Name = "nwd_open_file", ReadOnly = false, Destructive = true, Idempotent = false, OpenWorld = false), Description("Open a file in the active Navisworks session, replacing the current document. With discard_changes true, the current file's unsaved changes are lost and cannot be undone; without it, the call refuses while there are unsaved changes. The write confirmation (nwd_switch_target verify=true) moves to the opened file. Waits up to 5 minutes.")]
     public Task<string> OpenFile(string path, bool discardChanges = false, CancellationToken ct = default)
         => Call("open_file", new JObject { ["path"] = path, ["discard_changes"] = discardChanges }, ct);
 

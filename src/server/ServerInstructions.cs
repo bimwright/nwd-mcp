@@ -1,51 +1,26 @@
 namespace Bimwright.Nwd.Server;
 
+// INSTR-MAX-2KB: Text stays within 2,048 UTF-8 bytes so every client reads it whole, including the
+// Safety & permissions block at the end (FC-SRV-06). Detail that belongs to one tool lives in that
+// tool's description. Order: product keywords, target -> health -> report, tool index, safety.
 public static class ServerInstructions
 {
     public const string Text =
-        "nwd-mcp - MCP gateway for Autodesk Navisworks Manage 2022-2027. " +
-        "Tools are prefixed nwd_*. Lengths are in the model's display units. " +
-        "Targeting: the gateway binds to one Navisworks (PID + process start) and never moves on its own. " +
-        "If several may be open or several agents run, call nwd_list_available_targets (pid, window_title) and pin " +
-        "nwd_switch_target(\"pid:<n>\") at session start; list/get never select. Selectors: pid:<n>, id:<target_id>, 2022..2027, auto; never R-codes. " +
-        "AMBIGUOUS_TARGET, TARGET_LOST, TARGET_CHANGED, TARGET_UNAVAILABLE and NO_TARGET mean the command was not sent: inspect error.target.candidates, " +
-        "confirm with nwd_switch_target(\"pid:<n>\"), then call again. TARGET_REBIND_REQUIRED: a year/auto selector cannot move a binding; " +
-        "leaving a live explicit choice needs rebind=true. TARGET_INTERRUPTED: the command was sent and its outcome is unknown; " +
-        "inspect the document before retrying a write. " +
-        "Writes need a confirmed document: after the user confirms the reported file, call nwd_switch_target(\"pid:<n>\", verify=true) once. " +
-        "TARGET_UNCONFIRMED and PAIRING_REQUIRED mean not sent; DOCUMENT_CHANGED means another file is open now and the command did not start: " +
-        "ask the user, then verify again. nwd_open_file moves the confirmation to the file it opens. " +
-        "HOST_BUSY means Navisworks could not start the command (a modal dialog waits for the user, or its UI thread stayed busy): " +
-        "it was not started and will not run later; ask the user to answer the dialog, check nwd_health_check host_busy, then send it again. " +
-        "TIMEOUT means the command started and its outcome is unknown: inspect before retrying a write. " +
-        "After Navisworks work that changed a document or found something the user should check, call nwd_report_task_result once " +
-        "before your final answer (not for chat-only answers); responses of document writes carry _report until you do. " +
-        "In nwd_send_code put values that change from run to run in data and read them as data[\"key\"]; " +
-        "result_contract=\"task_v1\" makes the script return McpTaskResult.Pass(value) or McpTaskResult.Fail(code, message). " +
-        "At session start, select the intended target then call nwd_health_check(check_updates=true) once to discover newer stable releases " +
-        "and report host state, loaded server/plugin versions, build ids and alignment. If network access is unavailable or disallowed, " +
-        "use the offline default and keep the update status not_checked/unknown. Later routine probes stay offline. " +
-        "Inspect both update.components; missing evidence or a failed lookup is unknown, not up to date. " +
-        "When update.notification is present, report its code/message and follow agent_action: propose the release ZIP only if " +
-        "bundle_update_proposal_allowed=true and update_guidance.mode=prepare_update; other modes contain only check/review steps. " +
-        "UPDATE_CHECK_UNAVAILABLE reports an external lookup_reason, not a runtime fault or request for installation authorization. " +
-        "Report LOCAL_VERSION_AHEAD neutrally; preserve protected_components and explain protected_component_reasons. " +
-        "unobserved_components need connection/runtime observation, not a corruption warning. A review warning does not mean a new version exists. " +
-        "Installation authorization applies only to a permitted proposal; reuse existing permission. Never recommend a downgrade or " +
-        "automatically replace a development build, install or restart processes. host_connected=false or ok=false is not a successful host connection. " +
-        "Matching revisions do not verify artifact bytes, compatibility or publisher trust. " +
-        "After updating and reconnecting, compare fresh initialize serverInfo and tools/list metadata/schema/annotations " +
-        "on that same connection with health.client_verification. The server cannot observe client cache refresh. " +
-        "A default launch registers every toolset. " +
-        "nwd_list_recent_files reads that year's File menu list. " +
-        "nwd_open_file opens a file. nwd_import_model appends a model, or merges it when mode is merge. " +
-        "nwd_send_code is ON by default. Turn it off with --disable-send-code " +
-        "(or BIMWRIGHT_NWD_ENABLE_SEND_CODE=0) and BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0 " +
-        "in the Navisworks process. --read-only also removes it. " +
-        "Large results: a _response_warning field marks results over 64 KiB and the budget is 1 MiB. " +
-        "nwd_get_model_tree, nwd_batch_get_properties, nwd_find_items_by_name and nwd_run_baked_tool " +
-        "accept output=file to write the full result to a local file and return its path, schema and a preview; " +
-        "nwd_send_code output over 1 MiB auto-spills the same way. " +
+        "nwd-mcp - MCP gateway for Autodesk Navisworks Manage 2022-2027 (.nwd/.nwf/.nwc): model tree, properties, " +
+        "search, sets, selection, viewpoints, visibility. Tools are nwd_*; lengths are in the model's display units. " +
+        "Start: the binding never moves on its own. If several may be open or several agents run, " +
+        "pin nwd_switch_target(\"pid:<n>\") from nwd_list_available_targets, then call nwd_health_check(check_updates=true) once " +
+        "and report it. Writes need a confirmed document: after the user confirms the file, call nwd_switch_target(\"pid:<n>\", verify=true). " +
+        "AMBIGUOUS_TARGET, NO_TARGET, PAIRING_REQUIRED, DOCUMENT_CHANGED and TARGET_* except TARGET_INTERRUPTED mean not sent " +
+        "(see nwd_switch_target). HOST_BUSY means not started and will not run later (dialog open or UI busy): ask the user, then resend. " +
+        "TIMEOUT and TARGET_INTERRUPTED mean outcome unknown: inspect the document before retrying a write. " +
+        "After work that changed a document or found issues, call nwd_report_task_result once before your final answer " +
+        "(not for chat-only answers). " +
+        "Tools: targets/health, files, query, selection, sets, viewpoints, visibility, send_code, baked tools, reports. " +
+        "Default: every toolset; --read-only keeps read tools. " +
+        "Results over 64 KiB carry _response_warning (budget 1 MiB); tools with an output parameter can spill to a file. " +
+        "nwd_send_code is ON by default; off: server --disable-send-code or BIMWRIGHT_NWD_ENABLE_SEND_CODE=0, or " +
+        "BIMWRIGHT_NWD_PLUGIN_ENABLE_SEND_CODE=0 in Navisworks; --read-only removes it. " +
         SafetyAndPermissions;
 
     public const string SafetyAndPermissions =

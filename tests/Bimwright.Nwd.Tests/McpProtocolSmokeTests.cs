@@ -60,7 +60,10 @@ public sealed class McpProtocolSmokeTests
         Assert.Contains("update.notification", (string?)health["description"]);
         Assert.Contains("bundle_update_proposal_allowed", (string?)health["description"]);
         Assert.Contains("nwd_health_check(check_updates=true)", (string?)responses[0]["result"]?["instructions"]);
-        Assert.Contains("protected_component_reasons", (string?)responses[0]["result"]?["instructions"]);
+        // INSTR-MOVE-TO-TOOL: update-check detail moved from the instructions into the health description.
+        Assert.Contains("protected_component_reasons", (string?)health["description"]);
+        // INSTR-MAX-2KB: the instructions sent over MCP fit in 2,048 UTF-8 bytes, default and --read-only.
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount((string)responses[0]["result"]!["instructions"]!) <= 2048);
         var data = JObject.Parse((string)responses[2]["result"]!["content"]![0]!["text"]!);
         Assert.Equal(Program.ServerInformationalVersion, (string?)responses[0]["result"]?["serverInfo"]?["version"]);
         Assert.Equal((string?)responses[0]["result"]?["serverInfo"]?["version"], (string?)data["mcp"]?["server_informational_version"]);
