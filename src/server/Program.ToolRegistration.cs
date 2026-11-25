@@ -9,10 +9,20 @@ using ModelContextProtocol.Server;
 
 internal static partial class Program
 {
+    // TOOL-ALWAYSLOAD (BW-MCP-UPGRADE-001): startup and report tools preload even under Tool Search; never send_code.
+    internal const string AlwaysLoadMetadataKey = "anthropic/alwaysLoad";
+    internal static readonly string[] AlwaysLoadToolNames =
+    {
+        "nwd_health_check",
+        "nwd_list_available_targets",
+        "nwd_switch_target",
+        "nwd_report_task_result",
+    };
+
     internal static readonly (string Name, Type ToolType,
         Func<IMcpServerBuilder, Newtonsoft.Json.Linq.JObject?, IMcpServerBuilder> Register)[] ToolsetRegistrations =
     {
-        ("meta", typeof(MetaTools), static (mcp, _) => mcp.WithTools<MetaTools>()),
+        ("meta", typeof(MetaTools), RegisterMetaToolsWithAlwaysLoad),
         ("files", typeof(FileTools), static (mcp, _) => mcp.WithTools<FileTools>()),
         ("files_write", typeof(FileWriteTools), static (mcp, _) => mcp.WithTools<FileWriteTools>()),
         ("query", typeof(QueryTools), RegisterQueryToolsWithHealthMeta),
@@ -68,6 +78,10 @@ internal static partial class Program
         throw new InvalidOperationException("Unsupported MCP tool type: " + toolType.FullName);
     }
 
+    private static IMcpServerBuilder RegisterMetaToolsWithAlwaysLoad(IMcpServerBuilder mcp,
+        Newtonsoft.Json.Linq.JObject? gatewayIdentity)
+        => RegisterMethods(mcp, typeof(MetaTools), ToolMethods(typeof(MetaTools)), gatewayIdentity);
+
     private static IMcpServerBuilder RegisterQueryToolsWithHealthMeta(IMcpServerBuilder mcp,
         Newtonsoft.Json.Linq.JObject? gatewayIdentity)
         => RegisterMethods(mcp, typeof(QueryTools), ToolMethods(typeof(QueryTools)), gatewayIdentity);
@@ -81,11 +95,16 @@ internal static partial class Program
             var tool = McpServerTool.Create(method,
                 context => ActivatorUtilities.CreateInstance(context.Services!, toolType));
             if (attribute.Name == "nwd_health_check" && gatewayIdentity is not null)
-                tool.ProtocolTool.Meta = new System.Text.Json.Nodes.JsonObject
-                {
-                    [HealthRuntimeInfo.ClientRuntimeMetadataKey] = System.Text.Json.Nodes.JsonNode.Parse(
-                        HealthRuntimeInfo.ClientRuntime(gatewayIdentity).ToString()),
-                };
+            {
+                var meta = tool.ProtocolTool.Meta ??= new System.Text.Json.Nodes.JsonObject();
+                meta[HealthRuntimeInfo.ClientRuntimeMetadataKey] = System.Text.Json.Nodes.JsonNode.Parse(
+                    HealthRuntimeInfo.ClientRuntime(gatewayIdentity).ToString());
+            }
+            if (AlwaysLoadToolNames.Contains(attribute.Name, StringComparer.Ordinal))
+            {
+                var meta = tool.ProtocolTool.Meta ??= new System.Text.Json.Nodes.JsonObject();
+                meta[AlwaysLoadMetadataKey] = true;
+            }
             mcp.WithTools(new[] { tool });
         }
         return mcp;

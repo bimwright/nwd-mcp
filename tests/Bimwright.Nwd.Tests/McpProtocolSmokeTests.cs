@@ -61,9 +61,14 @@ public sealed class McpProtocolSmokeTests
         Assert.Contains("bundle_update_proposal_allowed", (string?)health["description"]);
         Assert.Contains("nwd_health_check(check_updates=true)", (string?)responses[0]["result"]?["instructions"]);
         // INSTR-MOVE-TO-TOOL: update-check detail moved from the instructions into the health description.
+        var instructions = (string)responses[0]["result"]!["instructions"]!;
         Assert.Contains("protected_component_reasons", (string?)health["description"]);
-        // INSTR-MAX-2KB: the instructions sent over MCP fit in 2,048 UTF-8 bytes, default and --read-only.
-        Assert.True(System.Text.Encoding.UTF8.GetByteCount((string)responses[0]["result"]!["instructions"]!) <= 2048);
+        Assert.DoesNotContain("protected_component_reasons", instructions);
+        // INSTR-MAX-2KB, INSTR-SAFETY-BLOCK (FC-SRV-06): wire instructions fit in 2,048 UTF-8 bytes and end with Safety & permissions.
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(instructions) <= 2048);
+        Assert.EndsWith(ServerInstructions.SafetyAndPermissions, instructions);
+        AssertWireToolDescriptionCaps(tools);
+        AssertAlwaysLoadMetadata(tools, readOnly: readOnly);
         var data = JObject.Parse((string)responses[2]["result"]!["content"]![0]!["text"]!);
         Assert.Equal(Program.ServerInformationalVersion, (string?)responses[0]["result"]?["serverInfo"]?["version"]);
         Assert.Equal((string?)responses[0]["result"]?["serverInfo"]?["version"], (string?)data["mcp"]?["server_informational_version"]);
@@ -99,8 +104,66 @@ public sealed class McpProtocolSmokeTests
         Assert.True(JToken.DeepEquals(newTool["_meta"]?[HealthRuntimeInfo.ClientRuntimeMetadataKey], expected));
     }
 
+    // TOOL-ALWAYSLOAD, INSTR-MAX-2KB, INSTR-SAFETY-BLOCK: verify bare default and --disable-send-code launches too.
+    [Theory]
+    [InlineData(false, 35)]
+    [InlineData(true, 34)]
+    public async Task Default_and_disable_send_code_launches_publish_alwaysLoad_and_bounded_instructions(
+        bool disableSendCode, int expectedCount)
+    {
+        var responses = await RunProtocolHandshake(bareDefault: !disableSendCode, disableSendCode: disableSendCode);
+        var instructions = (string)responses[0]["result"]!["instructions"]!;
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(instructions) <= 2048);
+        Assert.EndsWith(ServerInstructions.SafetyAndPermissions, instructions);
+        var tools = (JArray)responses[1]["result"]!["tools"]!;
+        Assert.Equal(expectedCount, tools.Count);
+        AssertWireToolDescriptionCaps(tools);
+        AssertAlwaysLoadMetadata(tools, readOnly: false, expectSendCode: !disableSendCode);
+    }
+
+    private static void AssertWireToolDescriptionCaps(JArray tools)
+    {
+        foreach (var tool in tools)
+        {
+            var desc = (string?)tool["description"] ?? "";
+            Assert.False(string.IsNullOrWhiteSpace(desc), $"{tool["name"]} has empty description");
+            Assert.True(desc.Length <= 4096, $"{tool["name"]} description length {desc.Length} > 4096");
+            Assert.True(System.Text.Encoding.UTF8.GetByteCount(desc) <= 4096,
+                $"{tool["name"]} description UTF-8 bytes > 4096");
+            if (tool["inputSchema"]?["properties"] is JObject props)
+                foreach (var prop in props.Properties())
+                {
+                    var pdesc = (string?)prop.Value["description"] ?? "";
+                    Assert.True(System.Text.Encoding.UTF8.GetByteCount(pdesc) <= 2048,
+                        $"{tool["name"]}.{prop.Name} description UTF-8 bytes > 2048");
+                }
+        }
+    }
+
+    private static void AssertAlwaysLoadMetadata(JArray tools, bool readOnly, bool expectSendCode = true)
+    {
+        var expectedAlwaysLoad = readOnly
+            ? new[] { "nwd_health_check", "nwd_list_available_targets", "nwd_report_task_result" }
+            : Program.AlwaysLoadToolNames;
+        var actualAlwaysLoad = tools
+            .Where(t => t["_meta"]?[Program.AlwaysLoadMetadataKey]?.Value<bool>() == true)
+            .Select(t => (string)t["name"]!)
+            .OrderBy(n => n, StringComparer.Ordinal)
+            .ToArray();
+        Assert.Equal(expectedAlwaysLoad.OrderBy(n => n, StringComparer.Ordinal).ToArray(), actualAlwaysLoad);
+        var health = Assert.Single(tools, t => (string?)t["name"] == "nwd_health_check");
+        Assert.NotNull(health["_meta"]?[HealthRuntimeInfo.ClientRuntimeMetadataKey]);
+        if (!readOnly && expectSendCode)
+        {
+            var sendCode = Assert.Single(tools, t => (string?)t["name"] == "nwd_send_code");
+            Assert.Null(sendCode["_meta"]?[Program.AlwaysLoadMetadataKey]);
+            Assert.NotEqual(true, sendCode["_meta"]?["anthropic/requiresUserInteraction"]?.Value<bool>());
+        }
+    }
+
     private static async Task<JObject[]> RunProtocolHandshake(bool checkHealth = false,
-        bool readOnly = false, bool explicitArgument = false, string toolset = "all")
+        bool readOnly = false, bool explicitArgument = false, string toolset = "all",
+        bool bareDefault = false, bool disableSendCode = false)
     {
         var serverAssembly = typeof(Program).Assembly.Location;
         var startInfo = new ProcessStartInfo
@@ -110,7 +173,12 @@ public sealed class McpProtocolSmokeTests
             RedirectStandardError = true, CreateNoWindow = true,
         };
         startInfo.ArgumentList.Add(serverAssembly);
-        foreach (var arg in new[] { "--toolsets", toolset, "--enable-send-code", "--read-only", readOnly ? "true" : "false", "--timeout-ms", "1000" })
+        var args = bareDefault
+            ? new[] { "--timeout-ms", "1000" }
+            : disableSendCode
+                ? new[] { "--disable-send-code", "--timeout-ms", "1000" }
+                : new[] { "--toolsets", toolset, "--enable-send-code", "--read-only", readOnly ? "true" : "false", "--timeout-ms", "1000" };
+        foreach (var arg in args)
             startInfo.ArgumentList.Add(arg);
         startInfo.Environment.Remove("BIMWRIGHT_NWD_ENABLE_TOOLBAKER");
 
@@ -150,7 +218,7 @@ public sealed class McpProtocolSmokeTests
 
     private static async Task<JObject> ReadJsonResponse(Process process, string label)
     {
-        var line = await process.StandardOutput.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(5));
+        var line = await process.StandardOutput.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(15));
         if (string.IsNullOrWhiteSpace(line)) throw new InvalidOperationException("No MCP response received for " + label + ".");
         return JObject.Parse(line);
     }
