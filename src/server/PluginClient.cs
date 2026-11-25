@@ -50,7 +50,7 @@ public sealed class PluginClient
         _registry = new TargetRegistry(config.DescriptorDirectory, probe);
         if (!TargetSelector.TryParse(config.TargetId, out var selector, out var error))
             throw new ArgumentException("Invalid target selector: " + error);
-        _binding = new TargetBinding(selector, _registry.List, probe, windowTitle,
+        _binding = new TargetBinding(selector, ListTargets, probe, windowTitle,
             SandboxJson);
         _gatewayIdentity = RuntimeIdentity.Capture(typeof(PluginClient).Assembly, "gateway");
         ReportStore = new Reports.ReportStore(config.ReportDirectory);
@@ -65,6 +65,9 @@ public sealed class PluginClient
     /// <summary>Test seam for FC-TGT-07: TokenIsAppContainer of this process (null = unknown). Defaults to the cached token probe.</summary>
     internal Func<bool?> AppContainerProbe { get; set; } = ClientSandbox.ProcessTokenIsAppContainer;
 
+    /// <summary>Test seam: replaces <see cref="TargetRegistry.List"/> when set (e.g. to simulate AppContainer access denial).</summary>
+    internal Func<IReadOnlyList<TargetDescriptor>>? ListTargetsOverride { get; set; }
+
     /// <summary>FC-TGT-07: whether this gateway runs inside a client AppContainer.</summary>
     internal ClientSandboxResult Sandbox() => ClientSandbox.Detect(AppContainerProbe(), _config.DescriptorDirectory);
 
@@ -74,7 +77,16 @@ public sealed class PluginClient
     /// <summary>Current binding generation; the call filter pins it when a tool call arrives.</summary>
     internal long Generation => _binding.Generation;
 
-    public IReadOnlyList<TargetDescriptor> ListTargets() => _registry.List();
+    /// <summary>
+    /// Live targets. Inside a client AppContainer (FC-TGT-07), <c>Global\</c> mutex creation or enumerating a
+    /// host descriptor folder throws <see cref="UnauthorizedAccessException"/>; treat that as zero targets so
+    /// callers report <c>CLIENT_SANDBOXED</c>. Outside a sandbox, access denial still throws.
+    /// </summary>
+    public IReadOnlyList<TargetDescriptor> ListTargets()
+    {
+        try { return (ListTargetsOverride ?? _registry.List)(); }
+        catch (UnauthorizedAccessException) when (Sandbox().Detected) { return Array.Empty<TargetDescriptor>(); }
+    }
 
     /// <summary>nwd_list_available_targets rows. Never selects a target.</summary>
     public JArray ListTargetRows() => _binding.ListRows();

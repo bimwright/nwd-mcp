@@ -118,4 +118,41 @@ public sealed class ClientSandboxToolTests : IDisposable
         Assert.Equal("NO_TARGET", (string?)health["error"]?["code"]);
         Assert.Null(health["sandbox"]);
     }
+
+    [Fact]
+    public async Task FC_TGT_07_DiscoveryUnauthorizedAccessInSandboxReportsClientSandboxed()
+    {
+        var client = EmptyClient(sandboxed: true);
+        client.ListTargetsOverride = () => throw new UnauthorizedAccessException(@"Access to the path 'Global\Bimwright.Nwd.File.test' is denied.");
+
+        var list = JObject.Parse(new MetaTools(client).ListAvailableTargets());
+        Assert.Empty((JArray)list["targets"]!);
+        AssertSandboxBlock(list["sandbox"]);
+        Assert.Equal(ClientSandbox.Message, (string?)list["note"]);
+
+        var info = JObject.Parse(await new QueryTools(client).GetDocumentInfo(Ct));
+        Assert.False((bool?)info["ok"]);
+        Assert.Equal("CLIENT_SANDBOXED", (string?)info["error"]?["code"]);
+        Assert.Equal(ClientSandbox.Message, (string?)info["error"]?["message"]);
+
+        var sw = JObject.Parse(await new MetaTools(client).SwitchTarget("pid:4242"));
+        Assert.False((bool?)sw["ok"]);
+        Assert.Equal("CLIENT_SANDBOXED", (string?)sw["error"]?["code"]);
+        AssertSandboxBlock(sw["error"]?["target"]?["sandbox"]);
+
+        var health = JObject.Parse(await new QueryTools(client).HealthCheck(Ct));
+        Assert.False((bool?)health["ok"]);
+        Assert.False((bool?)health["host_connected"]);
+        Assert.Equal("CLIENT_SANDBOXED", (string?)health["error"]?["code"]);
+        AssertSandboxBlock(health["sandbox"]);
+    }
+
+    [Fact]
+    public void FC_TGT_07_DiscoveryUnauthorizedAccessOutsideSandboxStillThrows()
+    {
+        var client = EmptyClient(sandboxed: false);
+        client.ListTargetsOverride = () => throw new UnauthorizedAccessException("Access denied.");
+
+        Assert.Throws<UnauthorizedAccessException>(() => client.ListTargets());
+    }
 }
