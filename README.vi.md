@@ -42,7 +42,7 @@ Tiêu đề thẻ ghi năm Navisworks và agent của lệnh gần nhất (ví d
 | Thành phần | Trạng thái |
 |---|---|
 | Máy chủ MCP gateway (.NET 8) | ✅ Biên dịch sạch cảnh báo (Debug + Release) |
-| Unit tests (615 xUnit) | ✅ Tất cả đều qua |
+| Unit tests (689 xUnit) | ✅ Tất cả đều qua |
 | Các triển khai plug-in handler | ✅ Đã xác minh trên một phiên Navisworks Manage thực tế |
 | Các dự án plug-in (net48) | ✅ Biên dịch thành công theo Navisworks Manage SDK |
 
