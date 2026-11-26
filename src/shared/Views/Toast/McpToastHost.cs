@@ -32,17 +32,21 @@ namespace Bimwright.Nwd.Shared.Views.Toast
         public ActivityAggregator Aggregator { get; }
         public ActivityHistory History { get; } = new ActivityHistory();
         private ToastHistoryWindow _history;
-        public void ShowHistory() => Post(manager =>
+        public void ShowHistory()
         {
-            if (_history == null)
+            Bimwright.Nwd.Shared.Update.UpdateNoticeCoordinator.TriggerFromUi();
+            Post(manager =>
             {
-                _history = new ToastHistoryWindow(History, _instanceIdentity);
-                _history.Closed += (_, __) => _history = null;
-                _history.Show();
-            }
-            if (_history.WindowState == WindowState.Minimized) _history.WindowState = WindowState.Normal;
-            _history.Activate();
-        });
+                if (_history == null)
+                {
+                    _history = new ToastHistoryWindow(History, _instanceIdentity);
+                    _history.Closed += (_, __) => _history = null;
+                    _history.Show();
+                }
+                if (_history.WindowState == WindowState.Minimized) _history.WindowState = WindowState.Normal;
+                _history.Activate();
+            });
+        }
 
         /// <summary>Hover wordmark. Default off; loaded from nwdmcp.config.json at startup.</summary>
         public bool ShowBranding => _showBranding;

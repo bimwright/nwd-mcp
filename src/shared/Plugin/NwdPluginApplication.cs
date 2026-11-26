@@ -4,6 +4,7 @@ using Bimwright.Nwd.Shared.Config;
 using Bimwright.Nwd.Shared.Logging;
 using Bimwright.Nwd.Shared.Transport;
 using Bimwright.Nwd.Shared.Infrastructure;
+using Bimwright.Nwd.Shared.Update;
 using NW = Autodesk.Navisworks.Api;
 using NWP = Autodesk.Navisworks.Api.Plugins;
 
@@ -68,10 +69,12 @@ public sealed class NwdPluginApplication : NWP.EventWatcherPlugin
             _idleHooked = true;
         }
         NavisworksDocumentIdentity.Attach();
+        UpdateNoticeCoordinator.Start(descriptorDir, typeof(NwdPluginApplication).Assembly);
     }
 
     public override void OnUnloading()
     {
+        UpdateNoticeCoordinator.Stop();
         if (_idleHooked)
         {
             NW.Application.Idle -= OnIdleToast;

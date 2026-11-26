@@ -30,6 +30,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="..\shared\**\*.cs" LinkBase="Shared" />
   </ItemGroup>
 
