@@ -9,7 +9,7 @@ namespace Bimwright.Nwd.Tests;
 
 public sealed class McpProtocolSmokeTests
 {
-    private const string AlwaysLoadKey = "anthropic/alwaysLoad";
+    private static readonly string[] AlwaysLoadKeys = { "anthropic/alwaysLoad", "antigravity/alwaysLoad" };
     private static readonly string[] ExpectedAlwaysLoadTools =
     {
         "nwd_health_check", "nwd_list_available_targets", "nwd_report_task_result", "nwd_switch_target"
@@ -179,19 +179,23 @@ public sealed class McpProtocolSmokeTests
     {
         var names = tools.Select(t => (string)t["name"]!).ToHashSet(StringComparer.Ordinal);
         var expectedAlwaysLoad = ExpectedAlwaysLoadTools.Where(names.Contains).ToArray();
-        var actualAlwaysLoad = tools
-            .Where(t => t["_meta"]?[AlwaysLoadKey] is { Type: JTokenType.Boolean } flag && flag.Value<bool>())
-            .Select(t => (string)t["name"]!)
-            .OrderBy(n => n, StringComparer.Ordinal)
-            .ToArray();
-        Assert.Equal(expectedAlwaysLoad, actualAlwaysLoad);
+        foreach (var alwaysLoadKey in AlwaysLoadKeys)
+        {
+            var actualAlwaysLoad = tools
+                .Where(t => t["_meta"]?[alwaysLoadKey] is { Type: JTokenType.Boolean } flag && flag.Value<bool>())
+                .Select(t => (string)t["name"]!)
+                .OrderBy(n => n, StringComparer.Ordinal)
+                .ToArray();
+            Assert.Equal(expectedAlwaysLoad, actualAlwaysLoad);
+        }
         var health = tools.SingleOrDefault(t => (string?)t["name"] == "nwd_health_check");
         if (health != null)
             Assert.NotNull(health["_meta"]?[HealthRuntimeInfo.ClientRuntimeMetadataKey]);
         if (!readOnly && expectSendCode)
         {
             var sendCode = Assert.Single(tools, t => (string?)t["name"] == "nwd_send_code");
-            Assert.Null(sendCode["_meta"]?[AlwaysLoadKey]);
+            foreach (var alwaysLoadKey in AlwaysLoadKeys)
+                Assert.Null(sendCode["_meta"]?[alwaysLoadKey]);
             Assert.NotEqual(true, sendCode["_meta"]?["anthropic/requiresUserInteraction"]?.Value<bool>());
         }
     }
