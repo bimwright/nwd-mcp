@@ -3,6 +3,7 @@ using System.Windows.Interop;
 using Bimwright.Nwd.Shared.Config;
 using Bimwright.Nwd.Shared.Logging;
 using Bimwright.Nwd.Shared.Transport;
+using Bimwright.Nwd.Shared.Update;
 using Bimwright.Nwd.Shared.Views;
 using Bimwright.Nwd.Shared.Views.Toast;
 using NW = Autodesk.Navisworks.Api;
@@ -35,7 +36,11 @@ internal static class NwdActivityToast
             return paused ? notifier.PauseForToday() : notifier.ResumeFromPause();
         return paused ? ToastSnooze.PauseForToday() : ToastSnooze.Resume();
     }
-    public static void ShowHistoryWindow() => _notifier?.ShowHistory();
+    public static void ShowHistoryWindow()
+    {
+        UpdateNoticeCoordinator.TriggerFromUi();
+        _notifier?.ShowHistory();
+    }
 
     public static bool ShowBranding => _notifier?.ShowBranding ?? PluginSettings.LoadShowBranding();
 
@@ -171,6 +176,7 @@ internal static class NwdActivityToast
 
     public static void ShowStatusWindow()
     {
+        UpdateNoticeCoordinator.TriggerFromUi();
         if (_status != null)
         {
             _status.Activate();
