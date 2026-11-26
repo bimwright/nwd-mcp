@@ -6,7 +6,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>Bimwright.Nwd.Plugin</RootNamespace>
     <AssemblyName>Bimwright.Nwd.Plugin.Navis26</AssemblyName>
-    <Version>2.5.1</Version>
+    <Version>2.5.2</Version>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>

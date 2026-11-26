@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ApplicationPackage
   SchemaVersion="1.0"
-  AppVersion="2.5.1-dev"
+  AppVersion="2.5.2-dev"
   AutodeskProduct="Navisworks"
   Name="Bimwright.Nwd"
   Description="MCP gateway plugin for Autodesk Navisworks Manage"
