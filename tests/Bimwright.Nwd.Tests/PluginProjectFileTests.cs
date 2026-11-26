@@ -63,8 +63,14 @@ public sealed class PluginProjectFileTests
             Assert.Equal("all", api.Attribute("PrivateAssets")?.Value);
             // record/init on net48 needs the IsExternalInit polyfill in every shell.
             Assert.Contains(packages, p => p.Attribute("Include")?.Value == "IsExternalInit");
-            // No install-path references: every shell builds without Navisworks installed.
-            Assert.Empty(itemGroups.SelectMany(ig => ig.Elements("Reference")));
+            // No install-path references: every shell builds without Navisworks installed
+            // (only the net48 BCL System.Net.Http reference without HintPath is allowed).
+            var refs = itemGroups.SelectMany(ig => ig.Elements("Reference")).ToArray();
+            Assert.All(refs, r =>
+            {
+                Assert.Null(r.Element("HintPath"));
+                Assert.Equal("System.Net.Http", r.Attribute("Include")?.Value);
+            });
             Assert.Null(propertyGroup.Element("NavisworksInstallDir"));
 
             // no net8/net10 TFA
