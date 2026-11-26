@@ -9,6 +9,12 @@ namespace Bimwright.Nwd.Tests;
 
 public sealed class McpProtocolSmokeTests
 {
+    private const string AlwaysLoadKey = "anthropic/alwaysLoad";
+    private static readonly string[] ExpectedAlwaysLoadTools =
+    {
+        "nwd_health_check", "nwd_list_available_targets", "nwd_report_task_result", "nwd_switch_target"
+    };
+
     public static IEnumerable<object[]> ToolsetCases()
         => Program.ToolsetRegistrations.Select(registration => new object[] { registration.Name, registration.ToolType });
 
@@ -82,12 +88,10 @@ public sealed class McpProtocolSmokeTests
         Assert.Equal("check_only", (string?)data["update_guidance"]?["mode"]);
         Assert.False(data["update_guidance"]!.Value<bool>("requires_user_authorization"));
         Assert.DoesNotContain("install.ps1", data["update_guidance"]!["steps"]!.ToString());
-        // A live Navisworks instance may be present on the test machine. Both connection outcomes retain runtime evidence.
-        if (!data.Value<bool>("host_connected"))
-        {
-            Assert.False(data.Value<bool>("ok"));
-            Assert.True(responses[2]["result"]!.Value<bool>("isError"));
-        }
+        // The disposable profile has no Navisworks descriptors.
+        Assert.False(data.Value<bool>("host_connected"));
+        Assert.False(data.Value<bool>("ok"));
+        Assert.True(responses[2]["result"]!.Value<bool>("isError"));
     }
 
     [Fact]
@@ -121,6 +125,37 @@ public sealed class McpProtocolSmokeTests
         AssertAlwaysLoadMetadata(tools, readOnly: false, expectSendCode: !disableSendCode);
     }
 
+    // INSTR-MAX-2KB, FC-SRV-06, TOOL-ALWAYSLOAD: filtered catalogs must not misdirect the agent.
+    [Theory]
+    [InlineData("meta", false, false, true, true)]
+    [InlineData("query", false, true, false, false)]
+    [InlineData("files_write", false, false, false, false)]
+    [InlineData("meta", true, false, false, true)]
+    public async Task Filtered_toolsets_publish_safe_startup_guidance(string toolset, bool readOnly,
+        bool hasHealth, bool hasSwitch, bool hasReport)
+    {
+        var responses = await RunProtocolHandshake(toolset: toolset, readOnly: readOnly);
+        var tools = (JArray)responses[1]["result"]!["tools"]!;
+        var names = tools.Select(t => (string)t["name"]!).ToHashSet(StringComparer.Ordinal);
+        Assert.Equal(hasHealth, names.Contains("nwd_health_check"));
+        Assert.Equal(hasSwitch, names.Contains("nwd_switch_target"));
+        Assert.Equal(hasReport, names.Contains("nwd_report_task_result"));
+
+        var instructions = (string)responses[0]["result"]!["instructions"]!;
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(instructions) <= 2048);
+        Assert.EndsWith(ServerInstructions.SafetyAndPermissions, instructions);
+        Assert.Contains("Use only registered tools", instructions);
+        Assert.Contains("if available, call nwd_health_check(check_updates=true)", instructions);
+        Assert.Contains("If available, call nwd_report_task_result", instructions);
+        if (!hasSwitch)
+        {
+            Assert.Contains("If switching is unavailable, start reads with --target pid:<n>", instructions);
+            Assert.Contains("For writes, include meta in writable mode", instructions);
+        }
+        AssertWireToolDescriptionCaps(tools);
+        AssertAlwaysLoadMetadata(tools, readOnly, expectSendCode: false);
+    }
+
     private static void AssertWireToolDescriptionCaps(JArray tools)
     {
         foreach (var tool in tools)
@@ -142,21 +177,21 @@ public sealed class McpProtocolSmokeTests
 
     private static void AssertAlwaysLoadMetadata(JArray tools, bool readOnly, bool expectSendCode = true)
     {
-        var expectedAlwaysLoad = readOnly
-            ? new[] { "nwd_health_check", "nwd_list_available_targets", "nwd_report_task_result" }
-            : Program.AlwaysLoadToolNames;
+        var names = tools.Select(t => (string)t["name"]!).ToHashSet(StringComparer.Ordinal);
+        var expectedAlwaysLoad = ExpectedAlwaysLoadTools.Where(names.Contains).ToArray();
         var actualAlwaysLoad = tools
-            .Where(t => t["_meta"]?[Program.AlwaysLoadMetadataKey]?.Value<bool>() == true)
+            .Where(t => t["_meta"]?[AlwaysLoadKey] is { Type: JTokenType.Boolean } flag && flag.Value<bool>())
             .Select(t => (string)t["name"]!)
             .OrderBy(n => n, StringComparer.Ordinal)
             .ToArray();
-        Assert.Equal(expectedAlwaysLoad.OrderBy(n => n, StringComparer.Ordinal).ToArray(), actualAlwaysLoad);
-        var health = Assert.Single(tools, t => (string?)t["name"] == "nwd_health_check");
-        Assert.NotNull(health["_meta"]?[HealthRuntimeInfo.ClientRuntimeMetadataKey]);
+        Assert.Equal(expectedAlwaysLoad, actualAlwaysLoad);
+        var health = tools.SingleOrDefault(t => (string?)t["name"] == "nwd_health_check");
+        if (health != null)
+            Assert.NotNull(health["_meta"]?[HealthRuntimeInfo.ClientRuntimeMetadataKey]);
         if (!readOnly && expectSendCode)
         {
             var sendCode = Assert.Single(tools, t => (string?)t["name"] == "nwd_send_code");
-            Assert.Null(sendCode["_meta"]?[Program.AlwaysLoadMetadataKey]);
+            Assert.Null(sendCode["_meta"]?[AlwaysLoadKey]);
             Assert.NotEqual(true, sendCode["_meta"]?["anthropic/requiresUserInteraction"]?.Value<bool>());
         }
     }
@@ -180,7 +215,10 @@ public sealed class McpProtocolSmokeTests
                 : new[] { "--toolsets", toolset, "--enable-send-code", "--read-only", readOnly ? "true" : "false", "--timeout-ms", "1000" };
         foreach (var arg in args)
             startInfo.ArgumentList.Add(arg);
-        startInfo.Environment.Remove("BIMWRIGHT_NWD_ENABLE_TOOLBAKER");
+        foreach (var key in startInfo.Environment.Keys.Where(key => key.StartsWith("BIMWRIGHT_NWD_", StringComparison.OrdinalIgnoreCase)).ToArray())
+            startInfo.Environment.Remove(key);
+        var profile = Directory.CreateTempSubdirectory("nwd-protocol-");
+        startInfo.Environment["LOCALAPPDATA"] = profile.FullName;
 
         using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start nwd-mcp server.");
         var stderrTask = process.StandardError.ReadToEndAsync();
@@ -212,7 +250,12 @@ public sealed class McpProtocolSmokeTests
         }
         finally
         {
-            if (!process.HasExited) process.Kill(entireProcessTree: true);
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(10));
+            }
+            profile.Delete(recursive: true);
         }
     }
 
