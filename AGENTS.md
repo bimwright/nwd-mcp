@@ -12,7 +12,7 @@ This file is machine-readable install instructions for AI coding agents. A user 
 - Point the MCP client at that executable. The installer does not edit client config files.
 - Verify `tools/list` and `nwd_health_check` after the client restarts. For an upgrade failure, restore the previous bundle/server backups; do not use uninstall as an upgrade rollback.
 
-**Current status — 2026-11-23:** the latest published release is **v2.5.1** (version numbers follow the shared bimwright release number; the jump from v1.1.0 is not a breaking change). Use `/repos/bimwright/nwd-mcp/releases/latest`. The ZIP ships plug-ins for Manage **2022–2027**; only 2025 has been run live, the other years are build-verified against their Autodesk API.
+**Current status — 2026-11-26:** the latest published release is **v2.5.2**. Use `/repos/bimwright/nwd-mcp/releases/latest`. The ZIP ships plug-ins for Manage **2022–2027**; only 2025 has been run live, the other years are build-verified against their Autodesk API.
 
 **What you cannot do:**
 

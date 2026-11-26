@@ -42,7 +42,7 @@ The card title names the Navisworks year and the agent of the latest call (for e
 | Component | Status |
 |---|---|
 | MCP gateway server (.NET 8) | ✅ Builds warning-clean (Debug + Release) |
-| Unit tests (615 xUnit) | ✅ All passing |
+| Unit tests (689 xUnit) | ✅ All passing |
 | Plug-in handler implementations | ✅ Verified against a live Navisworks Manage session |
 | Plug-in projects (net48) | ✅ Compile against the Navisworks Manage SDK |
 

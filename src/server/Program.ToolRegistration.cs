@@ -11,6 +11,7 @@ internal static partial class Program
 {
     // TOOL-ALWAYSLOAD (BW-MCP-UPGRADE-001): startup and report tools preload even under Tool Search; never send_code.
     internal const string AlwaysLoadMetadataKey = "anthropic/alwaysLoad";
+    internal const string AntigravityAlwaysLoadMetadataKey = "antigravity/alwaysLoad";
     internal static readonly string[] AlwaysLoadToolNames =
     {
         "nwd_health_check",
@@ -104,6 +105,7 @@ internal static partial class Program
             {
                 var meta = tool.ProtocolTool.Meta ??= new System.Text.Json.Nodes.JsonObject();
                 meta[AlwaysLoadMetadataKey] = true;
+                meta[AntigravityAlwaysLoadMetadataKey] = true;
             }
             mcp.WithTools(new[] { tool });
         }
